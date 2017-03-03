@@ -64,7 +64,7 @@ extern "C" {
 	} cluster_data;
 
 	typedef struct quotient_filter_iterator {
-		QF *qf;
+		const QF *qf;
 		uint64_t run;
 		uint64_t current;
 		uint64_t cur_start_index;
@@ -75,7 +75,8 @@ extern "C" {
 
 	typedef quotient_filter_iterator QFi;
 
-	void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t value_bits, bool mem, const char *path, uint32_t seed);
+	void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t
+							 value_bits, bool mem, const char *path, uint32_t seed);
 
 	void qf_reset(QF *qf);
 
@@ -88,7 +89,8 @@ extern "C" {
 								 bool lock, bool spin);
 
 	/* Remove count instances of this key/value combination. */
-	void qf_remove(QF *qf, uint64_t key, uint64_t value, uint64_t count);
+	void qf_remove(QF *qf, uint64_t key, uint64_t value, uint64_t count, bool
+								 lock, bool spin);
 
 	/* Remove all instances of this key/value pair. */
 	void qf_delete_key_value(QF *qf, uint64_t key, uint64_t value);
@@ -118,18 +120,18 @@ extern "C" {
 	uint64_t qf_count_key_value(const QF *qf, uint64_t key, uint64_t value);
 
 	/* Initialize an iterator */
-	void qf_iterator(QF *qf, QFi *qfi, uint64_t position);
+	bool qf_iterator(const QF *qf, QFi *qfi, uint64_t position);
 
 	/* Returns 0 if the iterator is still valid (i.e. has not reached the
 		 end of the QF. */
-	int qfi_get(QFi *qfi, uint64_t *key, uint64_t *value, uint64_t *count);
+	int qfi_get(const QFi *qfi, uint64_t *key, uint64_t *value, uint64_t *count);
 
 	/* Advance to next entry.  Returns whether or not another entry is
 		 found.  */
 	int qfi_next(QFi *qfi);
 
 	/* Check to see if the if the end of the QF */
-	int qfi_end(QFi *qfi); 
+	int qfi_end(const QFi *qfi); 
 
 	/* For debugging */
 	void qf_dump(const QF *);
