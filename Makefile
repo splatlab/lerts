@@ -1,16 +1,59 @@
+TARGETS=main merge
+
+ifdef D
+	DEBUG=-g
+	OPT=
+else
+	DEBUG=
+	OPT=-Ofast
+endif
+
+ifdef P
+	PROFILE=-pg -no-pie # for bug in gprof.
+endif
+
 CXX = g++ -std=c++11
+CC = g++ -std=c++11
+LD= g++ -std=c++11
 
-#CXXFLAGS = -Wall -g -I. -pthread -Wno-unused-result -Wno-strict-aliasing
-CXXFLAGS = -Wall -Ofast -m64 -I. -Wno-unused-result -Wno-strict-aliasing
-#CXXFLAGS = -Wall -Ofast -m64 -I. -Wno-unused-result -Wno-strict-aliasing -DLOG_WAIT_TIME -DLOG_CLUSTER_LENGTH
+CXXFLAGS = -Wall $(DEBUG) $(PROFILE) $(OPT) -m64 -I. -Wno-unused-result -Wno-strict-aliasing -Wno-unused-function
 
-LDFLAGS = -lpthread -lssl -lcrypto -lboost_system -lboost_thread
+LDFLAGS = $(DEBUG) $(PROFILE) $(OPT) -lpthread -lssl -lcrypto -lboost_system -lboost_thread -lm -lbz2 -lz
 
-TARGET_MAIN	= main
-MAIN_SRC = main.cc threadsafe-gqf/gqf.c
+#
+# declaration of dependencies
+#
 
-$(TARGET_MAIN): $(MAIN_SRC)
-	$(CXX) $(CXXFLAGS) $(MAIN_SRC) $(LDFLAGS) -o $@
+all: $(TARGETS)
+
+# dependencies between programs and .o files
+
+main:                  main.o 								 hashutil.o threadsafe-gqf/gqf.o
+merge:                 merge.o 								 hashutil.o threadsafe-gqf/gqf.o
+
+# dependencies between .o files and .h files
+
+main.o: 								 									threadsafe-gqf/gqf.h hashutil.h
+merge.o: 								 									threadsafe-gqf/gqf.h hashutil.h
+hashutil.o: 																									 hashutil.h
+
+# dependencies between .o files and .cc (or .c) files
+
+%.o: %.cc
+threadsafe-gqf/gqf.o: threadsafe-gqf/gqf.c threadsafe-gqf/gqf.h
+
+#
+# generic build rules
+#
+
+$(TARGETS):
+	$(LD) $^ $(LDFLAGS) -o $@
+
+%.o: %.cc
+	$(CXX) $(CXXFLAGS) $(INCLUDE) $< -c -o $@
+
+%.o: %.c
+	$(CC) $(CXXFLAGS) $(INCLUDE) $< -c -o $@
 
 clean:
-	rm -f $(TARGET_MAIN) *.o core
+	rm -f *.o threadsafe-gqf/gqf.o $(TARGETS)
