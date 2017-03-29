@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 		uint32_t nfilters = atoi(argv[3]);
 		uint64_t nhashbits = qbits + 8;
 		uint64_t nslots = (1ULL << qbits);
-		uint64_t nvals = 950*nslots/1000;
+		uint64_t nvals = 750*nslots/1000;
 		cfs = (QF *)calloc(nfilters, sizeof(QF));
 
 		cout << "Creating " << nfilters << " CQFs each with " << nslots << " slots \
