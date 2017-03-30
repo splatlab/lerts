@@ -118,12 +118,14 @@ int main(int argc, char **argv)
 		QF *cf_arr[10];	// assuming we won't be merging more than 10 CQFs. 
 		QF cfr;
 		uint64_t total_occupied_slots = 0;
+		uint64_t total_num_elements = 0;
 		uint64_t nfilters = argc-2;
 
 		for (int i = 2, j = 0; i < argc; i++, j++) {
 			cf_arr[j] = (QF *)calloc(1, sizeof(QF));
 			qf_read(cf_arr[j], argv[i]);
 			total_occupied_slots += cf_arr[j]->metadata->noccupied_slots;
+			total_num_elements += cf_arr[j]->metadata->ndistinct_elts;
 		}
 
 		uint64_t nhashbits = cf_arr[0]->metadata->key_bits;
@@ -134,7 +136,8 @@ int main(int argc, char **argv)
 		cout << "Creating final CQFs with " << rnslots << " slots" << endl;
 		qf_init(&cfr, rnslots, nhashbits, 0, false, final_qf.c_str(), seed);
 
-		cout << "Merging CQFs" << endl;
+		cout << "Merging " << total_num_elements << " elements from " << nfilters <<
+			" CQFs" << endl;
 		gettimeofday(&start1, &tzp);
 		qf_multi_merge(cf_arr, nfilters, &cfr);
 		gettimeofday(&end1, &tzp);
