@@ -81,8 +81,8 @@ int main(int argc, char **argv)
 		uint64_t nvals = 750*nslots/1000;
 		cfs = (QF *)calloc(nfilters, sizeof(QF));
 
-		cout << "Creating " << nfilters << " CQFs each with " << nslots << " slots \
-			on disk" << endl;
+		cout << "Creating " << nfilters << " CQFs each with " << nslots << " slots"
+			<< "on disk" << endl;
 		uint32_t seed = time(NULL);
 		for (uint32_t i = 0; i < nfilters; i++) {
 			string file("_cqf.ser");
