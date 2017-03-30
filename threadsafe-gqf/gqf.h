@@ -146,10 +146,10 @@ extern "C" {
 	void qf_read(QF *qf, const char *path);
 
 	/* merge two QFs into the third one. */
-	void qf_merge(QF *qfa, QF *qfb, QF *qfc);
+	void qf_merge(QF *qfa, QF *qfb, QF *qfc, bool lock, bool spin);
 
 	/* merge multiple QFs into the final QF one. */
-	void qf_multi_merge(QF *qf_arr[], int nqf, QF *qfr);
+	void qf_multi_merge(QF *qf_arr[], int nqf, QF *qfr, bool lock, bool spin);
 
 	/* find cosine similarity between two QFs. */
 	uint64_t qf_inner_product(QF *qfa, QF *qfb);
