@@ -118,11 +118,11 @@ int main(int argc, char **argv)
 		QF *cf_arr[10];	// assuming we won't be merging more than 10 CQFs. 
 		QF cfr;
 		uint64_t total_occupied_slots = 0;
-		uint64_t nfilters = 0;
+		uint64_t nfilters = argc-2;
 
 		for (int i = 2, j = 0; i < argc; i++, j++) {
+			cf_arr[j] = (QF *)calloc(1, sizeof(QF));
 			qf_read(cf_arr[j], argv[i]);
-			nfilters++;
 			total_occupied_slots += cf_arr[j]->metadata->noccupied_slots;
 		}
 
