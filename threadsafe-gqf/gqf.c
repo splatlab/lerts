@@ -21,7 +21,6 @@
 	 8, 16, 32, or 64 (for optimized versions),
 	 or other integer <= 56 (for compile-time-optimized bit-shifting-based versions)
 	 */
-//#define BITS_PER_SLOT 12
 
 /******************************************************************
  * Code for managing the metadata bits and slots w/o interpreting *
@@ -34,16 +33,21 @@
 #define SLOTS_PER_BLOCK (1ULL << BLOCK_OFFSET_BITS)
 #define METADATA_WORDS_PER_BLOCK ((SLOTS_PER_BLOCK + 63) / 64)
 
-#define NUM_SLOTS_TO_LOCK (1ULL<<12)
-#define CLUSTER_SIZE (1ULL<<8)
+#define NUM_SLOTS_TO_LOCK (1ULL<<16)
+#define CLUSTER_SIZE (1ULL<<14)
 
-#define METADATA_WORD(qf,field,slot_index) (get_block((qf), (slot_index) / SLOTS_PER_BLOCK)->field[((slot_index) % SLOTS_PER_BLOCK) / 64])
-#define BITMASK(nbits) ((nbits) == 64 ? 0xffffffffffffffff : (1ULL << (nbits)) - 1ULL)
+#define METADATA_WORD(qf,field,slot_index) (get_block((qf), (slot_index) / \
+					SLOTS_PER_BLOCK)->field[((slot_index)  % SLOTS_PER_BLOCK) / 64])
+
+#define BITMASK(nbits) ((nbits) == 64 ? 0xffffffffffffffff : (1ULL << (nbits)) \
+												- 1ULL)
 #define MAX_VALUE(nbits) ((1ULL << (nbits)) - 1)
 #define BILLION 1000000000L
 
 typedef struct __attribute__ ((__packed__)) qfblock {
-	uint8_t offset; /* Code works with uint16_t, uint32_t, etc, but uint8_t seems just as fast as anything else */
+	/* Code works with uint16_t, uint32_t, etc, but uint8_t seems just as fast as
+   * anything else */
+	uint8_t offset; 
 	uint64_t occupieds[METADATA_WORDS_PER_BLOCK];
 	uint64_t runends[METADATA_WORDS_PER_BLOCK];
 
@@ -70,7 +74,7 @@ static __inline__ unsigned long long rdtsc(void)
 }
 
 #ifdef LOG_WAIT_TIME
-static inline bool qf_spin_lock(QF *qf, volatile int *lock, uint64_t idx, bool
+static inline bool qf_spin_lock(QF *cf, volatile int *lock, uint64_t idx, bool
 																flag_spin)
 {
 	struct timespec start, end;
@@ -80,45 +84,47 @@ static inline bool qf_spin_lock(QF *qf, volatile int *lock, uint64_t idx, bool
 	if (!flag_spin) {
 		ret = !__sync_lock_test_and_set(lock, 1);
 		clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
-		qf->wait_times[idx].locks_acquired_single_attempt++;
-		qf->wait_times[idx].total_time_single += BILLION * (end.tv_sec -
+		cf->mem->wait_times[idx].locks_acquired_single_attempt++;
+		cf->mem->wait_times[idx].total_time_single += BILLION * (end.tv_sec -
 																												start.tv_sec) +
 			end.tv_nsec - start.tv_nsec;
 	} else {
 		if (!__sync_lock_test_and_set(lock, 1)) {
 			clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
-			qf->wait_times[idx].locks_acquired_single_attempt++;
-			qf->wait_times[idx].total_time_single += BILLION * (end.tv_sec -
+			cf->mem->wait_times[idx].locks_acquired_single_attempt++;
+			cf->mem->wait_times[idx].total_time_single += BILLION * (end.tv_sec -
 																													start.tv_sec) +
 			end.tv_nsec - start.tv_nsec;
 		} else {
 			while (__sync_lock_test_and_set(lock, 1))
 				while (*lock);
 			clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
-			qf->wait_times[idx].total_time_spinning += BILLION * (end.tv_sec -
+			cf->mem->wait_times[idx].total_time_spinning += BILLION * (end.tv_sec -
 																														start.tv_sec) +
 				end.tv_nsec - start.tv_nsec;
 		}
 		ret = true;
 	}
-	qf->wait_times[idx].locks_taken++;
+	cf->mem->wait_times[idx].locks_taken++;
 
 	return ret;
 
 	/*start = rdtsc();*/
 	/*if (!__sync_lock_test_and_set(lock, 1)) {*/
 		/*clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);*/
-		/*qf->wait_times[idx].locks_acquired_single_attempt++;*/
-		/*qf->wait_times[idx].total_time_single += BILLION * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;*/
+		/*cf->mem->wait_times[idx].locks_acquired_single_attempt++;*/
+		/*cf->mem->wait_times[idx].total_time_single += BILLION * (end.tv_sec -
+		 * start.tv_sec) + end.tv_nsec - start.tv_nsec;*/
 	/*} else {*/
 		/*while (__sync_lock_test_and_set(lock, 1))*/
 			/*while (*lock);*/
 		/*clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);*/
-		/*qf->wait_times[idx].total_time_spinning += BILLION * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;*/
+		/*cf->mem->wait_times[idx].total_time_spinning += BILLION * (end.tv_sec -
+		 * start.tv_sec) + end.tv_nsec - start.tv_nsec;*/
 	/*}*/
 
 	/*end = rdtsc();*/
-	/*qf->wait_times[idx].locks_taken++;*/
+	/*cf->mem->wait_times[idx].locks_taken++;*/
 	/*return;*/
 }
 #else
@@ -140,32 +146,113 @@ static inline bool qf_spin_lock(volatile int *lock, bool flag_spin)
 }
 #endif
 
-/*static inline void qf_spin_lock(volatile int *lock)*/
-/*{*/
-	/*while (__sync_lock_test_and_set(lock, 1))*/
-		/*while (*lock);*/
-	/*return;*/
-/*}*/
-
 static inline void qf_spin_unlock(volatile int *lock)
 {
 	__sync_lock_release(lock);
 	return;
 }
 
-static void modify_metadata(QF *qf, uint64_t *metadata, int cnt, bool lock)
+static bool qf_lock(QF *cf, uint64_t hash_bucket_index, bool spin, bool flag)
 {
-	if (lock) {
+	uint64_t hash_bucket_lock_offset  = hash_bucket_index % NUM_SLOTS_TO_LOCK;
+	if (flag) {
 #ifdef LOG_WAIT_TIME
-		qf_spin_lock(qf, &qf->mem->metadata_lock,qf->num_locks, true);
+		if (!qf_spin_lock(cf, &cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK],
+											hash_bucket_index/NUM_SLOTS_TO_LOCK, spin))
+			return false;
+		if (NUM_SLOTS_TO_LOCK - hash_bucket_lock_offset <= CLUSTER_SIZE) {
+			if (!qf_spin_lock(cf, &cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1],
+												hash_bucket_index/NUM_SLOTS_TO_LOCK+1, spin)) {
+				qf_spin_unlock(&cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
+				return false;
+			}
+		}
 #else
-		qf_spin_lock(&qf->mem->metadata_lock, true);
+		if (!qf_spin_lock(&cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK], spin))
+			return false;
+		if (NUM_SLOTS_TO_LOCK - hash_bucket_lock_offset <= CLUSTER_SIZE) {
+			if (!qf_spin_lock(&cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1],
+												spin)) {
+				qf_spin_unlock(&cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
+				return false;
+			}
+		}
 #endif
-		*metadata = *metadata + cnt;
-		qf_spin_unlock(&qf->mem->metadata_lock);
-	} else
-		*metadata = *metadata + cnt;
+	} else {
+		/* take the lock for two lock-blocks; the lock-block in which the
+		 * hash_bucket_index falls and the next lock-block */
 
+#ifdef LOG_WAIT_TIME
+		if (hash_bucket_index >= NUM_SLOTS_TO_LOCK && hash_bucket_lock_offset <=
+				CLUSTER_SIZE) {
+			if (!qf_spin_lock(cf, &cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK-1], spin))
+				return false;
+		}
+		if (!qf_spin_lock(cf, &cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK], spin)) {
+			if (hash_bucket_index >= NUM_SLOTS_TO_LOCK && hash_bucket_lock_offset <=
+					CLUSTER_SIZE)
+				qf_spin_unlock(&cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK-1]);
+			return false;
+		}
+		if (!qf_spin_lock(cf, &cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1],
+											spin)) {
+			qf_spin_unlock(&cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
+			if (hash_bucket_index >= NUM_SLOTS_TO_LOCK && hash_bucket_lock_offset <=
+					CLUSTER_SIZE)
+				qf_spin_unlock(&cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK-1]);
+			return false;
+		}
+#else
+		if (hash_bucket_index >= NUM_SLOTS_TO_LOCK && hash_bucket_lock_offset <=
+				CLUSTER_SIZE) {
+			if (!qf_spin_lock(&cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK-1], spin))
+				return false;
+		}
+		if (!qf_spin_lock(&cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK], spin)) {
+			if (hash_bucket_index >= NUM_SLOTS_TO_LOCK && hash_bucket_lock_offset <=
+					CLUSTER_SIZE)
+				qf_spin_unlock(&cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK-1]);
+			return false;
+		}
+		if (!qf_spin_lock(&cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1],
+											spin)) {
+			qf_spin_unlock(&cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
+			if (hash_bucket_index >= NUM_SLOTS_TO_LOCK && hash_bucket_lock_offset <=
+					CLUSTER_SIZE)
+				qf_spin_unlock(&cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK-1]);
+			return false;
+		}
+#endif
+	}
+	return true;
+}
+
+static void qf_unlock(QF *cf, uint64_t hash_bucket_index, bool flag)
+{
+	uint64_t hash_bucket_lock_offset  = hash_bucket_index % NUM_SLOTS_TO_LOCK;
+	if (flag) {
+		if (NUM_SLOTS_TO_LOCK - hash_bucket_lock_offset <= CLUSTER_SIZE) {
+			qf_spin_unlock(&cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1]);
+		}
+		qf_spin_unlock(&cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
+	} else {
+		qf_spin_unlock(&cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1]);
+		qf_spin_unlock(&cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
+		if (hash_bucket_index >= NUM_SLOTS_TO_LOCK && hash_bucket_lock_offset <=
+				CLUSTER_SIZE)
+			qf_spin_unlock(&cf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK-1]);
+	}
+}
+
+static void modify_metadata(QF *cf, uint64_t *metadata, int cnt)
+{
+#ifdef LOG_WAIT_TIME
+	qf_spin_lock(cf, &cf->mem->metadata_lock,cf->num_locks, true);
+#else
+	qf_spin_lock(&cf->mem->metadata_lock, true);
+#endif
+	*metadata = *metadata + cnt;
+	qf_spin_unlock(&cf->mem->metadata_lock);
 	return;
 }
 
@@ -210,9 +297,130 @@ static inline int bitrank(uint64_t val, int pos) {
 	return val;
 }
 
+/**
+ * Returns the position of the k-th 1 in the 64-bit word x.
+ * k is 0-based, so k=0 returns the position of the first 1.
+ *
+ * Uses the broadword selection algorithm by Vigna [1], improved by Gog
+ * and Petri [2] and Vigna [3].
+ *
+ * [1] Sebastiano Vigna. Broadword Implementation of Rank/Select
+ *    Queries. WEA, 2008
+ *
+ * [2] Simon Gog, Matthias Petri. Optimized succinct data
+ * structures for massive data. Softw. Pract. Exper., 2014
+ *
+ * [3] Sebastiano Vigna. MG4J 5.2.1. http://mg4j.di.unimi.it/
+ * The following code is taken from
+ * https://github.com/facebook/folly/blob/b28186247104f8b90cfbe094d289c91f9e413317/folly/experimental/Select64.h
+ */
+const uint8_t kSelectInByte[2048] = {
+	8, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0, 1, 0, 3, 0,
+	1, 0, 2, 0, 1, 0, 5, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0,
+	2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 6, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0,
+	1, 0, 4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 5, 0, 1, 0, 2, 0, 1, 0,
+	3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 7, 0,
+	1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0,
+	2, 0, 1, 0, 5, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0,
+	1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 6, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
+	4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 5, 0, 1, 0, 2, 0, 1, 0, 3, 0,
+	1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 8, 8, 8, 1,
+	8, 2, 2, 1, 8, 3, 3, 1, 3, 2, 2, 1, 8, 4, 4, 1, 4, 2, 2, 1, 4, 3, 3, 1, 3, 2,
+	2, 1, 8, 5, 5, 1, 5, 2, 2, 1, 5, 3, 3, 1, 3, 2, 2, 1, 5, 4, 4, 1, 4, 2, 2, 1,
+	4, 3, 3, 1, 3, 2, 2, 1, 8, 6, 6, 1, 6, 2, 2, 1, 6, 3, 3, 1, 3, 2, 2, 1, 6, 4,
+	4, 1, 4, 2, 2, 1, 4, 3, 3, 1, 3, 2, 2, 1, 6, 5, 5, 1, 5, 2, 2, 1, 5, 3, 3, 1,
+	3, 2, 2, 1, 5, 4, 4, 1, 4, 2, 2, 1, 4, 3, 3, 1, 3, 2, 2, 1, 8, 7, 7, 1, 7, 2,
+	2, 1, 7, 3, 3, 1, 3, 2, 2, 1, 7, 4, 4, 1, 4, 2, 2, 1, 4, 3, 3, 1, 3, 2, 2, 1,
+	7, 5, 5, 1, 5, 2, 2, 1, 5, 3, 3, 1, 3, 2, 2, 1, 5, 4, 4, 1, 4, 2, 2, 1, 4, 3,
+	3, 1, 3, 2, 2, 1, 7, 6, 6, 1, 6, 2, 2, 1, 6, 3, 3, 1, 3, 2, 2, 1, 6, 4, 4, 1,
+	4, 2, 2, 1, 4, 3, 3, 1, 3, 2, 2, 1, 6, 5, 5, 1, 5, 2, 2, 1, 5, 3, 3, 1, 3, 2,
+	2, 1, 5, 4, 4, 1, 4, 2, 2, 1, 4, 3, 3, 1, 3, 2, 2, 1, 8, 8, 8, 8, 8, 8, 8, 2,
+	8, 8, 8, 3, 8, 3, 3, 2, 8, 8, 8, 4, 8, 4, 4, 2, 8, 4, 4, 3, 4, 3, 3, 2, 8, 8,
+	8, 5, 8, 5, 5, 2, 8, 5, 5, 3, 5, 3, 3, 2, 8, 5, 5, 4, 5, 4, 4, 2, 5, 4, 4, 3,
+	4, 3, 3, 2, 8, 8, 8, 6, 8, 6, 6, 2, 8, 6, 6, 3, 6, 3, 3, 2, 8, 6, 6, 4, 6, 4,
+	4, 2, 6, 4, 4, 3, 4, 3, 3, 2, 8, 6, 6, 5, 6, 5, 5, 2, 6, 5, 5, 3, 5, 3, 3, 2,
+	6, 5, 5, 4, 5, 4, 4, 2, 5, 4, 4, 3, 4, 3, 3, 2, 8, 8, 8, 7, 8, 7, 7, 2, 8, 7,
+	7, 3, 7, 3, 3, 2, 8, 7, 7, 4, 7, 4, 4, 2, 7, 4, 4, 3, 4, 3, 3, 2, 8, 7, 7, 5,
+	7, 5, 5, 2, 7, 5, 5, 3, 5, 3, 3, 2, 7, 5, 5, 4, 5, 4, 4, 2, 5, 4, 4, 3, 4, 3,
+	3, 2, 8, 7, 7, 6, 7, 6, 6, 2, 7, 6, 6, 3, 6, 3, 3, 2, 7, 6, 6, 4, 6, 4, 4, 2,
+	6, 4, 4, 3, 4, 3, 3, 2, 7, 6, 6, 5, 6, 5, 5, 2, 6, 5, 5, 3, 5, 3, 3, 2, 6, 5,
+	5, 4, 5, 4, 4, 2, 5, 4, 4, 3, 4, 3, 3, 2, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 3, 8, 8, 8, 8, 8, 8, 8, 4, 8, 8, 8, 4, 8, 4, 4, 3, 8, 8, 8, 8, 8, 8,
+	8, 5, 8, 8, 8, 5, 8, 5, 5, 3, 8, 8, 8, 5, 8, 5, 5, 4, 8, 5, 5, 4, 5, 4, 4, 3,
+	8, 8, 8, 8, 8, 8, 8, 6, 8, 8, 8, 6, 8, 6, 6, 3, 8, 8, 8, 6, 8, 6, 6, 4, 8, 6,
+	6, 4, 6, 4, 4, 3, 8, 8, 8, 6, 8, 6, 6, 5, 8, 6, 6, 5, 6, 5, 5, 3, 8, 6, 6, 5,
+	6, 5, 5, 4, 6, 5, 5, 4, 5, 4, 4, 3, 8, 8, 8, 8, 8, 8, 8, 7, 8, 8, 8, 7, 8, 7,
+	7, 3, 8, 8, 8, 7, 8, 7, 7, 4, 8, 7, 7, 4, 7, 4, 4, 3, 8, 8, 8, 7, 8, 7, 7, 5,
+	8, 7, 7, 5, 7, 5, 5, 3, 8, 7, 7, 5, 7, 5, 5, 4, 7, 5, 5, 4, 5, 4, 4, 3, 8, 8,
+	8, 7, 8, 7, 7, 6, 8, 7, 7, 6, 7, 6, 6, 3, 8, 7, 7, 6, 7, 6, 6, 4, 7, 6, 6, 4,
+	6, 4, 4, 3, 8, 7, 7, 6, 7, 6, 6, 5, 7, 6, 6, 5, 6, 5, 5, 3, 7, 6, 6, 5, 6, 5,
+	5, 4, 6, 5, 5, 4, 5, 4, 4, 3, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 4, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 5, 8, 8, 8, 8, 8, 8, 8, 5, 8, 8, 8, 5, 8, 5, 5, 4, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 6, 8, 8, 8, 8, 8, 8, 8, 6, 8, 8, 8, 6, 8, 6,
+	6, 4, 8, 8, 8, 8, 8, 8, 8, 6, 8, 8, 8, 6, 8, 6, 6, 5, 8, 8, 8, 6, 8, 6, 6, 5,
+	8, 6, 6, 5, 6, 5, 5, 4, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 8, 8,
+	8, 8, 8, 8, 8, 7, 8, 8, 8, 7, 8, 7, 7, 4, 8, 8, 8, 8, 8, 8, 8, 7, 8, 8, 8, 7,
+	8, 7, 7, 5, 8, 8, 8, 7, 8, 7, 7, 5, 8, 7, 7, 5, 7, 5, 5, 4, 8, 8, 8, 8, 8, 8,
+	8, 7, 8, 8, 8, 7, 8, 7, 7, 6, 8, 8, 8, 7, 8, 7, 7, 6, 8, 7, 7, 6, 7, 6, 6, 4,
+	8, 8, 8, 7, 8, 7, 7, 6, 8, 7, 7, 6, 7, 6, 6, 5, 8, 7, 7, 6, 7, 6, 6, 5, 7, 6,
+	6, 5, 6, 5, 5, 4, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 5, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 6, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 6, 8, 8, 8, 8, 8, 8, 8, 6, 8, 8, 8, 6,
+	8, 6, 6, 5, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7,
+	8, 8, 8, 8, 8, 8, 8, 7, 8, 8, 8, 7, 8, 7, 7, 5, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 7, 8, 8, 8, 8, 8, 8, 8, 7, 8, 8, 8, 7, 8, 7, 7, 6, 8, 8, 8, 8,
+	8, 8, 8, 7, 8, 8, 8, 7, 8, 7, 7, 6, 8, 8, 8, 7, 8, 7, 7, 6, 8, 7, 7, 6, 7, 6,
+	6, 5, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 6,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 7, 8, 8, 8, 8, 8, 8, 8, 7, 8, 8, 8, 7, 8, 7, 7, 6, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7
+};
+
+static inline uint64_t _select64(uint64_t x, int k)
+{
+	if (k >= popcnt(x)) { return 64; }
+	
+	const uint64_t kOnesStep4  = 0x1111111111111111ULL;
+	const uint64_t kOnesStep8  = 0x0101010101010101ULL;
+	const uint64_t kMSBsStep8  = 0x80ULL * kOnesStep8;
+
+	uint64_t s = x;
+	s = s - ((s & 0xA * kOnesStep4) >> 1);
+	s = (s & 0x3 * kOnesStep4) + ((s >> 2) & 0x3 * kOnesStep4);
+	s = (s + (s >> 4)) & 0xF * kOnesStep8;
+	uint64_t byteSums = s * kOnesStep8;
+
+	uint64_t kStep8 = k * kOnesStep8;
+	uint64_t geqKStep8 = (((kStep8 | kMSBsStep8) - byteSums) & kMSBsStep8);
+	uint64_t place = popcnt(geqKStep8) * 8;
+	uint64_t byteRank = k - (((byteSums << 8) >> place) & (uint64_t)(0xFF));
+	return place + kSelectInByte[((x >> place) & 0xFF) | (byteRank << 8)];
+}
+
 // Returns the position of the rank'th 1.  (rank = 0 returns the 1st 1)
 // Returns 64 if there are fewer than rank+1 1s.
 static inline uint64_t bitselect(uint64_t val, int rank) {
+#ifdef __SSE4_2_
 	uint64_t i = 1ULL << rank;
 	asm("pdep %[val], %[mask], %[val]"
 			: [val] "+r" (val)
@@ -222,6 +430,8 @@ static inline uint64_t bitselect(uint64_t val, int rank) {
 			: [bit] "g" (val)
 			: "cc");
 	return i;
+#endif
+	return _select64(val, rank);
 }
 
 static inline uint64_t bitselectv(const uint64_t val, int ignore, int rank)
@@ -238,20 +448,20 @@ static inline qfblock * get_block(const QF *qf, uint64_t block_index)
 static inline qfblock * get_block(const QF *qf, uint64_t block_index)
 {
 	return (qfblock *)(((char *)qf->blocks) + block_index * (sizeof(qfblock) +
-																													 SLOTS_PER_BLOCK *
-																													 qf->metadata->bits_per_slot /
-																													 8));
+						SLOTS_PER_BLOCK * qf->metadata->bits_per_slot / 8));
 }
 #endif
 
 static inline int is_runend(const QF *qf, uint64_t index)
 {
-	return (METADATA_WORD(qf, runends, index) >> ((index % SLOTS_PER_BLOCK) % 64)) & 1ULL;
+	return (METADATA_WORD(qf, runends, index) >> ((index % SLOTS_PER_BLOCK) %
+																								64)) & 1ULL;
 }
 
 static inline int is_occupied(const QF *qf, uint64_t index)
 {
-	return (METADATA_WORD(qf, occupieds, index) >> ((index % SLOTS_PER_BLOCK) % 64)) & 1ULL;
+	return (METADATA_WORD(qf, occupieds, index) >> ((index % SLOTS_PER_BLOCK) %
+																									64)) & 1ULL;
 }
 
 #if BITS_PER_SLOT == 8 || BITS_PER_SLOT == 16 || BITS_PER_SLOT == 32 || BITS_PER_SLOT == 64
@@ -275,7 +485,8 @@ static inline void set_slot(const QF *qf, uint64_t index, uint64_t value)
 
 static inline uint64_t get_slot(const QF *qf, uint64_t index)
 {
-	/* Should use __uint128_t to support up to 64-bit remainders, but gcc seems to generate buggy code.  :/  */
+	/* Should use __uint128_t to support up to 64-bit remainders, but gcc seems
+	 * to generate buggy code.  :/  */
 	assert(index < qf->metadata->xnslots);
 	uint64_t *p = (uint64_t *)&get_block(qf, index /
 																			 SLOTS_PER_BLOCK)->slots[(index %
@@ -287,7 +498,8 @@ static inline uint64_t get_slot(const QF *qf, uint64_t index)
 
 static inline void set_slot(const QF *qf, uint64_t index, uint64_t value)
 {
-	/* Should use __uint128_t to support up to 64-bit remainders, but gcc seems to generate buggy code.  :/  */
+	/* Should use __uint128_t to support up to 64-bit remainders, but gcc seems
+	 * to generate buggy code.  :/  */
 	assert(index < qf->metadata->xnslots);
 	uint64_t *p = (uint64_t *)&get_block(qf, index /
 																			 SLOTS_PER_BLOCK)->slots[(index %
@@ -311,19 +523,22 @@ static inline void set_slot(const QF *qf, uint64_t index, uint64_t value)
 static inline uint64_t get_slot(const QF *qf, uint64_t index)
 {
 	assert(index < qf->metadata->xnslots);
-	/* Should use __uint128_t to support up to 64-bit remainders, but gcc seems to generate buggy code.  :/  */
+	/* Should use __uint128_t to support up to 64-bit remainders, but gcc seems
+	 * to generate buggy code.  :/  */
 	uint64_t *p = (uint64_t *)&get_block(qf, index /
 																			 SLOTS_PER_BLOCK)->slots[(index %
 																																SLOTS_PER_BLOCK)
 																			 * qf->metadata->bits_per_slot / 8];
-	return (uint64_t)(((*p) >> (((index % SLOTS_PER_BLOCK) * qf->metadata->bits_per_slot)
-															% 8)) & BITMASK(qf->metadata->bits_per_slot));
+	return (uint64_t)(((*p) >> (((index % SLOTS_PER_BLOCK) *
+															 qf->metadata->bits_per_slot) % 8)) &
+										BITMASK(qf->metadata->bits_per_slot));
 }
 
 static inline void set_slot(const QF *qf, uint64_t index, uint64_t value)
 {
 	assert(index < qf->metadata->xnslots);
-	/* Should use __uint128_t to support up to 64-bit remainders, but gcc seems to generate buggy code.  :/  */
+	/* Should use __uint128_t to support up to 64-bit remainders, but gcc seems
+	 * to generate buggy code.  :/  */
 	uint64_t *p = (uint64_t *)&get_block(qf, index /
 																			 SLOTS_PER_BLOCK)->slots[(index %
 																																SLOTS_PER_BLOCK)
@@ -348,7 +563,7 @@ static inline uint64_t block_offset(const QF *qf, uint64_t blockidx)
 	/* If we have extended counters and a 16-bit (or larger) offset
 		 field, then we can safely ignore the possibility of overflowing
 		 that field. */
-	if (sizeof(qf->blocks[0].offset > 1) || 
+	if (sizeof(qf->blocks[0].offset) > 1 || 
 			get_block(qf, blockidx)->offset < BITMASK(8*sizeof(qf->blocks[0].offset)))
 		return get_block(qf, blockidx)->offset;
 
@@ -362,10 +577,9 @@ static inline uint64_t run_end(const QF *qf, uint64_t hash_bucket_index)
 	uint64_t bucket_intrablock_offset = hash_bucket_index % SLOTS_PER_BLOCK;
 	uint64_t bucket_blocks_offset = block_offset(qf, bucket_block_index);
 
-	// uint64_t bucket_intrablock_rank   = bitrankv(get_block(qf, bucket_block_index)->occupieds, METADATA_WORDS_PER_BLOCK, bucket_intrablock_offset);
 	uint64_t bucket_intrablock_rank   = bitrank(get_block(qf,
-																												bucket_block_index)->occupieds[0],
-																							bucket_intrablock_offset);
+																				bucket_block_index)->occupieds[0],
+																				bucket_intrablock_offset);
 
 	if (bucket_intrablock_rank == 0) {
 		if (bucket_blocks_offset <= bucket_intrablock_offset)
@@ -374,28 +588,25 @@ static inline uint64_t run_end(const QF *qf, uint64_t hash_bucket_index)
 			return SLOTS_PER_BLOCK * bucket_block_index + bucket_blocks_offset - 1;
 	}
 
-	/* FIXME: Should handle offset overflow  --- Ah screw it, just use 16-bit offset.  That'll never overflow.  */
 	uint64_t runend_block_index  = bucket_block_index + bucket_blocks_offset /
 		SLOTS_PER_BLOCK;
 	uint64_t runend_ignore_bits  = bucket_blocks_offset % SLOTS_PER_BLOCK;
 	uint64_t runend_rank         = bucket_intrablock_rank - 1;
-	// uint64_t runend_block_offset = bitselectv(get_block(qf, runend_block_index)->runends, METADATA_WORDS_PER_BLOCK, runend_ignore_bits, runend_rank);
 	uint64_t runend_block_offset = bitselectv(get_block(qf,
-																											runend_block_index)->runends[0],
+																						runend_block_index)->runends[0],
 																						runend_ignore_bits, runend_rank);
 	if (runend_block_offset == SLOTS_PER_BLOCK) {
 		if (bucket_blocks_offset == 0 && bucket_intrablock_rank == 0) {
-			/* The block begins in empty space, and this bucket is in that region of empty space */
+			/* The block begins in empty space, and this bucket is in that region of
+			 * empty space */
 			return hash_bucket_index;
 		} else {
 			do {
-				// runend_rank        -= popcntv(get_block(qf, runend_block_index)->runends, METADATA_WORDS_PER_BLOCK, runend_ignore_bits);
 				runend_rank        -= popcntv(get_block(qf,
 																								runend_block_index)->runends[0],
 																			runend_ignore_bits);
 				runend_block_index++;
 				runend_ignore_bits  = 0;
-				// runend_block_offset = bitselectv(get_block(qf, runend_block_index)->runends, METADATA_WORDS_PER_BLOCK, runend_ignore_bits, runend_rank);
 				runend_block_offset = bitselectv(get_block(qf,
 																									 runend_block_index)->runends[0],
 																				 runend_ignore_bits, runend_rank);
@@ -403,7 +614,8 @@ static inline uint64_t run_end(const QF *qf, uint64_t hash_bucket_index)
 		}
 	}
 
-	uint64_t runend_index = SLOTS_PER_BLOCK * runend_block_index + runend_block_offset;
+	uint64_t runend_index = SLOTS_PER_BLOCK * runend_block_index +
+		runend_block_offset;
 	if (runend_index < hash_bucket_index)
 		return hash_bucket_index;
 	else
@@ -429,14 +641,6 @@ static inline int is_empty(const QF *qf, uint64_t slot_index)
 	return offset_lower_bound(qf, slot_index) == 0;
 }
 
-/* static inline int is_empty(const QF *qf, uint64_t slot_index) */
-/* { */
-/* 	return get_slot(qf, slot_index) == 0 */
-/* 		&& !is_occupied(qf, slot_index)  */
-/* 		&& !is_runend(qf, slot_index) */
-/* 		&& run_end(qf, slot_index) == slot_index; */
-/* } */
-
 static inline int might_be_empty(const QF *qf, uint64_t slot_index)
 {
 	return !is_occupied(qf, slot_index)
@@ -453,8 +657,6 @@ static inline int probably_is_empty(const QF *qf, uint64_t slot_index)
 static inline uint64_t find_first_empty_slot(QF *qf, uint64_t from)
 {
 	do {
-		/* while (!probably_is_empty(qf, from)) */
-		/*   from++; */
 		int t = offset_lower_bound(qf, from);
 		assert(t>=0);
 		if (t == 0)
@@ -492,7 +694,7 @@ static inline void shift_remainders(QF *qf, uint64_t start_index, uint64_t
 						&get_block(qf, empty_block)->slots[0],
 						empty_offset * sizeof(qf->blocks[0].slots[0]));
 		get_block(qf, empty_block)->slots[0] = get_block(qf,
-																										 empty_block-1)->slots[SLOTS_PER_BLOCK-1];
+																			empty_block-1)->slots[SLOTS_PER_BLOCK-1];
 		empty_block--;
 		empty_offset = SLOTS_PER_BLOCK-1;
 	}
@@ -521,8 +723,10 @@ static inline void shift_remainders(QF *qf, const uint64_t start_index, const
 		last_word--;
 		bend = 64;
 	}
-	*REMAINDER_WORD(qf, last_word) = shift_into_b(0, *REMAINDER_WORD(qf, last_word),
-																								bstart, bend, qf->metadata->bits_per_slot);
+	*REMAINDER_WORD(qf, last_word) = shift_into_b(0, *REMAINDER_WORD(qf,
+																																	 last_word),
+																								bstart, bend,
+																								qf->metadata->bits_per_slot);
 }
 
 #endif
@@ -632,12 +836,11 @@ static inline void insert_replace_slots_and_shift_remainders_and_runends_and_off
 																																										 uint64_t		 overwrite_index,
 																																										 const uint64_t	*remainders, 
 																																										 uint64_t		 total_remainders,
-																																										 uint64_t		 noverwrites,
-																																										 bool lock)
+																																										 uint64_t		 noverwrites)
 {
 	uint64_t empties[67];
-	uint64_t i, j;
-	uint64_t ninserts = total_remainders - noverwrites;
+	uint64_t i;
+	int64_t ninserts = total_remainders - noverwrites;
 	uint64_t insert_index = overwrite_index + noverwrites;
 
 	if (ninserts > 0) {
@@ -646,13 +849,11 @@ static inline void insert_replace_slots_and_shift_remainders_and_runends_and_off
 
 		for (i = 0; i < ninserts - 1; i++)
 			shift_slots(qf, empties[i+1] + 1, empties[i] - 1, i + 1);
-		if (ninserts > 0)
-			shift_slots(qf, insert_index, empties[ninserts - 1] - 1, ninserts);
+		shift_slots(qf, insert_index, empties[ninserts - 1] - 1, ninserts);
 
 		for (i = 0; i < ninserts - 1; i++)
 			shift_runends(qf, empties[i+1] + 1, empties[i] - 1, i + 1);
-		if (ninserts > 0)
-			shift_runends(qf, insert_index, empties[ninserts - 1] - 1, ninserts);
+		shift_runends(qf, insert_index, empties[ninserts - 1] - 1, ninserts);
 
 
 		for (i = noverwrites; i < total_remainders - 1; i++)
@@ -687,24 +888,23 @@ static inline void insert_replace_slots_and_shift_remainders_and_runends_and_off
 				abort();
 		}
 
-		if (ninserts > 0) {
-			for (i = bucket_index / SLOTS_PER_BLOCK + 1; i <= empties[ninserts -
-					 1]/SLOTS_PER_BLOCK; i++) {
-				if (get_block(qf, i)->offset < BITMASK(8*sizeof(qf->blocks[0].offset)))
-					get_block(qf, i)->offset += ninserts;
-			}
-			for (j = 0; j < ninserts -1 ; j++)
-				for (i = empties[ninserts - j - 1] / SLOTS_PER_BLOCK + 1; i <=
-						 empties[ninserts - j - 2]/SLOTS_PER_BLOCK; i++) {
-					if (get_block(qf, i)->offset < BITMASK(8*sizeof(qf->blocks[0].offset)))
-						get_block(qf, i)->offset += ninserts - j - 1;
-				}
+		uint64_t npreceding_empties = 0;
+		for (i = bucket_index / SLOTS_PER_BLOCK + 1; i <= empties[0]/SLOTS_PER_BLOCK; i++) {
+			while (npreceding_empties < ninserts &&
+						 empties[ninserts - 1 - npreceding_empties]  / SLOTS_PER_BLOCK < i)
+				npreceding_empties++;
+			
+			if (get_block(qf, i)->offset + ninserts - npreceding_empties < BITMASK(8*sizeof(qf->blocks[0].offset)))
+				get_block(qf, i)->offset += ninserts - npreceding_empties;
+			else
+				get_block(qf, i)->offset = (uint8_t) BITMASK(8*sizeof(qf->blocks[0].offset));
 		}
 	}
+						
 	for (i = 0; i < total_remainders; i++)
 		set_slot(qf, overwrite_index + i, remainders[i]);
-
-	modify_metadata(qf, &qf->metadata->noccupied_slots, ninserts, lock);
+	
+	/*modify_metadata(qf, &qf->metadata->noccupied_slots, ninserts);*/
 }
 
 static inline void remove_replace_slots_and_shift_remainders_and_runends_and_offsets(QF		        *qf,
@@ -812,9 +1012,12 @@ static inline void remove_replace_slots_and_shift_remainders_and_runends_and_off
 		original_block++;
 	}
 
-	qf->metadata->noccupied_slots -= (old_length - total_remainders);
+	/*int num_slots_freed = old_length - total_remainders;*/
+	/*modify_metadata(qf, &qf->metadata->noccupied_slots, -num_slots_freed);*/
+	/*qf->metadata->noccupied_slots -= (old_length - total_remainders);*/
 	if (!total_remainders) {
-		qf->metadata->ndistinct_elts--;
+		/*modify_metadata(qf, &qf->metadata->ndistinct_elts, -1);*/
+		/*qf->metadata->ndistinct_elts--;*/
 	}
 }
 
@@ -982,31 +1185,10 @@ static inline bool insert1(QF *qf, __uint128_t hash, bool lock, bool spin)
 	uint64_t hash_remainder           = hash & BITMASK(qf->metadata->bits_per_slot);
 	uint64_t hash_bucket_index        = hash >> qf->metadata->bits_per_slot;
 	uint64_t hash_bucket_block_offset = hash_bucket_index % SLOTS_PER_BLOCK;
-	uint64_t hash_bucket_lock_offset  = hash_bucket_index % NUM_SLOTS_TO_LOCK;
 
 	if (lock) {
-#ifdef LOG_WAIT_TIME
-		if (!qf_spin_lock(qf, &qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK],
-											hash_bucket_index/NUM_SLOTS_TO_LOCK, spin))
+		if (!qf_lock(qf, hash_bucket_index, spin, true))
 			return false;
-		if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE)) {
-			if (!qf_spin_lock(qf, &qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1],
-												hash_bucket_index/NUM_SLOTS_TO_LOCK+1, spin)) {
-				qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-				return false;
-			}
-		}
-#else
-		if (!qf_spin_lock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK], spin))
-			return false;
-		if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE)) {
-			if (!qf_spin_lock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1],
-												spin)) {
-				qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-				return false;
-			}
-		}
-#endif
 	}
 	if (is_empty(qf, hash_bucket_index) /* might_be_empty(qf, hash_bucket_index) && runend_index == hash_bucket_index */) {
 		METADATA_WORD(qf, runends, hash_bucket_index) |= 1ULL <<
@@ -1015,9 +1197,9 @@ static inline bool insert1(QF *qf, __uint128_t hash, bool lock, bool spin)
 		METADATA_WORD(qf, occupieds, hash_bucket_index) |= 1ULL <<
 			(hash_bucket_block_offset % 64);
 
-		modify_metadata(qf, &qf->metadata->ndistinct_elts, 1, lock);
-		modify_metadata(qf, &qf->metadata->noccupied_slots, 1, lock);
-		modify_metadata(qf, &qf->metadata->nelts, 1, lock);
+		/*modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);*/
+		/*modify_metadata(qf, &qf->metadata->noccupied_slots, 1);*/
+		/*modify_metadata(qf, &qf->metadata->nelts, 1);*/
 	} else {
 		uint64_t runend_index              = run_end(qf, hash_bucket_index);
 		int operation = 0; /* Insert into empty bucket */
@@ -1085,7 +1267,7 @@ static inline bool insert1(QF *qf, __uint128_t hash, bool lock, bool spin)
 				operation = 1;
 				insert_index = runstart_index;
 				new_value = hash_remainder;
-				modify_metadata(qf, &qf->metadata->ndistinct_elts, 1, lock);
+				/*modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);*/
 
 				/* This is the first time we're inserting this remainder, but
 					 there are larger remainders already in the run. */
@@ -1093,7 +1275,7 @@ static inline bool insert1(QF *qf, __uint128_t hash, bool lock, bool spin)
 				operation = 2; /* Inserting */
 				insert_index = runstart_index;
 				new_value = hash_remainder;
-				modify_metadata(qf, &qf->metadata->ndistinct_elts, 1, lock);
+				/*modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);*/
 
 				/* Cases below here: we're incrementing the (simple or
 					 extended) counter for this remainder. */
@@ -1224,19 +1406,17 @@ static inline bool insert1(QF *qf, __uint128_t hash, bool lock, bool spin)
 					 empty_slot_index/SLOTS_PER_BLOCK; i++) {
 				if (get_block(qf, i)->offset < BITMASK(8*sizeof(qf->blocks[0].offset)))
 					get_block(qf, i)->offset++;
-				//assert(get_block(qf, i)->offset != 0);
+				assert(get_block(qf, i)->offset != 0);
 			}
-			modify_metadata(qf, &qf->metadata->noccupied_slots, 1, lock);
+			/*modify_metadata(qf, &qf->metadata->noccupied_slots, 1);*/
 		}
-		modify_metadata(qf, &qf->metadata->nelts, 1, lock);
+		/*modify_metadata(qf, &qf->metadata->nelts, 1);*/
 		METADATA_WORD(qf, occupieds, hash_bucket_index) |= 1ULL <<
 			(hash_bucket_block_offset % 64);
 	}
 
 	if (lock) {
-		qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-		if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE))
-			qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1]);
+		qf_unlock(qf, hash_bucket_index, true);
 	}
 
 	return true;
@@ -1248,35 +1428,15 @@ static inline bool insert(QF *qf, __uint128_t hash, uint64_t count, bool lock,
 	uint64_t hash_remainder           = hash & BITMASK(qf->metadata->bits_per_slot);
 	uint64_t hash_bucket_index        = hash >> qf->metadata->bits_per_slot;
 	uint64_t hash_bucket_block_offset = hash_bucket_index % SLOTS_PER_BLOCK;
-	uint64_t runend_index             = run_end(qf, hash_bucket_index);
-	uint64_t hash_bucket_lock_offset  = hash_bucket_index % NUM_SLOTS_TO_LOCK;
+	/*uint64_t hash_bucket_lock_offset  = hash_bucket_index % NUM_SLOTS_TO_LOCK;*/
 
 	if (lock) {
-		/* take the lock for two lock-blocks; the lock-block in which the
-		 * hash_bucket_index falls and the next lock-block */
-
-#ifdef LOG_WAIT_TIME
-		if (!qf_spin_lock(qf, &qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK],
-											hash_bucket_index/NUM_SLOTS_TO_LOCK, spin))
+		if (!qf_lock(qf, hash_bucket_index, spin, false))
 			return false;
-		if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE)) {
-			if (!qf_spin_lock(qf, &qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1],
-												hash_bucket_index/NUM_SLOTS_TO_LOCK+1, spin)) {
-				qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-				return false;
-			}
-		}
-#else
-		if (!qf_spin_lock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK], spin))
-			return false;
-		if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE)) {
-			if (!qf_spin_lock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1], spin)) {
-				qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-				return false;
-			}
-		}
-#endif
 	}
+
+	uint64_t runend_index             = run_end(qf, hash_bucket_index);
+	
 	/* Empty slot */
 	if (might_be_empty(qf, hash_bucket_index) && runend_index ==
 			hash_bucket_index) {
@@ -1286,15 +1446,12 @@ static inline bool insert(QF *qf, __uint128_t hash, uint64_t count, bool lock,
 		METADATA_WORD(qf, occupieds, hash_bucket_index) |= 1ULL <<
 			(hash_bucket_block_offset % 64);
 		
-		modify_metadata(qf, &qf->metadata->ndistinct_elts, 1, lock);
-		modify_metadata(qf, &qf->metadata->noccupied_slots, 1, lock);
-		modify_metadata(qf, &qf->metadata->nelts, 1, lock);
+		/*modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);*/
+		/*modify_metadata(qf, &qf->metadata->noccupied_slots, 1);*/
+		/*modify_metadata(qf, &qf->metadata->nelts, 1);*/
 		/* This trick will, I hope, keep the fast case fast. */
 		if (count > 1) {
-			qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-			if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE))
-				qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1]);
-			insert(qf, hash, count - 1, lock, spin);
+			insert(qf, hash, count - 1, false, false);
 		}
 	} else { /* Non-empty slot */
 		uint64_t new_values[67];
@@ -1310,8 +1467,8 @@ static inline bool insert(QF *qf, __uint128_t hash, uint64_t count, bool lock,
 																																				runstart_index, 
 																																				p, 
 																																				&new_values[67] - p, 
-																																				0, lock);
-			modify_metadata(qf, &qf->metadata->ndistinct_elts, 1, lock);
+																																				0);
+			/*modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);*/
 		} else { /* Non-empty bucket */
 
 			uint64_t current_remainder, current_count, current_end;
@@ -1335,8 +1492,8 @@ static inline bool insert(QF *qf, __uint128_t hash, uint64_t count, bool lock,
 																																					current_end + 1, 
 																																					p, 
 																																					&new_values[67] - p, 
-																																					0, lock);
-				modify_metadata(qf, &qf->metadata->ndistinct_elts, 1, lock);
+																																					0);
+				/*modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);*/
 				/* Found a counter for this remainder.  Add in the new count. */
 			} else if (current_remainder == hash_remainder) {
 				uint64_t *p = encode_counter(qf, hash_remainder, current_count + count, &new_values[67]);
@@ -1346,7 +1503,7 @@ static inline bool insert(QF *qf, __uint128_t hash, uint64_t count, bool lock,
 																																					runstart_index, 
 																																					p, 
 																																					&new_values[67] - p, 
-																																					current_end - runstart_index + 1, lock);
+																																					current_end - runstart_index + 1);
 				/* No counter for this remainder, but there are larger
 					 remainders, so we're not appending to the bucket. */
 			} else {
@@ -1357,62 +1514,38 @@ static inline bool insert(QF *qf, __uint128_t hash, uint64_t count, bool lock,
 																																					runstart_index, 
 																																					p, 
 																																					&new_values[67] - p, 
-																																					0, lock);	
-				modify_metadata(qf, &qf->metadata->ndistinct_elts, 1, lock);
+																																					0);
+				/*modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);*/
 			}
 		}
 		METADATA_WORD(qf, occupieds, hash_bucket_index) |= 1ULL << (hash_bucket_block_offset % 64);
 		
-		modify_metadata(qf, &qf->metadata->nelts, count, lock);
+		/*modify_metadata(qf, &qf->metadata->nelts, count);*/
 	}
 
 	if (lock) {
-		qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-		if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE))
-			qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1]);
+		qf_unlock(qf, hash_bucket_index, false);
 	}
 
 	return true;
 }
 
-inline static bool _remove(QF *qf, __uint128_t hash, uint64_t count, bool lock, bool spin)
+inline static bool _remove(QF *qf, __uint128_t hash, uint64_t count, bool lock)
 {
 	uint64_t hash_remainder           = hash & BITMASK(qf->metadata->bits_per_slot);
 	uint64_t hash_bucket_index        = hash >> qf->metadata->bits_per_slot;
-	uint64_t hash_bucket_lock_offset  = hash_bucket_index % NUM_SLOTS_TO_LOCK;
 	uint64_t current_remainder, current_count, current_end;
 	uint64_t new_values[67];
+
+	if (lock) {
+		if (!qf_lock(qf, hash_bucket_index, true, false))
+			return false;
+	}
 
 	/* Empty bucket */
 	if (!is_occupied(qf, hash_bucket_index))
 		return false;
 
-	if (lock) {
-		/* take the lock for two lock-blocks; the lock-block in which the
-		 * hash_bucket_index falls and the next lock-block */
-
-#ifdef LOG_WAIT_TIME
-		if (!qf_spin_lock(qf, &qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK],
-											hash_bucket_index/NUM_SLOTS_TO_LOCK, spin))
-			return false;
-		if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE)) {
-			if (!qf_spin_lock(qf, &qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1],
-												hash_bucket_index/NUM_SLOTS_TO_LOCK+1, spin)) {
-				qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-				return false;
-			}
-		}
-#else
-		if (!qf_spin_lock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK], spin))
-			return false;
-		if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE)) {
-			if (!qf_spin_lock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1], spin)) {
-				qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-				return false;
-			}
-		}
-#endif
-	}
 	uint64_t runstart_index = hash_bucket_index == 0 ? 0 : run_end(qf, hash_bucket_index - 1) + 1;
 	uint64_t original_runstart_index = runstart_index;
 	int only_item_in_the_run = 0;
@@ -1424,15 +1557,9 @@ inline static bool _remove(QF *qf, __uint128_t hash, uint64_t count, bool lock, 
 		current_end = decode_counter(qf, runstart_index, &current_remainder, &current_count);
 	}
 	/* remainder not found in the given run */
-	if (current_remainder != hash_remainder) {
-		if (lock) {
-			qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-			if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE))
-				qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1]);
-		}
+	if (current_remainder != hash_remainder)
 		return false;
-	}
-
+	
 	if (original_runstart_index == runstart_index && is_runend(qf, current_end))
 		only_item_in_the_run = 1;
 
@@ -1448,10 +1575,12 @@ inline static bool _remove(QF *qf, __uint128_t hash, uint64_t count, bool lock, 
 																																		&new_values[67] - p,
 																																		current_end - runstart_index + 1);
 
+	// update the nelements.
+	/*modify_metadata(qf, &qf->metadata->nelts, -count);*/
+	/*qf->metadata->nelts -= count;*/
+
 	if (lock) {
-		qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-		if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE))
-			qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1]);
+		qf_unlock(qf, hash_bucket_index, false);
 	}
 
 	return true;
@@ -1557,7 +1686,7 @@ void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t value_bits,
 	qf->mem->locks = (volatile int *)calloc(qf->metadata->num_locks,
 																					sizeof(volatile int));
 #ifdef LOG_WAIT_TIME
-	qf->wait_times = (wait_time_data* )calloc(qf->metadata->num_locks+1,
+	qf->mem->wait_times = (wait_time_data* )calloc(qf->metadata->num_locks+1,
 																						sizeof(wait_time_data));
 #endif
 }
@@ -1584,8 +1713,8 @@ void qf_destroy(QF *qf, bool mem)
 		free(qf->metadata);
 		free(qf->blocks);
 	} else {
-		munmap(qf->metadata, qf->metadata->size + sizeof(qfmetadata));
-		close(qf->mem->fd);
+	munmap(qf->metadata, qf->metadata->size + sizeof(qfmetadata));
+	close(qf->mem->fd);
 	}
 }
 
@@ -1703,12 +1832,12 @@ bool qf_insert(QF *qf, uint64_t key, uint64_t value, uint64_t count, bool
 }
 
 /* count = 0 would remove the key completely. */
-void qf_remove(QF *qf, uint64_t key, uint64_t value, uint64_t count, bool lock, bool spin)
+void qf_remove(QF *qf, uint64_t key, uint64_t value, uint64_t count, bool lock)
 {
 	if (count == 0)
 		count = qf_count_key_value(qf, key, value);
 
-	_remove(qf, key, count, lock, spin);
+	_remove(qf, key, count, lock);
 }
 
 uint64_t qf_count_key_value(const QF *qf, uint64_t key, uint64_t value)
@@ -1740,16 +1869,25 @@ uint64_t qf_count_key_value(const QF *qf, uint64_t key, uint64_t value)
 	return 0;
 }
 
+/**
+ * This function will return the smallest key greater than @prev in the QF.
+ */
+int qf_succ(const QF *qf, uint64_t prev, uint64_t *key, uint64_t *value,
+						uint64_t *count)
+{
+	return 0;
+}
+
 /* initialize the iterator at the run corresponding
  * to the position index
  */
-bool qf_iterator(const QF *qf, QFi *qfi, uint64_t position)
+bool qf_iterator(QF *qf, QFi *qfi, uint64_t position)
 {
-  if (position == 0xffffffffffffffff) {
-    qfi->current = 0xffffffffffffffff;
-    qfi->qf = qf;
-    return false;
-  }
+	if (position == 0xffffffffffffffff) {
+		qfi->current = 0xffffffffffffffff;
+		qfi->qf = qf;
+		return false;
+	}
 	assert(position < qf->metadata->nslots);
 	if (!is_occupied(qf, position)) {
 		uint64_t block_index = position;
@@ -1781,7 +1919,7 @@ bool qf_iterator(const QF *qf, QFi *qfi, uint64_t position)
 	return true;
 }
 
-int qfi_get(const QFi *qfi, uint64_t *key, uint64_t *value, uint64_t *count)
+int qfi_get(QFi *qfi, uint64_t *key, uint64_t *value, uint64_t *count)
 {
 	assert(qfi->current < qfi->qf->metadata->nslots);
 
@@ -1865,7 +2003,7 @@ int qfi_next(QFi *qfi)
 	}
 }
 
-int qfi_end(const QFi *qfi)
+inline int qfi_end(const QFi *qfi)
 {
 	if (qfi->current >= qfi->qf->metadata->xnslots /*&& is_runend(qfi->qf, qfi->current)*/)
 		return 1;
@@ -1976,6 +2114,70 @@ void qf_multi_merge(QF *qf_arr[], int nqf, QF *qfr, bool lock, bool spin)
 	return;
 }
 
+uint64_t qf_shuffle_merge_step(QF *qf_arr[], uint8_t thlds[], uint8_t nqf,
+															 uint64_t prev, bool lock, bool spin)
+{
+	uint64_t min = UINT64_MAX;
+
+	uint64_t keys[nqf];
+	uint64_t values[nqf];
+	uint64_t counts[nqf];
+
+	for (uint32_t i = 0; i <= nqf; i++) {
+		qf_succ(qf_arr[i], prev, &keys[i], &values[i], &counts[i]);
+		if (min > keys[i]) {
+			min = keys[i];
+		}
+	}
+	
+	if (min == UINT64_MAX)
+		return UINT64_MAX;
+
+	uint64_t count = 0;
+	uint64_t value = 0;
+	for (uint32_t i = 0; i <= nqf; i++) {
+		if (min == keys[i]) {
+			count += counts[i];
+			value = values[i];
+			qf_remove(qf_arr[i], keys[i], values[i],
+								0, lock);
+		}
+	}
+
+	for (uint32_t i = nqf; i <= nqf; i++) {
+		if (count >= thlds[i]) {
+			qf_insert(qf_arr[i], min, value, thlds[i], lock, spin);
+			count -= thlds[i];
+		} else if (count > 0) {
+			qf_insert(qf_arr[i], min, value, count, lock, spin);
+		} else
+			break;
+	}
+	
+	return min;
+}
+
+/**
+ * Perform a shuffle-merge among qfs in qf_arr.
+ * Only hashes [hash_begin, hash_end] are involved in the shuffle-merge.
+ * This function assumes that the qfs in qf_arr are sufficient to handle all
+ * the elements <key, count> without violating the no-clogging constraint.
+ * 
+ * This shuffle merge depends on a stateless iterator, since we will be
+ * performing the shuffle-merge in-place.
+ */
+void qf_shuffle_merge(QF *qf_arr[], uint8_t thlds[], uint8_t nqf, uint64_t
+											hash_begin, uint64_t hash_end, bool lock, bool spin)
+{
+	uint64_t cur = hash_begin-1; 		//Need to handle the case when hash_begin is 0.
+
+	while (cur <= hash_end) {
+		cur = qf_shuffle_merge_step(qf_arr, thlds, nqf, cur, lock, spin);
+		if (cur == UINT64_MAX)
+			break;
+	}
+}
+
 /* find cosine similarity between two QFs. */
 uint64_t qf_inner_product(QF *qfa, QF *qfb)
 {
@@ -2003,6 +2205,30 @@ uint64_t qf_inner_product(QF *qfa, QF *qfb)
 	} while (!qfi_next(&qfi));
 
 	return acc;
+}
+
+/* find cosine similarity between two QFs. */
+void qf_intersect(QF *qfa, QF *qfb, QF *qfr)
+{
+	QFi qfi;
+	QF *qf_mem, *qf_disk;
+
+	// create the iterator on the larger QF.
+	if (qfa->metadata->size > qfb->metadata->size) {
+		qf_mem = qfb;
+		qf_disk = qfa;
+	} else {
+		qf_mem = qfa;
+		qf_disk = qfb;
+	}
+
+	qf_iterator(qf_disk, &qfi, 0);
+	do {
+		uint64_t key = 0, value = 0, count = 0;
+		qfi_get(&qfi, &key, &value, &count);
+		if (qf_count_key_value(qf_mem, key, 0) > 0)
+			qf_insert(qfr, key, value, count, false, false);
+	} while (!qfi_next(&qfi));
 }
 
 /* magnitude of a QF. */

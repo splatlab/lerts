@@ -90,7 +90,7 @@ extern "C" {
 
 	/* Remove count instances of this key/value combination. */
 	void qf_remove(QF *qf, uint64_t key, uint64_t value, uint64_t count, bool
-								 lock, bool spin);
+								 lock);
 
 	/* Remove all instances of this key/value pair. */
 	void qf_delete_key_value(QF *qf, uint64_t key, uint64_t value);
