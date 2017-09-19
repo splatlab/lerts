@@ -1869,15 +1869,6 @@ uint64_t qf_count_key_value(const QF *qf, uint64_t key, uint64_t value)
 	return 0;
 }
 
-/**
- * This function will return the smallest key greater than @prev in the QF.
- */
-int qf_succ(const QF *qf, uint64_t prev, uint64_t *key, uint64_t *value,
-						uint64_t *count)
-{
-	return 0;
-}
-
 /* initialize the iterator at the run corresponding
  * to the position index
  */
@@ -2011,6 +2002,40 @@ inline int qfi_end(const QFi *qfi)
 		return 0;
 }
 
+/**
+ * This function will return the smallest key greater than @prev in the QF.
+ * Returns -1 if @prev is not found. 
+ * Returns 0 if @prev is found and sets @key, @value, and @count.
+ */
+int qf_succ(const QF *qf, uint64_t prev, uint64_t *key, uint64_t *value,
+						uint64_t *count)
+{
+	__uint128_t hash = prev;
+	uint64_t hash_remainder   = hash & BITMASK(qf->metadata->bits_per_slot);
+	int64_t hash_bucket_index = hash >> qf->metadata->bits_per_slot;
+
+	if (!is_occupied(qf, hash_bucket_index))
+		return -1;
+
+	int64_t runstart_index = hash_bucket_index == 0 ? 0 : run_end(qf,
+		hash_bucket_index-1) + 1;
+	if (runstart_index < hash_bucket_index)
+		runstart_index = hash_bucket_index;
+
+	/* printf("MC RUNSTART: %02lx RUNEND: %02lx\n", runstart_index, runend_index); */
+
+	uint64_t current_remainder, current_count, current_end;
+	do {
+		current_end = decode_counter(qf, runstart_index, &current_remainder,
+																 &current_count);
+		if (current_remainder == hash_remainder)
+			return current_count;
+		runstart_index = current_end + 1;
+	} while (!is_runend(qf, current_end));
+
+	return 0;
+}
+
 /*
  * Merge qfa and qfb into qfc 
  */
@@ -2123,6 +2148,7 @@ uint64_t qf_shuffle_merge_step(QF *qf_arr[], uint8_t thlds[], uint8_t nqf,
 	uint64_t values[nqf];
 	uint64_t counts[nqf];
 
+	 /*Find the smallest key greater than @prev across each level.*/
 	for (uint32_t i = 0; i <= nqf; i++) {
 		qf_succ(qf_arr[i], prev, &keys[i], &values[i], &counts[i]);
 		if (min > keys[i]) {
@@ -2133,6 +2159,8 @@ uint64_t qf_shuffle_merge_step(QF *qf_arr[], uint8_t thlds[], uint8_t nqf,
 	if (min == UINT64_MAX)
 		return UINT64_MAX;
 
+	/*Aggregate count of @min across levels and remove all it's occurrences from
+	 * all levels.*/
 	uint64_t count = 0;
 	uint64_t value = 0;
 	for (uint32_t i = 0; i <= nqf; i++) {
@@ -2144,6 +2172,7 @@ uint64_t qf_shuffle_merge_step(QF *qf_arr[], uint8_t thlds[], uint8_t nqf,
 		}
 	}
 
+	/* Smear aggregated count of @min starting from the lowest level. */
 	for (uint32_t i = nqf; i <= nqf; i++) {
 		if (count >= thlds[i]) {
 			qf_insert(qf_arr[i], min, value, thlds[i], lock, spin);
