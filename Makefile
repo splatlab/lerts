@@ -1,7 +1,7 @@
-TARGETS=main merge
+TARGETS=test main merge
 
 ifdef D
-	DEBUG=-g
+	DEBUG=-g -DDEBUG
 	OPT=
 else
 	DEBUG=
@@ -34,11 +34,13 @@ all: $(TARGETS)
 
 # dependencies between programs and .o files
 
+test:									 test.o									 threadsafe-gqf/gqf.o
 main:                  main.o 								 hashutil.o threadsafe-gqf/gqf.o
 merge:                 merge.o 								 hashutil.o threadsafe-gqf/gqf.o
 
 # dependencies between .o files and .h files
 
+test.o:																		threadsafe-gqf/gqf.h
 main.o: 								 									threadsafe-gqf/gqf.h hashutil.h
 merge.o: 								 									threadsafe-gqf/gqf.h hashutil.h
 hashutil.o: 																									 hashutil.h
@@ -62,4 +64,4 @@ $(TARGETS):
 	$(CC) $(CXXFLAGS) $(INCLUDE) $< -c -o $@
 
 clean:
-	rm -f *.o threadsafe-gqf/gqf.o $(TARGETS)
+	rm -f *.o core threadsafe-gqf/gqf.o $(TARGETS)

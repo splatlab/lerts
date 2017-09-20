@@ -41,6 +41,15 @@
 
 using namespace std;
 
+#ifdef DEBUG
+#define D 1
+#else
+#define D 0
+#endif
+
+#define debug_print(fmt, ...) \
+	            do { if (D) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
+
 /* Print elapsed time using the start and end timeval */
 void print_time_elapsed(string desc, struct timeval* start, struct timeval* end)
 {
@@ -82,7 +91,7 @@ int main(int argc, char **argv)
 		cfs = (QF *)calloc(nfilters, sizeof(QF));
 
 		cout << "Creating " << nfilters << " CQFs each with " << nslots << " slots"
-			<< "on disk" << endl;
+			<< " on disk" << endl;
 		uint32_t seed = time(NULL);
 		for (uint32_t i = 0; i < nfilters; i++) {
 			string file("_cqf.ser");
