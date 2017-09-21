@@ -38,37 +38,12 @@
 
 #include "threadsafe-gqf/gqf.h"
 #include "hashutil.h"
-
-using namespace std;
-
-#ifdef DEBUG
-#define D 1
-#else
-#define D 0
-#endif
-
-#define debug_print(fmt, ...) \
-	            do { if (D) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
-
-/* Print elapsed time using the start and end timeval */
-void print_time_elapsed(string desc, struct timeval* start, struct timeval* end)
-{
-	struct timeval elapsed;
-	if (start->tv_usec > end->tv_usec) {
-		end->tv_usec += 1000000;
-		end->tv_sec--;
-	}
-	elapsed.tv_usec = end->tv_usec - start->tv_usec;
-	elapsed.tv_sec = end->tv_sec - start->tv_sec;
-	float time_elapsed = (elapsed.tv_sec * 1000000 + elapsed.tv_usec)/1000000.f;
-	cout << desc << "Total Time Elapsed: " << to_string(time_elapsed) << 
-		"seconds" << endl;
-}
+#include "util.h"
 
 int main(int argc, char **argv)
 {
 	if (argc < 2) {
-			cout << "Not suffcient args." << endl;
+			std::cout << "Not suffcient args." << std::endl;
 			abort();
 	}
 
@@ -78,7 +53,7 @@ int main(int argc, char **argv)
 
 	if (flag) { // create
 		if (argc < 4) {
-			cout << "Not suffcient args." << endl;
+			std::cout << "Not suffcient args." << std::endl;
 			abort();
 		}
 
@@ -90,11 +65,11 @@ int main(int argc, char **argv)
 		uint64_t nvals = 750*nslots/1000;
 		cfs = (QF *)calloc(nfilters, sizeof(QF));
 
-		cout << "Creating " << nfilters << " CQFs each with " << nslots << " slots"
-			<< " on disk" << endl;
+		std::cout << "Creating " << nfilters << " CQFs each with " << nslots <<
+			" slots on disk" << std::endl;
 		uint32_t seed = time(NULL);
 		for (uint32_t i = 0; i < nfilters; i++) {
-			string file("_cqf.ser");
+			std::string file("_cqf.ser");
 			file = std::to_string(i) + file;
 			qf_init(&cfs[i], nslots, nhashbits, 0, false, file.c_str(), seed);
 		}
@@ -102,20 +77,20 @@ int main(int argc, char **argv)
 		__uint128_t *vals;
 		vals = (__uint128_t*)malloc(nvals*sizeof(vals[0]));
 		for (uint32_t i = 0; i < nfilters; i++) {
-			cout << "Generating random numbers." << endl;
+			std::cout << "Generating " << nvals << " random numbers." << std::endl;
 			memset(vals, 0, nvals*sizeof(vals[0]));
 			RAND_pseudo_bytes((unsigned char *)vals, sizeof(*vals) * nvals);
 			for (uint32_t k = 0; k < nvals; k++)
 				vals[k] = (1 * vals[k]) % cfs[i].metadata->range;
 
-			cout << "Inserting items in the " << i << " CQF." << endl;
+			std::cout << "Inserting items in the " << i << " CQF." << std::endl;
 			gettimeofday(&start1, &tzp);
 			for (uint32_t j = 0; j < nvals; j++) {
-				qf_insert(&cfs[i], vals[j], 0, 1, false, false);	// no lock and no spin
+				qf_insert(&cfs[i], vals[j], 0, 1, /*lock*/false, /*spin*/false);
 				uint64_t cnt = qf_count_key_value(&cfs[i], vals[j], 0);
 				if (!cnt) {
-					cout << "Failed lookup while inserting for " << (uint64_t)vals[j] <<
-						endl;
+					std::cout << "Failed lookup while inserting for " <<
+						(uint64_t)vals[j] << std::endl;
 					abort();
 				}
 			}
@@ -135,18 +110,23 @@ int main(int argc, char **argv)
 			qf_read(cf_arr[j], argv[i]);
 			total_occupied_slots += cf_arr[j]->metadata->noccupied_slots;
 			total_num_elements += cf_arr[j]->metadata->ndistinct_elts;
+			debug_print("Total occupied slots %ld\n",
+									cf_arr[j]->metadata->noccupied_slots);
+			debug_print("Total num elements %ld\n",
+									cf_arr[j]->metadata->ndistinct_elts);
 		}
-
+	
 		uint64_t nhashbits = cf_arr[0]->metadata->key_bits;
 		uint32_t seed = cf_arr[0]->metadata->seed;
-		uint64_t rqbits = ceil(log2(total_occupied_slots + 0.05*total_occupied_slots));
+		uint64_t rqbits = ceil(log2(total_occupied_slots +
+																0.05*total_occupied_slots));
 		uint64_t rnslots = pow(2, rqbits);
-		string final_qf("final_qf.ser");
-		cout << "Creating final CQFs with " << rnslots << " slots" << endl;
+		std::string final_qf("final_qf.ser");
+		std::cout << "Creating final CQFs with " << rnslots << " slots" << std::endl;
 		qf_init(&cfr, rnslots, nhashbits, 0, false, final_qf.c_str(), seed);
 
-		cout << "Merging " << total_num_elements << " elements from " << nfilters <<
-			" CQFs" << endl;
+		std::cout << "Merging " << total_num_elements << " elements from " <<
+			nfilters << " CQFs" << std::endl;
 		gettimeofday(&start1, &tzp);
 		qf_multi_merge(cf_arr, nfilters, &cfr, false, false);	// no lock and no spin
 		gettimeofday(&end1, &tzp);

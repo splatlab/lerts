@@ -15,6 +15,7 @@
 #include <fcntl.h>
 
 #include "gqf.h"
+#include "../util.h"
 
 /* Can be 
 	 0 (choose size at run-time), 
@@ -65,9 +66,6 @@ typedef struct __attribute__ ((__packed__)) qfblock {
 	uint8_t   slots[];
 #endif
 } qfblock;
-
-#define debug_print(fmt, ...) \
-	            do { if (DEBUG) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
 
 static __inline__ unsigned long long rdtsc(void)
 {
@@ -1765,8 +1763,6 @@ void qf_read(QF *qf, const char *path)
 
 void qf_reset(QF *qf)
 {
-	assert(popcnt(nslots) == 1); /* nslots must be a power of 2 */
-
 	qf->metadata->nelts = 0;
 	qf->metadata->ndistinct_elts = 0;
 	qf->metadata->noccupied_slots = 0;
