@@ -1634,8 +1634,8 @@ void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t value_bits,
 		}
 		ret = fallocate(qf->mem->fd, 0, 0, mmap_size);
 		if (ret < 0) {
-		perror("Couldn't fallocate file:\n");
-		exit(EXIT_FAILURE);
+			perror("Couldn't fallocate file:\n");
+			exit(EXIT_FAILURE);
 		}
 		qf->metadata = (qfmetadata *)mmap(NULL, mmap_size, PROT_READ |
 																			PROT_WRITE, MAP_SHARED, qf->mem->fd, 0);
