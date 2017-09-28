@@ -1600,7 +1600,6 @@ void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t value_bits,
 
 	assert(popcnt(nslots) == 1); /* nslots must be a power of 2 */
 	num_slots = nslots;
-	assert(popcnt(nslots) == 1); /* nslots must be a power of 2 */
 	xnslots = nslots + 10*sqrt((double)nslots);
 	nblocks = (xnslots + SLOTS_PER_BLOCK - 1) / SLOTS_PER_BLOCK;
 	key_remainder_bits = key_bits;
@@ -1620,31 +1619,10 @@ void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t value_bits,
 #endif
 
 	qf->mem = (qfmem *)calloc(sizeof(qfmem), 1);
-	
+
 	if (mem) {
 		qf->metadata = (qfmetadata *)calloc(sizeof(qfmetadata), 1);
-
-		qf->metadata->size = size;
-		qf->metadata->seed = seed;
-		qf->metadata->nslots = num_slots;
-		qf->metadata->xnslots = qf->metadata->nslots +
-			10*sqrt((double)qf->metadata->nslots);
-		qf->metadata->key_bits = key_bits;
-		qf->metadata->value_bits = value_bits;
-		qf->metadata->key_remainder_bits = key_remainder_bits;
-		qf->metadata->bits_per_slot = bits_per_slot;
-
-		qf->metadata->range = qf->metadata->nslots;
-		qf->metadata->range <<= qf->metadata->bits_per_slot;
-		qf->metadata->nblocks = (qf->metadata->xnslots + SLOTS_PER_BLOCK - 1) /
-			SLOTS_PER_BLOCK;
-		qf->metadata->nelts = 0;
-		qf->metadata->ndistinct_elts = 0;
-		qf->metadata->noccupied_slots = 0;
-		qf->metadata->num_locks = (qf->metadata->xnslots/NUM_SLOTS_TO_LOCK)+2;
-
 		qf->blocks = (qfblock *)calloc(size, 1);
-
 	} else {
 		int ret;
 		uint64_t mmap_size = size + sizeof(qfmetadata);
@@ -1656,8 +1634,8 @@ void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t value_bits,
 		}
 		ret = fallocate(qf->mem->fd, 0, 0, mmap_size);
 		if (ret < 0) {
-			perror("Couldn't fallocate file:\n");
-			exit(EXIT_FAILURE);
+		perror("Couldn't fallocate file:\n");
+		exit(EXIT_FAILURE);
 		}
 		qf->metadata = (qfmetadata *)mmap(NULL, mmap_size, PROT_READ |
 																			PROT_WRITE, MAP_SHARED, qf->mem->fd, 0);
@@ -1666,35 +1644,34 @@ void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t value_bits,
 			perror("Couldn't fallocate file:\n");
 			exit(EXIT_FAILURE);
 		}
-
-		qf->metadata->seed = seed;
-		qf->metadata->nslots = num_slots;
-		qf->metadata->xnslots = qf->metadata->nslots +
-														10*sqrt((double)qf->metadata->nslots);
-		qf->metadata->key_bits = key_bits;
-		qf->metadata->value_bits = value_bits;
-		qf->metadata->key_remainder_bits = key_remainder_bits;
-		qf->metadata->bits_per_slot = bits_per_slot;
-
-		qf->metadata->range = qf->metadata->nslots;
-		qf->metadata->range <<= qf->metadata->bits_per_slot;
-		qf->metadata->nblocks = (qf->metadata->xnslots + SLOTS_PER_BLOCK - 1) /
-			SLOTS_PER_BLOCK;
-		qf->metadata->nelts = 0;
-		qf->metadata->ndistinct_elts = 0;
-		qf->metadata->noccupied_slots = 0;
-		qf->metadata->num_locks = (qf->metadata->xnslots/NUM_SLOTS_TO_LOCK)+2;
-
 		qf->blocks = (qfblock *)(qf->metadata + sizeof(qfmetadata));
 	}
-	
+
+	qf->metadata->size = size;
+	qf->metadata->seed = seed;
+	qf->metadata->nslots = num_slots;
+	qf->metadata->xnslots = xnslots;
+	qf->metadata->key_bits = key_bits;
+	qf->metadata->value_bits = value_bits;
+	qf->metadata->key_remainder_bits = key_remainder_bits;
+	qf->metadata->bits_per_slot = bits_per_slot;
+
+	qf->metadata->range = qf->metadata->nslots;
+	qf->metadata->range <<= qf->metadata->bits_per_slot;
+	qf->metadata->nblocks = (qf->metadata->xnslots + SLOTS_PER_BLOCK - 1) /
+		SLOTS_PER_BLOCK;
+	qf->metadata->nelts = 0;
+	qf->metadata->ndistinct_elts = 0;
+	qf->metadata->noccupied_slots = 0;
+	qf->metadata->num_locks = (qf->metadata->xnslots/NUM_SLOTS_TO_LOCK)+2;
+
 	/* initialize all the locks to 0 */
 	qf->mem->metadata_lock = 0;
 	qf->mem->locks = (volatile int *)calloc(qf->metadata->num_locks,
 																					sizeof(volatile int));
 #ifdef LOG_WAIT_TIME
 	qf->mem->wait_times = (wait_time_data* )calloc(qf->metadata->num_locks+1,
-																						sizeof(wait_time_data));
+																								 sizeof(wait_time_data));
 #endif
 }
 
