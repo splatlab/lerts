@@ -1661,6 +1661,11 @@ void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t value_bits,
 		}
 		qf->metadata = (qfmetadata *)mmap(NULL, mmap_size, PROT_READ |
 																			PROT_WRITE, MAP_SHARED, qf->mem->fd, 0);
+		ret = madvise(qf->metadata, mmap_size, MADV_RANDOM);
+		if (ret < 0) {
+			perror("Couldn't fallocate file:\n");
+			exit(EXIT_FAILURE);
+		}
 
 		qf->metadata->seed = seed;
 		qf->metadata->nslots = num_slots;
