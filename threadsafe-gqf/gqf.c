@@ -15,7 +15,6 @@
 #include <fcntl.h>
 
 #include "gqf.h"
-#include "../util.h"
 
 /* Can be 
 	 0 (choose size at run-time), 
@@ -66,6 +65,16 @@ typedef struct __attribute__ ((__packed__)) qfblock {
 	uint8_t   slots[];
 #endif
 } qfblock;
+
+#ifdef DEBUG
+#define PRINT_DEBUG 1
+#else
+#define PRINT_DEBUG 0
+#endif
+
+#define DEBUG_CQF(fmt, ...) \
+							do { if (PRINT_DEBUG) fprintf(stderr, fmt, __VA_ARGS__); } while \
+(0)
 
 static __inline__ unsigned long long rdtsc(void)
 {
@@ -1854,7 +1863,7 @@ uint64_t qf_count_key_value(const QF *qf, uint64_t key, uint64_t value)
 /* initialize the iterator at the run corresponding
  * to the position index
  */
-bool qf_iterator(QF *qf, QFi *qfi, uint64_t position)
+bool qf_iterator(const QF *qf, QFi *qfi, uint64_t position)
 {
 	if (position == 0xffffffffffffffff) {
 		qfi->current = 0xffffffffffffffff;
@@ -1892,7 +1901,7 @@ bool qf_iterator(QF *qf, QFi *qfi, uint64_t position)
 	return true;
 }
 
-int qfi_get(QFi *qfi, uint64_t *key, uint64_t *value, uint64_t *count)
+int qfi_get(const QFi *qfi, uint64_t *key, uint64_t *value, uint64_t *count)
 {
 	assert(qfi->current < qfi->qf->metadata->nslots);
 

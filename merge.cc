@@ -110,9 +110,9 @@ int main(int argc, char **argv)
 			qf_read(cf_arr[j], argv[i]);
 			total_occupied_slots += cf_arr[j]->metadata->noccupied_slots;
 			total_num_elements += cf_arr[j]->metadata->ndistinct_elts;
-			debug_print("Total occupied slots %ld\n",
+			DEBUG("Total occupied slots " << 
 									cf_arr[j]->metadata->noccupied_slots);
-			debug_print("Total num elements %ld\n",
+			DEBUG("Total num elements " <<
 									cf_arr[j]->metadata->ndistinct_elts);
 		}
 	

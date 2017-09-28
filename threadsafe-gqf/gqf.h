@@ -3,6 +3,7 @@
 
 #include <inttypes.h>
 #include <pthread.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {

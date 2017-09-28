@@ -25,7 +25,6 @@ int cmp_uint64_t(const void *a, const void *b)
 int main(int argc, char **argv)
 {
 	QF cf;
-	QF cf_read;
 	/*QFi cfi;*/
 	uint64_t qbits = atoi(argv[1]);
 	int mem = atoi(argv[2]);
@@ -92,6 +91,7 @@ int main(int argc, char **argv)
 	qf_destroy(&cf, false);
 
 	if (!mem) {
+		QF cf_read;
 		qf_read(&cf_read, "test_qf.ser");
 		fprintf(stdout, "Reading CQF from disk. \n");
 		for (uint64_t j = 0; j < nvals; j++) {
@@ -101,6 +101,18 @@ int main(int argc, char **argv)
 				abort();
 			}
 		}
+		QFi cfi;
+		qf_iterator(&cf_read, &cfi, 0);
+		fprintf(stdout, "Iterating over hashes in the CQF. \n");
+		do {
+			uint64_t key, value, count;
+			qfi_get(&cfi, &key, &value, &count);
+			count = qf_count_key_value(&cf_read, key, 0);
+			if (!count) {
+				fprintf(stderr, "failed lookup after during iteration for %lx %ld.\n", key, count);
+				abort();
+			}
+		} while(!qfi_next(&cfi));
 		fprintf(stdout, "Verified all items.\n");
 	}
 

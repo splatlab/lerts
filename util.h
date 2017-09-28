@@ -22,22 +22,15 @@
 #include <cassert>
 #include <fstream>
 
-#include <time.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/resource.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-
 #ifdef DEBUG
 #define PRINT_DEBUG 1
 #else
 #define PRINT_DEBUG 0
 #endif
 
-#define debug_print(fmt, ...) \
-	            do { if (PRINT_DEBUG) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
+#define DEBUG(x) do { \
+	  if (PRINT_DEBUG) { std::cerr << x << std::endl; } \
+} while (0)
 
 /* Print elapsed time using the start and end timeval */
 void print_time_elapsed(std::string desc, struct timeval* start, struct

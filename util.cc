@@ -21,13 +21,6 @@
 #include <cassert>
 #include <fstream>
 
-#include <time.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/resource.h>
-#include <sys/stat.h>
-
 void print_time_elapsed(std::string desc, struct timeval* start, struct
 												timeval* end)
 {
