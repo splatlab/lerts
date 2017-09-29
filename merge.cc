@@ -83,7 +83,7 @@ int main(int argc, char **argv)
 			for (uint32_t k = 0; k < nvals; k++)
 				vals[k] = (1 * vals[k]) % cfs[i].metadata->range;
 
-			std::cout << "Inserting items in the " << i << " CQF." << std::endl;
+			std::cout << "Inserting items in the CQF: " << i << std::endl;
 			gettimeofday(&start1, &tzp);
 			for (uint32_t j = 0; j < nvals; j++) {
 				qf_insert(&cfs[i], vals[j], 0, 1, /*lock*/false, /*spin*/false);
