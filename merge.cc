@@ -122,7 +122,7 @@ int main(int argc, char **argv)
 																0.05*total_occupied_slots));
 		uint64_t rnslots = pow(2, rqbits);
 		std::string final_qf("final_qf.ser");
-		std::cout << "Creating final CQFs with " << rnslots << " slots" << std::endl;
+		std::cout << "Creating final CQF with " << rnslots << " slots" << std::endl;
 		qf_init(&cfr, rnslots, nhashbits, 0, false, final_qf.c_str(), seed);
 
 		std::cout << "Merging " << total_num_elements << " elements from " <<
