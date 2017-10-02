@@ -1653,7 +1653,7 @@ void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t value_bits,
 			perror("Couldn't fallocate file:\n");
 			exit(EXIT_FAILURE);
 		}
-		qf->blocks = (qfblock *)(qf->metadata + sizeof(qfmetadata));
+		qf->blocks = (qfblock *)(qf->metadata + 1);
 	}
 
 	qf->metadata->size = size;
@@ -1749,7 +1749,7 @@ void qf_read(QF *qf, const char *path)
 	qf->metadata = (qfmetadata *)mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE, MAP_SHARED,
 																qf->mem->fd, 0);
 
-	qf->blocks = (qfblock *)(qf->metadata + sizeof(qfmetadata));
+	qf->blocks = (qfblock *)(qf->metadata + 1);
 }
 
 void qf_reset(QF *qf)

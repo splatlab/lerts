@@ -97,7 +97,7 @@ int main(int argc, char **argv)
 		for (uint64_t j = 0; j < nvals; j++) {
 			uint64_t count = qf_count_key_value(&cf_read, vals[j], 0);
 			if (!count) {
-				fprintf(stderr, "failed lookup after insertion for %lx %ld.\n", vals[j], count);
+				fprintf(stderr, "failed lookup after reading for %lx %ld.\n", vals[j], count);
 				abort();
 			}
 		}
