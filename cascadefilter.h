@@ -52,6 +52,15 @@ class CascadeFilter {
 	uint64_t count_key_value(const QF *qf, uint64_t key, uint64_t value) const;
 
 	private:
+	/**
+	 * Perform a shuffle-merge among @nqf cqfs from @qf_arr and put elements in
+	 * new cqfs in @qf_arr_new.
+	 *
+	 * After the shuffle-merge the cqfs in @qf_arr will be destroyed and memory
+	 * will be freed.
+	 */
+	void shuffle_merge(uint8_t nqf);
+
 	QF *filters[NUM_MAX_FILTERS];
 	uint32_t thresholds[NUM_MAX_FILTERS];
 	uint64_t sizes[NUM_MAX_FILTERS];
