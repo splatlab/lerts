@@ -18,6 +18,95 @@
 
 #include "cascadefilter.h"
 
+const QF* CascadeFilterIterator::get_filter(uint32_t level) const {
+	return this->filters[level];
+}
+
+CascadeFilterIterator::CascadeFilterIterator(
+								const CascadeFilter *cascade_filter, uint64_t position) {
+	int i;
+	int flag = 0;
+	int smallest_idx = 0;
+	uint64_t smallest_key = UINT64_MAX;
+
+	this->cf = cascade_filter;
+	for (i=0; i<nqf; i++) {
+		qf_iterator(cf->get_filter(i), qfi_arr[i], 0);
+	}
+
+	uint64_t keys[nqf];
+	uint64_t values[nqf];
+	uint64_t counts[nqf];
+
+	for (i=0; i<nqf; i++) {
+		qfi_get(&qfi_arr[i], &keys[i], &values[i], &counts[i]);
+	}
+
+	smallest_key = UINT64_MAX;
+	if ()
+	for (i=0; i<nqf; i++) {
+		if (keys[i] < smallest_key) {
+			smallest_key = keys[i];
+			smallest_idx = i;
+		}
+	}
+
+
+		if (!qfi_end(&qfi_arr[0])) {
+			do {
+				uint64_t key, value, count;
+				qfi_get(&qfi_arr[0], &key, &value, &count);
+				qf_insert(qfr, key, value, count, lock, spin);
+			} while(!qfi_next(&qfi_arr[0]));
+		}
+
+}
+
+int CascadeFilterIterator::get(uint64_t *key, uint64_t *value, uint64_t
+															 *count, uint32_t *level);
+
+int CascadeFilterIterator::next() {
+		qf_insert(qfr, keys[smallest_idx], values[smallest_idx], counts[smallest_idx],
+							lock, spin);
+		qfi_next(&qfi_arr[smallest_idx]);
+		qfi_get(&qfi_arr[smallest_idx], &keys[smallest_idx], &values[smallest_idx],
+						&counts[smallest_idx]);
+	} while(!qfi_end(&qfi_arr[smallest_idx]));
+
+		/* remove the qf that is exhausted from the array */
+		if (smallest_idx < nqf-1)
+			memmove(&qfi_arr[smallest_idx], &qfi_arr[smallest_idx+1],
+							(nqf-smallest_idx-1)*sizeof(qfi_arr[0]));
+		nqf--;
+		if (nqf == 1)
+			flag = 1;
+
+}
+
+int CascadeFilterIterator::end();
+
+
+
+CascadeFilter::CascadeFilter();
+
+bool CascadeFilter::insert(QF *qf, uint64_t key, uint64_t value, uint64_t
+													 count, bool lock, bool spin);
+
+void CascadeFilter::remove(QF *qf, uint64_t key, uint64_t value, uint64_t
+													 count, bool lock);
+
+void CascadeFilter::replace(QF *qf, uint64_t key, uint64_t oldvalue, uint64_t
+														newvalue);
+
+uint64_t CascadeFilter::count_key_value(const QF *qf, uint64_t key, uint64_t
+																				value) const;
+
+void CascadeFilter::shuffle_merge(uint8_t nqf);
+
+
+
+
+
 /**
  * This function will return the smallest key greater than @prev in the QF.
  * Returns -1 if @prev is not found. 
@@ -34,7 +123,7 @@ int qf_succ(const QF *qf, uint64_t prev, uint64_t *key, uint64_t *value,
 		return -1;
 
 	int64_t runstart_index = hash_bucket_index == 0 ? 0 : run_end(qf,
-		hash_bucket_index-1) + 1;
+																																hash_bucket_index-1) + 1;
 	if (runstart_index < hash_bucket_index)
 		runstart_index = hash_bucket_index;
 
@@ -61,14 +150,14 @@ uint64_t qf_shuffle_merge_step(QF *qf_arr[], uint8_t thlds[], uint8_t nqf,
 	uint64_t values[nqf];
 	uint64_t counts[nqf];
 
-	 /*Find the smallest key greater than @prev across each level.*/
+	/*Find the smallest key greater than @prev across each level.*/
 	for (uint32_t i = 0; i <= nqf; i++) {
 		qf_succ(qf_arr[i], prev, &keys[i], &values[i], &counts[i]);
 		if (min > keys[i]) {
 			min = keys[i];
 		}
 	}
-	
+
 	if (min == UINT64_MAX)
 		return UINT64_MAX;
 
@@ -95,7 +184,7 @@ uint64_t qf_shuffle_merge_step(QF *qf_arr[], uint8_t thlds[], uint8_t nqf,
 		} else
 			break;
 	}
-	
+
 	return min;
 }
 
@@ -109,7 +198,7 @@ uint64_t qf_shuffle_merge_step(QF *qf_arr[], uint8_t thlds[], uint8_t nqf,
  * performing the shuffle-merge in-place.
  */
 void qf_shuffle_merge_inplace(QF *qf_arr[], uint8_t thlds[], uint8_t nqf, uint64_t
-											hash_begin, uint64_t hash_end, bool lock, bool spin)
+															hash_begin, uint64_t hash_end, bool lock, bool spin)
 {
 	uint64_t cur = hash_begin-1; 		//Need to handle the case when hash_begin is 0.
 
@@ -183,13 +272,13 @@ void qf_shuffle_merge(QF *qf_arr[], uint8_t thlds[], uint8_t nqf, QF
 				}
 			}
 		} while(!qfi_end(&qfi_arr[smallest_idx]));
-		/* remove the cqf that is exhausted from the array. */
-		if (smallest_idx < nqf-1)
-			memmove(&qfi_arr[smallest_idx], &qfi_arr[smallest_idx+1],
-							(nqf-smallest_idx-1)*sizeof(qfi_arr[0]));
-		nqf--;
-		if (nqf == 1)
-			flag = 1;
+					/* remove the cqf that is exhausted from the array. */
+					if (smallest_idx < nqf-1)
+						memmove(&qfi_arr[smallest_idx], &qfi_arr[smallest_idx+1],
+										(nqf-smallest_idx-1)*sizeof(qfi_arr[0]));
+					nqf--;
+					if (nqf == 1)
+						flag = 1;
 	}
 
 	if (!qfi_end(&qfi_arr[0])) {
