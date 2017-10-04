@@ -27,8 +27,10 @@
 
 class CascadeFilter {
 	public:
-		CascadeFilter(uint32_t num_hash_bits, uint32_t filter_thlds[],
+		CascadeFilter(uint32_t nhashbits, uint32_t filter_thlds[],
 									uint64_t filter_sizes[], uint32_t num_filters);
+
+		const QF* get_filter(uint32_t level) const;
 
 		/* Increment the counter for this key/value pair by count. */
 		bool insert(QF *qf, uint64_t key, uint64_t value, uint64_t count, bool
@@ -49,8 +51,6 @@ class CascadeFilter {
 			 value, into qf. */
 		uint64_t count_key_value(const QF *qf, uint64_t key, uint64_t value) const;
 
-		const QF* get_filter(uint32_t level) const;
-
 	private:
 		/**
 		 * Perform a shuffle-merge among @nqf cqfs from @qf_arr and put elements in
@@ -59,12 +59,14 @@ class CascadeFilter {
 		 * After the shuffle-merge the cqfs in @qf_arr will be destroyed and memory
 		 * will be freed.
 		 */
-		void shuffle_merge(uint8_t nqf);
+		void shuffle_merge(uint32_t num_levels);
 
 		QF filters[NUM_MAX_FILTERS];
 		uint32_t thresholds[NUM_MAX_FILTERS];
 		uint64_t sizes[NUM_MAX_FILTERS];
-		uint32_t num_levels;
+		uint32_t total_num_levels;
+		uint32_t num_hash_bits;
+		uint32_t seed;
 };
 
 class CascadeFilterIterator {

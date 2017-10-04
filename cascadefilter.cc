@@ -34,16 +34,17 @@
 #include "util.h"
 
 
-CascadeFilter::CascadeFilter(uint32_t num_hash_bits, uint32_t filter_thlds[],
+CascadeFilter::CascadeFilter(uint32_t nhashbits, uint32_t filter_thlds[],
 									uint64_t filter_sizes[], uint32_t num_filters) {
-	num_levels = num_filters;
+	total_num_levels = num_filters;
+	num_hash_bits = nhashbits;
+	seed = time(NULL);
 	memcpy(thresholds, filter_thlds, num_filters * sizeof(thresholds[0]));
 	memcpy(sizes, filter_sizes, num_filters * sizeof(sizes[0]));
 
 	/* Initialize all the filters. */
 	//TODO: (prashant) Make it laze initialization.
-	uint32_t seed = time(NULL);
-	for (uint32_t i = 0; i < num_levels; i++) {
+	for (uint32_t i = 0; i < total_num_levels; i++) {
 		std::string file("_cqf.ser");
 		file = std::to_string(i) + file;
 		qf_init(&filters[i], sizes[i], num_hash_bits, 0, false, file.c_str(), seed);
@@ -54,6 +55,60 @@ const QF* CascadeFilter::get_filter(uint32_t level) const {
 	return &filters[level];
 }
 
+//bool CascadeFilter::insert(QF *qf, uint64_t key, uint64_t value, uint64_t
+													 //count, bool lock, bool spin);
+
+//void CascadeFilter::remove(QF *qf, uint64_t key, uint64_t value, uint64_t
+													 //count, bool lock);
+
+//void CascadeFilter::replace(QF *qf, uint64_t key, uint64_t oldvalue, uint64_t
+														//newvalue);
+
+//uint64_t CascadeFilter::count_key_value(const QF *qf, uint64_t key, uint64_t
+																				//value) const;
+
+void CascadeFilter::shuffle_merge(uint32_t num_levels) {
+	assert(num_levels < total_num_levels);
+
+	uint64_t cur_key, cur_value, cur_count;
+	uint64_t next_key, next_value, next_count;
+	uint32_t cur_level, next_level;
+	QF new_filters[num_levels];
+
+	/* Initialize new filters. */
+	for (uint32_t i = 0; i < num_levels; i++) {
+		std::string file("_cqf.ser");
+		file = std::to_string(i) + file;
+		qf_init(&new_filters[i], sizes[i], num_hash_bits, 0, false, file.c_str(),
+						seed);
+	}
+
+	/* Initialize cascade filter iterator. */
+	CascadeFilterIterator cfi(this, num_levels);
+	cfi.get(&cur_key, &cur_value, &cur_count, &cur_level);
+	
+	while(!cfi.end()) {
+		cfi.get(&next_key, &next_value, &next_count, &next_level);
+		/* next_key is same as cur_key then aggregate counts. Else, smear the key
+		 * counts across levels starting from the bottom one. */
+		if (next_key == cur_key)
+			cur_count += next_count;
+		else {
+			for (int32_t i = num_levels; i >= 0; i--) {
+				if (cur_count >= thresholds[i]) {
+					qf_insert(&new_filters[i], cur_key, cur_value, thresholds[i], true,
+										true);
+					cur_count -= thresholds[i];
+				} else if (cur_count > 0) {
+					qf_insert(&new_filters[i], cur_key, cur_value, cur_count, true,
+										true);
+				} else
+					break;
+			}
+		}
+	}
+}
+
 CascadeFilterIterator::CascadeFilterIterator(
 								const CascadeFilter *cascade_filter,
 								uint32_t num_levels) {
@@ -61,13 +116,13 @@ CascadeFilterIterator::CascadeFilterIterator(
 	cur_num_levels = num_levels;
 
 	/* Initialize the iterator for all the levels. */
-	for (int i = 0; i < cur_num_levels; i++)
+	for (uint32_t i = 0; i < cur_num_levels; i++)
 		qf_iterator(cf->get_filter(i), &qfi_arr[i], 0);
 
 	/* Find the smallest key across levels. */
 	uint64_t key, value, count;
 	uint64_t smallest_key = UINT64_MAX;
-	for (int i = 0; i < cur_num_levels; i++) {
+	for (uint32_t i = 0; i < cur_num_levels; i++) {
 		qfi_get(&qfi_arr[i], &key, &value, &count);
 		if (key < smallest_key)
 			cur_level = i;
@@ -102,7 +157,7 @@ int CascadeFilterIterator::next() {
 	/* Find the smallest key across levels. */
 	uint64_t key, value, count;
 	uint64_t smallest_key = UINT64_MAX;
-	for (int i = 0; i < cur_num_levels; i++) {
+	for (uint32_t i = 0; i < cur_num_levels; i++) {
 		qfi_get(&qfi_arr[i], &key, &value, &count);
 		if (key < smallest_key)
 			cur_level = i;
@@ -119,23 +174,6 @@ int CascadeFilterIterator::end() {
 }
 
 #if 0
-bool CascadeFilter::insert(QF *qf, uint64_t key, uint64_t value, uint64_t
-													 count, bool lock, bool spin);
-
-void CascadeFilter::remove(QF *qf, uint64_t key, uint64_t value, uint64_t
-													 count, bool lock);
-
-void CascadeFilter::replace(QF *qf, uint64_t key, uint64_t oldvalue, uint64_t
-														newvalue);
-
-uint64_t CascadeFilter::count_key_value(const QF *qf, uint64_t key, uint64_t
-																				value) const;
-
-void CascadeFilter::shuffle_merge(uint8_t nqf);
-
-
-
-
 
 /**
  * This function will return the smallest key greater than @prev in the QF.
