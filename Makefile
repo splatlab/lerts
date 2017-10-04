@@ -1,4 +1,4 @@
-TARGETS=test main merge
+TARGETS=test main merge cascadefilter
 
 ifdef D
 	DEBUG=-g -DDEBUG
@@ -43,12 +43,14 @@ all: $(TARGETS)
 test:									 test.o									                   threadsafe-gqf/gqf.o
 main:                  main.o 								 util.o hashutil.o threadsafe-gqf/gqf.o
 merge:                 merge.o 								 util.o hashutil.o threadsafe-gqf/gqf.o
+cascadefilter:         cascadefilter.o 				 util.o hashutil.o threadsafe-gqf/gqf.o
 
 # dependencies between .o files and .h files
 
 test.o:																		threadsafe-gqf/gqf.h
 main.o: 								 									threadsafe-gqf/gqf.h hashutil.h util.h
 merge.o: 								 									threadsafe-gqf/gqf.h hashutil.h util.h
+cascadefilter.o: 				cascadefilter.h		threadsafe-gqf/gqf.h hashutil.h util.h
 hashutil.o: 																									 hashutil.h
 util.o: 																									 								util.h
 

@@ -1,5 +1,5 @@
 /*
- * =====================================================================================
+ * ============================================================================
  *
  *       Filename:  cascadefilter.h
  *
@@ -13,29 +13,26 @@
  *         Author:  Prashant Pandey (), ppandey@cs.stonybrook.edu
  *   Organization:  Stony Brook University
  *
- * =====================================================================================
+ * ============================================================================
  */
 
-#ifdef _CASCADEFILTER_H_
+#ifndef _CASCADEFILTER_H_
 #define _CASCADEFILTER_H_
 
-
 #include <sys/types.h>
-#include <string>
-#include <stdlib.h>
-#include <stdint.h>
 
 #include "threadsafe-gqf/gqf.h"
 
-#define NUM_MAX_FILTERS 10;
+#define NUM_MAX_FILTERS 10
 
 class CascadeFilter {
 	public:
-		CascadeFilter();
+		CascadeFilter(uint32_t num_hash_bits, uint32_t filter_thlds[],
+									uint64_t filter_sizes[], uint32_t num_filters);
 
 		/* Increment the counter for this key/value pair by count. */
-		bool insert(QF *qf, uint64_t key, uint64_t value, uint64_t count, bool lock,
-								bool spin);
+		bool insert(QF *qf, uint64_t key, uint64_t value, uint64_t count, bool
+								lock, bool spin);
 
 		/* Remove count instances of this key/value combination. */
 		void remove(QF *qf, uint64_t key, uint64_t value, uint64_t count, bool
@@ -64,7 +61,7 @@ class CascadeFilter {
 		 */
 		void shuffle_merge(uint8_t nqf);
 
-		QF *filters[NUM_MAX_FILTERS];
+		QF filters[NUM_MAX_FILTERS];
 		uint32_t thresholds[NUM_MAX_FILTERS];
 		uint64_t sizes[NUM_MAX_FILTERS];
 		uint32_t num_levels;
@@ -72,8 +69,8 @@ class CascadeFilter {
 
 class CascadeFilterIterator {
 	public:
-		CascadeFilterIterator(const CascadeFilter *cascade_filter, uint64_t
-													position);
+		CascadeFilterIterator(const CascadeFilter *cascade_filter,
+													uint32_t num_levels);
 
 		/* Returns 0 if the iterator is still valid (i.e. has not reached the
 			 end of the QF. */
@@ -88,11 +85,9 @@ class CascadeFilterIterator {
 
 	private:
 		const CascadeFilter *cf;
-		QFi qfi_arr[nqf];
+		QFi qfi_arr[NUM_MAX_FILTERS];
 		uint32_t cur_num_levels;
 		uint32_t cur_level;
-		uint64_t smallest_idx;
-		uint64_t smallest_key;
 };
 
 #endif

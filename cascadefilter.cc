@@ -1,5 +1,5 @@
 /*
- * =====================================================================================
+ * ============================================================================
  *
  *       Filename:  cascadefilter.cc
  *
@@ -13,82 +13,112 @@
  *         Author:  Prashant Pandey (), ppandey@cs.stonybrook.edu
  *   Organization:  Stony Brook University
  *
- * =====================================================================================
+ * ============================================================================
  */
+
+#include <stdlib.h>
+#include <iostream>
+#include <algorithm>
+#include <cstring>
+#include <string>
+#include <vector>
+#include <set>
+#include <unordered_set>
+#include <bitset>
+#include <cassert>
+#include <fstream>
 
 #include "cascadefilter.h"
 
-const QF* CascadeFilterIterator::get_filter(uint32_t level) const {
-	return this->filters[level];
+#include "hashutil.h"
+#include "util.h"
+
+
+CascadeFilter::CascadeFilter(uint32_t num_hash_bits, uint32_t filter_thlds[],
+									uint64_t filter_sizes[], uint32_t num_filters) {
+	num_levels = num_filters;
+	memcpy(thresholds, filter_thlds, num_filters * sizeof(thresholds[0]));
+	memcpy(sizes, filter_sizes, num_filters * sizeof(sizes[0]));
+
+	/* Initialize all the filters. */
+	//TODO: (prashant) Make it laze initialization.
+	uint32_t seed = time(NULL);
+	for (uint32_t i = 0; i < num_levels; i++) {
+		std::string file("_cqf.ser");
+		file = std::to_string(i) + file;
+		qf_init(&filters[i], sizes[i], num_hash_bits, 0, false, file.c_str(), seed);
+	}
+}
+
+const QF* CascadeFilter::get_filter(uint32_t level) const {
+	return &filters[level];
 }
 
 CascadeFilterIterator::CascadeFilterIterator(
-								const CascadeFilter *cascade_filter, uint64_t position) {
-	int i;
-	int flag = 0;
-	int smallest_idx = 0;
+								const CascadeFilter *cascade_filter,
+								uint32_t num_levels) {
+	cf = cascade_filter;
+	cur_num_levels = num_levels;
+
+	/* Initialize the iterator for all the levels. */
+	for (int i = 0; i < cur_num_levels; i++)
+		qf_iterator(cf->get_filter(i), &qfi_arr[i], 0);
+
+	/* Find the smallest key across levels. */
+	uint64_t key, value, count;
 	uint64_t smallest_key = UINT64_MAX;
-
-	this->cf = cascade_filter;
-	for (i=0; i<nqf; i++) {
-		qf_iterator(cf->get_filter(i), qfi_arr[i], 0);
+	for (int i = 0; i < cur_num_levels; i++) {
+		qfi_get(&qfi_arr[i], &key, &value, &count);
+		if (key < smallest_key)
+			cur_level = i;
 	}
-
-	uint64_t keys[nqf];
-	uint64_t values[nqf];
-	uint64_t counts[nqf];
-
-	for (i=0; i<nqf; i++) {
-		qfi_get(&qfi_arr[i], &keys[i], &values[i], &counts[i]);
-	}
-
-	smallest_key = UINT64_MAX;
-	if ()
-	for (i=0; i<nqf; i++) {
-		if (keys[i] < smallest_key) {
-			smallest_key = keys[i];
-			smallest_idx = i;
-		}
-	}
-
-
-		if (!qfi_end(&qfi_arr[0])) {
-			do {
-				uint64_t key, value, count;
-				qfi_get(&qfi_arr[0], &key, &value, &count);
-				qf_insert(qfr, key, value, count, lock, spin);
-			} while(!qfi_next(&qfi_arr[0]));
-		}
-
 }
 
 int CascadeFilterIterator::get(uint64_t *key, uint64_t *value, uint64_t
-															 *count, uint32_t *level);
-
-int CascadeFilterIterator::next() {
-		qf_insert(qfr, keys[smallest_idx], values[smallest_idx], counts[smallest_idx],
-							lock, spin);
-		qfi_next(&qfi_arr[smallest_idx]);
-		qfi_get(&qfi_arr[smallest_idx], &keys[smallest_idx], &values[smallest_idx],
-						&counts[smallest_idx]);
-	} while(!qfi_end(&qfi_arr[smallest_idx]));
-
-		/* remove the qf that is exhausted from the array */
-		if (smallest_idx < nqf-1)
-			memmove(&qfi_arr[smallest_idx], &qfi_arr[smallest_idx+1],
-							(nqf-smallest_idx-1)*sizeof(qfi_arr[0]));
-		nqf--;
-		if (nqf == 1)
-			flag = 1;
-
+															 *count, uint32_t *level) {
+	*level = cur_level;
+	return qfi_get(&qfi_arr[cur_level], key, value, count);
 }
 
-int CascadeFilterIterator::end();
+int CascadeFilterIterator::next() {
+	assert(cur_level < cur_num_levels);
 
+	/* Move the iterator for "cur_level". */
+	qfi_next(&qfi_arr[cur_level]);
 
+	/* End of the cascade filter. */
+	if (cur_num_levels == 1 && qfi_end(&qfi_arr[cur_level]))
+		return -1;
 
-CascadeFilter::CascadeFilter();
+	/* remove the qf iterator that is exhausted from the array if it is not
+	 * the last level. */
+	if (cur_num_levels > 1 && qfi_end(&qfi_arr[cur_level])) {
+		if (cur_level < cur_num_levels - 1)
+			memmove(&qfi_arr[cur_level], &qfi_arr[cur_level + 1],
+							(cur_num_levels - cur_level - 1)*sizeof(qfi_arr[0]));
+		cur_num_levels--;
+	}
 
+	/* Find the smallest key across levels. */
+	uint64_t key, value, count;
+	uint64_t smallest_key = UINT64_MAX;
+	for (int i = 0; i < cur_num_levels; i++) {
+		qfi_get(&qfi_arr[i], &key, &value, &count);
+		if (key < smallest_key)
+			cur_level = i;
+	}
+
+	return 0;
+}
+
+int CascadeFilterIterator::end() {
+	assert(cur_level < cur_num_levels);
+	if (cur_num_levels == 1 && qfi_end(&qfi_arr[cur_level]))
+		return 1;
+	return 0;
+}
+
+#if 0
 bool CascadeFilter::insert(QF *qf, uint64_t key, uint64_t value, uint64_t
 													 count, bool lock, bool spin);
 
@@ -299,4 +329,17 @@ void qf_shuffle_merge(QF *qf_arr[], uint8_t thlds[], uint8_t nqf, QF
 		} while(!qfi_next(&qfi_arr[0]));
 	}
 }
+#endif
 
+
+/* 
+ * ===  FUNCTION  =============================================================
+ *         Name:  main
+ *  Description:  
+ * ===========================================================================
+ */
+	int
+main ( int argc, char *argv[] )
+{
+	return EXIT_SUCCESS;
+}				/* ----------  end of function main  ---------- */
