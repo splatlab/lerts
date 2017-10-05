@@ -1891,7 +1891,8 @@ bool qf_iterator(const QF *qf, QFi *qfi, uint64_t position)
 		qfi->current = position;
 
 #ifdef LOG_CLUSTER_LENGTH
-	qfi->c_info = (cluster_data* )calloc(qf->metadata->nslots/32, sizeof(cluster_data));
+	qfi->c_info = (cluster_data* )calloc(qf->metadata->nslots/32,
+																			 sizeof(cluster_data));
 	qfi->cur_start_index = position;
 	qfi->cur_length = 1;
 #endif
@@ -1911,9 +1912,6 @@ int qfi_get(const QFi *qfi, uint64_t *key, uint64_t *value, uint64_t *count)
 	*key = (qfi->run << qfi->qf->metadata->bits_per_slot) | current_remainder;
 	*value = 0;   // for now we are not using value
 	*count = current_count; 
-	
-	qfi->qf->metadata->ndistinct_elts++;
-	qfi->qf->metadata->nelts += current_count;
 
 	/*qfi->current = end_index;*/ 		//get should not change the current index
 																		//of the iterator
