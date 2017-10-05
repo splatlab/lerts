@@ -2049,14 +2049,14 @@ void qf_multi_merge(QF *qf_arr[], int nqf, QF *qfr, bool lock, bool spin)
 {
 	int i;
 	QFi qfi_arr[nqf];
-	int flag = 0;
 	int smallest_idx = 0;
 	uint64_t smallest_key = UINT64_MAX;
 	for (i=0; i<nqf; i++) {
 		qf_iterator(qf_arr[i], &qfi_arr[i], 0);
 	}
 
-	while (!flag) {
+	DEBUG_CQF("Merging %d CQFs\n", nqf);
+	while (nqf > 1) {
 		uint64_t keys[nqf];
 		uint64_t values[nqf];
 		uint64_t counts[nqf];
@@ -2082,8 +2082,6 @@ void qf_multi_merge(QF *qf_arr[], int nqf, QF *qfr, bool lock, bool spin)
 			memmove(&qfi_arr[smallest_idx], &qfi_arr[smallest_idx+1],
 							(nqf-smallest_idx-1)*sizeof(qfi_arr[0]));
 		nqf--;
-		if (nqf == 1)
-			flag = 1;
 	}
 	if (!qfi_end(&qfi_arr[0])) {
 		do {

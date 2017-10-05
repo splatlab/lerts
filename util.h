@@ -28,7 +28,7 @@
 #define PRINT_DEBUG 0
 #endif
 
-#define DEBUG(x) do { \
+#define DEBUG_CF(x) do { \
 	  if (PRINT_DEBUG) { std::cerr << x << std::endl; } \
 } while (0)
 

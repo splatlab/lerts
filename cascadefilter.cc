@@ -78,7 +78,7 @@ uint64_t CascadeFilter::count_key_value(uint64_t key, uint64_t value) const {
 
 bool CascadeFilter::is_full(uint32_t level) {
 	double load_factor = filters[level].metadata->noccupied_slots /
-											 filters[level].metadata->nslots;
+											 (double)filters[level].metadata->nslots;
 	if (load_factor > 0.75)
 		return true;
 	return false;
@@ -108,8 +108,8 @@ void CascadeFilter::merge() {
 	QF *to_merge[num_levels_to_merge];
 	for (uint32_t i = 0; i < num_levels_to_merge; i++)
 		to_merge[i] = &filters[i];
-	qf_multi_merge(to_merge, num_levels_to_merge, &filters[num_levels_to_merge +
-								 1], true, true);
+	qf_multi_merge(to_merge, num_levels_to_merge, &filters[num_levels_to_merge],
+								 true, true);
 
 	/* Reset the filter that were merged. */
 	for (uint32_t i = 0; i < num_levels_to_merge; i++)
@@ -233,14 +233,14 @@ int CascadeFilterIterator::end() {
 	int
 main ( int argc, char *argv[] )
 {
-	if (argc < 2) {
+	if (argc < 4) {
 		std::cout << "Not suffcient args." << std::endl;
 		abort();
 	}
 
-	uint64_t qbits = atoi(argv[2]);
-	uint32_t nfilters = atoi(argv[3]);
-	uint32_t gfactor = atoi(argv[4]);
+	uint64_t qbits = atoi(argv[1]);
+	uint32_t nfilters = atoi(argv[2]);
+	uint32_t gfactor = atoi(argv[3]);
 	uint32_t nhashbits = qbits + 10;
 
 	uint64_t sizes[nfilters];
@@ -248,13 +248,14 @@ main ( int argc, char *argv[] )
 
 	sizes[0] = (1ULL << qbits);
 	for (uint32_t i = 1; i < nfilters; i++) {
-		sizes[i] = (gfactor ^ (i - 1)) * sizes[0];
+		sizes[i] = pow(gfactor, i - 1) * sizes[0];
 	}
 	uint64_t nvals = 750 * (sizes[nfilters - 1]) / 1000;
 
 	/* Create a cascade filter. */
-	std::cout << "Create a cascade filter with " << nhashbits << " hash bits, " <<
-		nfilters << " levels, and " << gfactor << " growth factor." << std::endl;
+	std::cout << "Create a cascade filter with " << nhashbits << "-bit hashes, "
+		<< nfilters << " levels, and " << gfactor << " as growth factor." <<
+		std::endl;
 	CascadeFilter cf(nhashbits, thlds, sizes, nfilters);
 
 	__uint128_t *vals;
@@ -267,11 +268,21 @@ main ( int argc, char *argv[] )
 
 	std::cout << "Inserting elements." << std::endl;
 	for (uint64_t k = 0; k < nvals; k++)
-		cf.insert(vals[k], 0, 1, true, true);
+		if (!cf.insert(vals[k], 0, 1, true, true)) {
+			std::cerr << "Failed insertion for " <<
+				(uint64_t)vals[k] << std::endl;
+			abort();
+		}
+	std::cout << "Finished insertions." << std::endl;
 
 	std::cout << "Querying elements." << std::endl;
 	for (uint64_t k = 0; k < nvals; k++)
-		cf.count_key_value(vals[k], 0);
+		if (cf.count_key_value(vals[k], 0) < 1) {
+			std::cerr << "Failed lookup for " <<
+				(uint64_t)vals[k] << std::endl;
+			abort();
+		}
+	std::cout << "Finished lookups." << std::endl;
 
 	return EXIT_SUCCESS;
 }				/* ----------  end of function main  ---------- */
