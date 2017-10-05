@@ -28,11 +28,10 @@
 #include <cassert>
 #include <fstream>
 
+#include <openssl/rand.h>
+
 #include "cascadefilter.h"
-
-#include "hashutil.h"
 #include "util.h"
-
 
 CascadeFilter::CascadeFilter(uint32_t nhashbits, uint32_t filter_thlds[],
 									uint64_t filter_sizes[], uint32_t num_filters) {
@@ -43,7 +42,7 @@ CascadeFilter::CascadeFilter(uint32_t nhashbits, uint32_t filter_thlds[],
 	memcpy(sizes, filter_sizes, num_filters * sizeof(sizes[0]));
 
 	/* Initialize all the filters. */
-	//TODO: (prashant) Make it laze initialization.
+	//TODO: (prashant) Maybe make is a lazy initilization.
 	for (uint32_t i = 0; i < total_num_levels; i++) {
 		std::string file("_cqf.ser");
 		file = std::to_string(i) + file;
@@ -97,10 +96,11 @@ void CascadeFilter::merge() {
 	if (empty_level < total_num_levels)
 		num_levels_to_merge = empty_level;
 	else {
-		std::string file("_cqf.ser");
-		file = std::to_string(total_num_levels) + file;
-		qf_init(&filters[total_num_levels], sizes[total_num_levels],
-						num_hash_bits, 0, false, file.c_str(), seed);
+		/* Assuing we are creating all the levels in the constructor. */
+		//std::string file("_cqf.ser");
+		//file = std::to_string(total_num_levels) + file;
+		//qf_init(&filters[total_num_levels], sizes[total_num_levels],
+						//num_hash_bits, 0, false, file.c_str(), seed);
 		num_levels_to_merge = total_num_levels;
 		total_num_levels++;
 	}
@@ -233,6 +233,46 @@ int CascadeFilterIterator::end() {
 	int
 main ( int argc, char *argv[] )
 {
+	if (argc < 2) {
+		std::cout << "Not suffcient args." << std::endl;
+		abort();
+	}
+
+	uint64_t qbits = atoi(argv[2]);
+	uint32_t nfilters = atoi(argv[3]);
+	uint32_t gfactor = atoi(argv[4]);
+	uint32_t nhashbits = qbits + 10;
+
+	uint64_t sizes[nfilters];
+	uint32_t thlds[nfilters];
+
+	sizes[0] = (1ULL << qbits);
+	for (uint32_t i = 1; i < nfilters; i++) {
+		sizes[i] = (gfactor ^ (i - 1)) * sizes[0];
+	}
+	uint64_t nvals = 750 * (sizes[nfilters - 1]) / 1000;
+
+	/* Create a cascade filter. */
+	std::cout << "Create a cascade filter with " << nhashbits << " hash bits, " <<
+		nfilters << " levels, and " << gfactor << " growth factor." << std::endl;
+	CascadeFilter cf(nhashbits, thlds, sizes, nfilters);
+
+	__uint128_t *vals;
+	vals = (__uint128_t*)malloc(nvals*sizeof(vals[0]));
+	std::cout << "Generating " << nvals << " random numbers." << std::endl;
+	memset(vals, 0, nvals*sizeof(vals[0]));
+	RAND_pseudo_bytes((unsigned char *)vals, sizeof(*vals) * nvals);
+	for (uint64_t k = 0; k < nvals; k++)
+		vals[k] = (1 * vals[k]) % cf.get_filter(0)->metadata->range;
+
+	std::cout << "Inserting elements." << std::endl;
+	for (uint64_t k = 0; k < nvals; k++)
+		cf.insert(vals[k], 0, 1, true, true);
+
+	std::cout << "Querying elements." << std::endl;
+	for (uint64_t k = 0; k < nvals; k++)
+		cf.count_key_value(vals[k], 0);
+
 	return EXIT_SUCCESS;
 }				/* ----------  end of function main  ---------- */
 

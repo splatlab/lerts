@@ -16,11 +16,28 @@
  * ============================================================================
  */
 
+#include <iostream>
+#include <algorithm>
+#include <cstring>
+#include <vector>
+#include <set>
+#include <unordered_set>
+#include <bitset>
+#include <cassert>
+#include <fstream>
 
+#include <time.h>
+#include <stdio.h>
 #include	<stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/resource.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/mman.h>
+#include <openssl/rand.h>
 
-
-#include	"threadsafe-gqf/gqf.h"
+#include	"cascadefilter.h"
 
 /* 
  * ===  FUNCTION  =============================================================
