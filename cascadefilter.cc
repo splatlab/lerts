@@ -55,17 +55,66 @@ const QF* CascadeFilter::get_filter(uint32_t level) const {
 	return &filters[level];
 }
 
-//bool CascadeFilter::insert(QF *qf, uint64_t key, uint64_t value, uint64_t
-													 //count, bool lock, bool spin);
+bool CascadeFilter::insert(uint64_t key, uint64_t value, uint64_t count,
+													 bool lock, bool spin) {
+	if (is_full(0))
+		merge();
 
-//void CascadeFilter::remove(QF *qf, uint64_t key, uint64_t value, uint64_t
-													 //count, bool lock);
+	qf_insert(&filters[0], key, value, count, lock, spin);
+	return true;
+}
 
-//void CascadeFilter::replace(QF *qf, uint64_t key, uint64_t oldvalue, uint64_t
-														//newvalue);
+void CascadeFilter::remove(uint64_t key, uint64_t value, uint64_t count, bool
+													 lock) {
+	for (uint32_t i = 0; i < total_num_levels; i++)
+		qf_remove(&filters[i], key, value, count, lock);
+}
 
-//uint64_t CascadeFilter::count_key_value(const QF *qf, uint64_t key, uint64_t
-																				//value) const;
+uint64_t CascadeFilter::count_key_value(uint64_t key, uint64_t value) const {
+	uint64_t count = 0;
+	for (uint32_t i = 0; i < total_num_levels; i++)
+		count += qf_count_key_value(&filters[i], key, value);
+	return count;
+}
+
+bool CascadeFilter::is_full(uint32_t level) {
+	double load_factor = filters[level].metadata->noccupied_slots /
+											 filters[level].metadata->nslots;
+	if (load_factor > 0.75)
+		return true;
+	return false;
+}
+
+void CascadeFilter::merge() {
+	uint32_t empty_level;
+	for (empty_level = 0; empty_level < total_num_levels; empty_level++) {
+		if (!is_full(empty_level))
+			break;
+	}
+	/* If found an empty level. Merge all levels before the empty level into the
+	 * empty level. Else create a new level and merge all the levels. */
+	uint32_t num_levels_to_merge;
+	if (empty_level < total_num_levels)
+		num_levels_to_merge = empty_level;
+	else {
+		std::string file("_cqf.ser");
+		file = std::to_string(total_num_levels) + file;
+		qf_init(&filters[total_num_levels], sizes[total_num_levels],
+						num_hash_bits, 0, false, file.c_str(), seed);
+		num_levels_to_merge = total_num_levels;
+		total_num_levels++;
+	}
+
+	QF *to_merge[num_levels_to_merge];
+	for (uint32_t i = 0; i < num_levels_to_merge; i++)
+		to_merge[i] = &filters[i];
+	qf_multi_merge(to_merge, num_levels_to_merge, &filters[num_levels_to_merge +
+								 1], true, true);
+
+	/* Reset the filter that were merged. */
+	for (uint32_t i = 0; i < num_levels_to_merge; i++)
+		qf_reset(&filters[i]);
+}
 
 void CascadeFilter::shuffle_merge(uint32_t num_levels) {
 	assert(num_levels < total_num_levels);
@@ -76,6 +125,7 @@ void CascadeFilter::shuffle_merge(uint32_t num_levels) {
 	QF new_filters[num_levels];
 
 	/* Initialize new filters. */
+	//TODO: (prashant) Add a version number to file names.
 	for (uint32_t i = 0; i < num_levels; i++) {
 		std::string file("_cqf.ser");
 		file = std::to_string(i) + file;
@@ -89,8 +139,9 @@ void CascadeFilter::shuffle_merge(uint32_t num_levels) {
 	
 	while(!cfi.end()) {
 		cfi.get(&next_key, &next_value, &next_count, &next_level);
-		/* next_key is same as cur_key then aggregate counts. Else, smear the key
-		 * counts across levels starting from the bottom one. */
+		/* If next_key is same as cur_key then aggregate counts.
+		 * Else, smear the count across levels starting from the bottom one.
+		 * */
 		if (next_key == cur_key)
 			cur_count += next_count;
 		else {
@@ -154,7 +205,7 @@ int CascadeFilterIterator::next() {
 		cur_num_levels--;
 	}
 
-	/* Find the smallest key across levels. */
+	/* Find the smallest key across levels and update "cur_level". */
 	uint64_t key, value, count;
 	uint64_t smallest_key = UINT64_MAX;
 	for (uint32_t i = 0; i < cur_num_levels; i++) {
@@ -173,7 +224,21 @@ int CascadeFilterIterator::end() {
 	return 0;
 }
 
+/* 
+ * ===  FUNCTION  =============================================================
+ *         Name:  main
+ *  Description:  
+ * ===========================================================================
+ */
+	int
+main ( int argc, char *argv[] )
+{
+	return EXIT_SUCCESS;
+}				/* ----------  end of function main  ---------- */
+
 #if 0
+//TODO: (prashant) delete code after this line when you know this won't be
+//needed anymore.
 
 /**
  * This function will return the smallest key greater than @prev in the QF.
@@ -370,14 +435,3 @@ void qf_shuffle_merge(QF *qf_arr[], uint8_t thlds[], uint8_t nqf, QF
 #endif
 
 
-/* 
- * ===  FUNCTION  =============================================================
- *         Name:  main
- *  Description:  
- * ===========================================================================
- */
-	int
-main ( int argc, char *argv[] )
-{
-	return EXIT_SUCCESS;
-}				/* ----------  end of function main  ---------- */

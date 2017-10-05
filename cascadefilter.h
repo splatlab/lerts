@@ -33,25 +33,44 @@ class CascadeFilter {
 		const QF* get_filter(uint32_t level) const;
 
 		/* Increment the counter for this key/value pair by count. */
-		bool insert(QF *qf, uint64_t key, uint64_t value, uint64_t count, bool
-								lock, bool spin);
+		bool insert(uint64_t key, uint64_t value, uint64_t count, bool lock,
+								bool spin);
 
 		/* Remove count instances of this key/value combination. */
-		void remove(QF *qf, uint64_t key, uint64_t value, uint64_t count, bool
-								lock);
+		void remove(uint64_t key, uint64_t value, uint64_t count, bool lock);
 
 		/* Replace the association (key, oldvalue, count) with the association
 			 (key, newvalue, count). If there is already an association (key,
 			 newvalue, count'), then the two associations will be merged and
 			 their counters will be summed, resulting in association (key,
 			 newvalue, count' + count). */
-		void replace(QF *qf, uint64_t key, uint64_t oldvalue, uint64_t newvalue);
+		void replace(uint64_t key, uint64_t oldvalue, uint64_t newvalue);
 
 		/* Return the number of times key has been inserted, with the given
-			 value, into qf. */
-		uint64_t count_key_value(const QF *qf, uint64_t key, uint64_t value) const;
+			 value, into the cascade qf. */
+		uint64_t count_key_value(uint64_t key, uint64_t value) const;
 
 	private:
+		/**
+		 * Check if the filter at "level" has exceeded the threshold load factor.
+		 */
+		bool is_full(uint32_t level);
+	
+		/** Perform a standard cascade filter merge. It merges "num_levels" levels
+		 * and inserts all the elements into a new level.  Merge will be called
+		 * whenever in-mem level is full.
+     *
+		 * Approach: Make the in-memory level as large as possible w/o swapping.
+		 * Each on-disk level should be twice as large as the previous level.  The
+		 * number of levels should be unconstrained, i.e. make a new level
+		 * whenever all the existing levels become full.
+		 *
+		 * For the cascade filter, the size of the first level, i.e., the level in
+		 * RAM and the second level, i.e., the first level on-disk should same.
+		 * The rest of the levels on-disk grow exponentially in size.
+     */
+		void merge();
+
 		/**
 		 * Perform a shuffle-merge among @nqf cqfs from @qf_arr and put elements in
 		 * new cqfs in @qf_arr_new.
