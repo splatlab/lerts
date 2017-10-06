@@ -28,6 +28,14 @@
 #include <cassert>
 #include <fstream>
 
+#include <time.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/resource.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/mman.h>
 #include <openssl/rand.h>
 
 #include "cascadefilter.h"
@@ -246,6 +254,9 @@ main ( int argc, char *argv[] )
 	uint64_t sizes[nfilters];
 	uint32_t thlds[nfilters];
 
+	struct timeval start, end;
+	struct timezone tzp;
+	
 	sizes[0] = (1ULL << qbits);
 	for (uint32_t i = 1; i < nfilters; i++) {
 		sizes[i] = pow(gfactor, i - 1) * sizes[0];
@@ -267,21 +278,27 @@ main ( int argc, char *argv[] )
 		vals[k] = (1 * vals[k]) % cf.get_filter(0)->metadata->range;
 
 	std::cout << "Inserting elements." << std::endl;
+	gettimeofday(&start, &tzp);
 	for (uint64_t k = 0; k < nvals; k++)
 		if (!cf.insert(vals[k], 0, 1, true, true)) {
 			std::cerr << "Failed insertion for " <<
 				(uint64_t)vals[k] << std::endl;
 			abort();
 		}
+	gettimeofday(&end, &tzp);
+	print_time_elapsed("", &start, &end);
 	std::cout << "Finished insertions." << std::endl;
 
 	std::cout << "Querying elements." << std::endl;
+	gettimeofday(&start, &tzp);
 	for (uint64_t k = 0; k < nvals; k++)
 		if (cf.count_key_value(vals[k], 0) < 1) {
 			std::cerr << "Failed lookup for " <<
 				(uint64_t)vals[k] << std::endl;
 			abort();
 		}
+	gettimeofday(&end, &tzp);
+	print_time_elapsed("", &start, &end);
 	std::cout << "Finished lookups." << std::endl;
 
 	return EXIT_SUCCESS;
