@@ -74,8 +74,8 @@ int main(int argc, char **argv)
 			qf_init(&cfs[i], nslots, nhashbits, 0, false, file.c_str(), seed);
 		}
 
-		__uint128_t *vals;
-		vals = (__uint128_t*)malloc(nvals*sizeof(vals[0]));
+		uint64_t *vals;
+		vals = (uint64_t*)malloc(nvals*sizeof(vals[0]));
 		for (uint32_t i = 0; i < nfilters; i++) {
 			std::cout << "Generating " << nvals << " random numbers." << std::endl;
 			memset(vals, 0, nvals*sizeof(vals[0]));
@@ -110,9 +110,9 @@ int main(int argc, char **argv)
 			qf_read(cf_arr[j], argv[i]);
 			total_occupied_slots += cf_arr[j]->metadata->noccupied_slots;
 			total_num_elements += cf_arr[j]->metadata->ndistinct_elts;
-			DEBUG("Total occupied slots " << 
+			DEBUG_CF("Total occupied slots " << 
 									cf_arr[j]->metadata->noccupied_slots);
-			DEBUG("Total num elements " <<
+			DEBUG_CF("Total num elements " <<
 									cf_arr[j]->metadata->ndistinct_elts);
 		}
 	

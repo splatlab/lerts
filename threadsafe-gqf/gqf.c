@@ -72,9 +72,14 @@ typedef struct __attribute__ ((__packed__)) qfblock {
 #define PRINT_DEBUG 0
 #endif
 
+/* Forward declaration for the macro. */
+void qf_dump_metadata(const QF *qf);
+
 #define DEBUG_CQF(fmt, ...) \
-							do { if (PRINT_DEBUG) fprintf(stderr, fmt, __VA_ARGS__); } while \
-(0)
+	do { if (PRINT_DEBUG) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
+
+#define DEBUG_DUMP(qf) \
+	do { if (PRINT_DEBUG) qf_dump_metadata(qf); } while (0)
 
 static __inline__ unsigned long long rdtsc(void)
 {
@@ -776,6 +781,19 @@ static inline void qf_dump_block(const QF *qf, uint64_t i)
 	printf("\n");
 }
 
+void qf_dump_metadata(const QF *qf) {
+	printf("Slots: %lu Occupied: %lu Elements: %lu Distinct: %lu\n",
+				 qf->metadata->nslots,
+				 qf->metadata->noccupied_slots,
+				 qf->metadata->nelts,
+				 qf->metadata->ndistinct_elts);
+	printf("Key_bits: %lu Value_bits: %lu Remainder_bits: %lu Bits_per_slot: %lu\n",
+				 qf->metadata->key_bits,
+				 qf->metadata->value_bits,
+				 qf->metadata->key_remainder_bits,
+				 qf->metadata->bits_per_slot);
+}
+
 void qf_dump(const QF *qf)
 {
 	uint64_t i;
@@ -1370,6 +1388,8 @@ static inline bool insert1(QF *qf, __uint128_t hash, bool lock, bool spin)
 					operation = -1;
 				}
 			}
+		} else {
+			modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);
 		}
 
 		if (operation >= 0) {
@@ -2054,6 +2074,11 @@ void qf_multi_merge(QF *qf_arr[], int nqf, QF *qfr, bool lock, bool spin)
 	}
 
 	DEBUG_CQF("Merging %d CQFs\n", nqf);
+	for (i=0; i<nqf; i++) {
+		DEBUG_CQF("CQF %d\n", i);
+		DEBUG_DUMP(qf_arr[i]);
+	}
+
 	while (nqf > 1) {
 		uint64_t keys[nqf];
 		uint64_t values[nqf];
@@ -2088,6 +2113,9 @@ void qf_multi_merge(QF *qf_arr[], int nqf, QF *qfr, bool lock, bool spin)
 			qf_insert(qfr, key, value, count, lock, spin);
 		} while(!qfi_next(&qfi_arr[0]));
 	}
+
+	DEBUG_CQF("%s", "Final CQF after merging.\n");
+	DEBUG_DUMP(qfr);
 
 	return;
 }
