@@ -1708,9 +1708,13 @@ void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t value_bits,
  */
 void qf_copy(QF *dest, QF *src)
 {
+	DEBUG_CQF("%s\n","Source CQF");
+	DEBUG_DUMP(src);
 	memcpy(dest->mem, src->mem, sizeof(qfmem));
 	memcpy(dest->metadata, src->metadata, sizeof(qfmetadata));
 	memcpy(dest->blocks, src->blocks, src->metadata->size);
+	DEBUG_CQF("%s\n","Destination CQF after copy.");
+	DEBUG_DUMP(dest);
 }
 
 /* free up the memory if the QF is in memory.

@@ -99,8 +99,12 @@ void CascadeFilter::merge() {
 		to_merge[i] = &filters[i];
 	DEBUG_CF("Merging CQFs 0 to " << num_levels_to_merge - 1 << " into the CQF "
 					 << num_levels_to_merge);
-	qf_multi_merge(to_merge, num_levels_to_merge, &filters[num_levels_to_merge],
-								 true, true);
+	/* If the in-mem filter needs to be merged to the first level on disk. */
+	if (num_levels_to_merge == 1)
+		qf_copy(&filters[num_levels_to_merge], to_merge[0]);
+	else
+		qf_multi_merge(to_merge, num_levels_to_merge, &filters[num_levels_to_merge],
+									 true, true);
 
 	/* Reset the filter that were merged. */
 	for (uint32_t i = 0; i < num_levels_to_merge; i++)
