@@ -52,8 +52,9 @@ CascadeFilter::CascadeFilter(uint32_t nhashbits, uint32_t filter_thlds[],
 	/* Initialize all the filters. */
 	//TODO: (prashant) Maybe make is a lazy initilization.
 	for (uint32_t i = 0; i < total_num_levels; i++) {
+		DEBUG_CF("Creating level: " << i << " of " << sizes[i] << " slots.");
 		std::string file("_cqf.ser");
-		file = std::to_string(i) + file;
+		file = "raw/" + std::to_string(i) + file;
 		qf_init(&filters[i], sizes[i], num_hash_bits, 0, false, file.c_str(), seed);
 	}
 }
@@ -62,39 +63,19 @@ const QF* CascadeFilter::get_filter(uint32_t level) const {
 	return &filters[level];
 }
 
-bool CascadeFilter::insert(uint64_t key, uint64_t value, uint64_t count,
-													 bool lock, bool spin) {
-	if (is_full(0))
-		merge();
-
-	qf_insert(&filters[0], key, value, count, lock, spin);
-	return true;
-}
-
-void CascadeFilter::remove(uint64_t key, uint64_t value, uint64_t count, bool
-													 lock) {
-	for (uint32_t i = 0; i < total_num_levels; i++)
-		qf_remove(&filters[i], key, value, count, lock);
-}
-
-uint64_t CascadeFilter::count_key_value(uint64_t key, uint64_t value) const {
-	uint64_t count = 0;
-	for (uint32_t i = 0; i < total_num_levels; i++)
-		count += qf_count_key_value(&filters[i], key, value);
-	return count;
-}
-
 bool CascadeFilter::is_full(uint32_t level) {
 	double load_factor = filters[level].metadata->noccupied_slots /
 											 (double)filters[level].metadata->nslots;
-	if (load_factor > 0.75)
+	if (load_factor > 0.75) {
+		DEBUG_CF("Load factor: " << load_factor);
 		return true;
+	}
 	return false;
 }
 
 void CascadeFilter::merge() {
 	uint32_t empty_level;
-	for (empty_level = 0; empty_level < total_num_levels; empty_level++) {
+	for (empty_level = 1; empty_level < total_num_levels; empty_level++) {
 		if (!is_full(empty_level))
 			break;
 	}
@@ -116,6 +97,8 @@ void CascadeFilter::merge() {
 	QF *to_merge[num_levels_to_merge];
 	for (uint32_t i = 0; i < num_levels_to_merge; i++)
 		to_merge[i] = &filters[i];
+	DEBUG_CF("Merging CQFs 0 to " << num_levels_to_merge - 1 << " into the CQF "
+					 << num_levels_to_merge);
 	qf_multi_merge(to_merge, num_levels_to_merge, &filters[num_levels_to_merge],
 								 true, true);
 
@@ -166,6 +149,28 @@ void CascadeFilter::shuffle_merge(uint32_t num_levels) {
 			}
 		}
 	}
+}
+
+bool CascadeFilter::insert(uint64_t key, uint64_t value, uint64_t count,
+													 bool lock, bool spin) {
+	if (is_full(0))
+		merge();
+
+	qf_insert(&filters[0], key, value, count, lock, spin);
+	return true;
+}
+
+void CascadeFilter::remove(uint64_t key, uint64_t value, uint64_t count, bool
+													 lock) {
+	for (uint32_t i = 0; i < total_num_levels; i++)
+		qf_remove(&filters[i], key, value, count, lock);
+}
+
+uint64_t CascadeFilter::count_key_value(uint64_t key, uint64_t value) const {
+	uint64_t count = 0;
+	for (uint32_t i = 0; i < total_num_levels; i++)
+		count += qf_count_key_value(&filters[i], key, value);
+	return count;
 }
 
 CascadeFilterIterator::CascadeFilterIterator(

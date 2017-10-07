@@ -2107,11 +2107,15 @@ void qf_multi_merge(QF *qf_arr[], int nqf, QF *qfr, bool lock, bool spin)
 		nqf--;
 	}
 	if (!qfi_end(&qfi_arr[0])) {
+		uint64_t iters = 0;
 		do {
 			uint64_t key, value, count;
 			qfi_get(&qfi_arr[0], &key, &value, &count);
 			qf_insert(qfr, key, value, count, lock, spin);
-		} while(!qfi_next(&qfi_arr[0]));
+			qfi_next(&qfi_arr[0]);
+			iters++;
+		} while(!qfi_end(&qfi_arr[0]));
+		DEBUG_CQF("Num of iterations: %lu\n", iters);
 	}
 
 	DEBUG_CQF("%s", "Final CQF after merging.\n");
