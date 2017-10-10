@@ -1693,7 +1693,7 @@ void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t value_bits,
 	qf->metadata->bits_per_slot = bits_per_slot;
 
 	qf->metadata->range = qf->metadata->nslots;
-	qf->metadata->range <<= qf->metadata->bits_per_slot;
+	qf->metadata->range <<= qf->metadata->key_remainder_bits;
 	qf->metadata->nblocks = (qf->metadata->xnslots + SLOTS_PER_BLOCK - 1) /
 		SLOTS_PER_BLOCK;
 	qf->metadata->nelts = 0;
@@ -1846,11 +1846,12 @@ void qf_deserialize(QF *qf, const char *filename)
 bool qf_insert(QF *qf, uint64_t key, uint64_t value, uint64_t count, enum lock
 							 flag)
 {
-	/*uint64_t hash = (key << qf->metadata->value_bits) | (value & BITMASK(qf->metadata->value_bits));*/
+	uint64_t hash = (key << qf->metadata->value_bits) | (value &
+																											 BITMASK(qf->metadata->value_bits));
 	if (count == 1)
-		return insert1(qf, key, flag);
+		return insert1(qf, hash, flag);
 	else
-		return insert(qf, key, count, flag);
+		return insert(qf, hash, count, flag);
 }
 
 /* count = 0 would remove the key completely. */
@@ -1860,12 +1861,15 @@ void qf_remove(QF *qf, uint64_t key, uint64_t value, uint64_t count, enum lock
 	if (count == 0)
 		count = qf_count_key_value(qf, key, value);
 
-	_remove(qf, key, count, flag);
+	uint64_t hash = (key << qf->metadata->value_bits) | (value &
+																											 BITMASK(qf->metadata->value_bits));
+	_remove(qf, hash, count, flag);
 }
 
 uint64_t qf_count_key_value(const QF *qf, uint64_t key, uint64_t value)
 {
-	__uint128_t hash = key;
+	uint64_t hash = (key << qf->metadata->value_bits) | (value &
+																											 BITMASK(qf->metadata->value_bits));
 	uint64_t hash_remainder   = hash & BITMASK(qf->metadata->bits_per_slot);
 	int64_t hash_bucket_index = hash >> qf->metadata->bits_per_slot;
 
@@ -1941,8 +1945,9 @@ int qfi_get(const QFi *qfi, uint64_t *key, uint64_t *value, uint64_t *count)
 	uint64_t current_remainder, current_count;
 	decode_counter(qfi->qf, qfi->current, &current_remainder, &current_count);
 
-	*key = (qfi->run << qfi->qf->metadata->bits_per_slot) | current_remainder;
-	*value = 0;   // for now we are not using value
+	*value = current_remainder & BITMASK(qfi->qf->metadata->value_bits);
+	current_remainder = current_remainder >> qfi->qf->metadata->value_bits;
+	*key = (qfi->run << qfi->qf->metadata->key_remainder_bits) | current_remainder;
 	*count = current_count; 
 
 	/*qfi->current = end_index;*/ 		//get should not change the current index

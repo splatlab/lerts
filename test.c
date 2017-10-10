@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 	/*}*/
 
 	/*qf_init(&cf, nslots, nhashbits, 0);*/
-	qf_init(&cf, nslots, nhashbits, 0, mem, "raw/test_qf.ser", 23425);
+	qf_init(&cf, nslots, nhashbits, 4, mem, "raw/test_qf.ser", 23425);
 
 	vals = (uint64_t*)malloc(nvals*sizeof(vals[0]));
 	RAND_pseudo_bytes((unsigned char *)vals, sizeof(*vals) * nvals);
@@ -77,11 +77,11 @@ int main(int argc, char **argv)
 
 	/*for (uint64_t i = 0; i < 5; i++) {*/
 	for (uint64_t j = 0; j < nvals; j++) {
-		qf_insert(&cf, vals[j], 0, 1, NO_LOCK);
+		qf_insert(&cf, vals[j], 5, 1, NO_LOCK);
 	}
 	fprintf(stdout, "Inserted all items.\n");
 	for (uint64_t j = 0; j < nvals; j++) {
-		uint64_t count = qf_count_key_value(&cf, vals[j], 0);
+		uint64_t count = qf_count_key_value(&cf, vals[j], 5);
 		if (!count) {
 			fprintf(stderr, "failed lookup after insertion for %lx %ld.\n", vals[j], count);
 			abort();
@@ -92,10 +92,10 @@ int main(int argc, char **argv)
 
 	if (!mem) {
 		QF cf_read;
-		qf_read(&cf_read, "test_qf.ser");
+		qf_read(&cf_read, "raw/test_qf.ser");
 		fprintf(stdout, "Reading CQF from disk. \n");
 		for (uint64_t j = 0; j < nvals; j++) {
-			uint64_t count = qf_count_key_value(&cf_read, vals[j], 0);
+			uint64_t count = qf_count_key_value(&cf_read, vals[j], 5);
 			if (!count) {
 				fprintf(stderr, "failed lookup after reading for %lx %ld.\n", vals[j], count);
 				abort();
@@ -107,7 +107,7 @@ int main(int argc, char **argv)
 		do {
 			uint64_t key, value, count;
 			qfi_get(&cfi, &key, &value, &count);
-			count = qf_count_key_value(&cf_read, key, 0);
+			count = qf_count_key_value(&cf_read, key, 5);
 			if (!count) {
 				fprintf(stderr, "failed lookup after during iteration for %lx %ld.\n", key, count);
 				abort();
