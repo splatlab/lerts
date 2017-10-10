@@ -39,6 +39,8 @@
 #include <openssl/rand.h>
 
 #include "cascadefilter.h"
+#include "hashutil.h"
+#include "zipf.h"
 #include "util.h"
 
 CascadeFilter::CascadeFilter(uint32_t nhashbits, uint32_t filter_thlds[],
@@ -279,13 +281,19 @@ main ( int argc, char *argv[] )
 		std::endl;
 	CascadeFilter cf(nhashbits, thlds, sizes, nfilters);
 
-	__uint128_t *vals;
-	vals = (__uint128_t*)malloc(nvals*sizeof(vals[0]));
+	uint64_t *vals;
+	vals = (uint64_t*)malloc(nvals*sizeof(vals[0]));
 	std::cout << "Generating " << nvals << " random numbers." << std::endl;
 	memset(vals, 0, nvals*sizeof(vals[0]));
-	RAND_pseudo_bytes((unsigned char *)vals, sizeof(*vals) * nvals);
-	for (uint64_t k = 0; k < nvals; k++)
-		vals[k] = (1 * vals[k]) % cf.get_filter(0)->metadata->range;
+
+	//RAND_pseudo_bytes((unsigned char *)vals, sizeof(*vals) * nvals);
+	//for (uint64_t k = 0; k < nvals; k++)
+		//vals[k] = (1 * vals[k]) % cf.get_filter(0)->metadata->range;
+
+  generate_random_keys(vals, nvals, nvals, 1.5);
+	for (uint64_t i = 0; i < nvals; i++) {
+		vals[i] = HashUtil::AES_HASH(vals[i]) % cf.get_filter(0)->metadata->range;
+	}
 
 	std::cout << "Inserting elements." << std::endl;
 	gettimeofday(&start, &tzp);

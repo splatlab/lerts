@@ -43,21 +43,22 @@ all: $(TARGETS)
 test:									 test.o									                   cqf/gqf.o
 main:                  main.o 								 util.o hashutil.o cqf/gqf.o
 merge:                 merge.o 								 util.o hashutil.o cqf/gqf.o
-cascadefilter:         cascadefilter.o 				 util.o hashutil.o cqf/gqf.o
+cascadefilter:         cascadefilter.o 	zipf.o util.o hashutil.o cqf/gqf.o
 
 # dependencies between .o files and .h files
 
 test.o:																		cqf/gqf.h
 main.o: 								 									cqf/gqf.h hashutil.h util.h
 merge.o: 								 									cqf/gqf.h hashutil.h util.h
-cascadefilter.o: 				cascadefilter.h		cqf/gqf.h hashutil.h util.h
-hashutil.o: 																									 hashutil.h
-util.o: 																									 								util.h
+cascadefilter.o: 				cascadefilter.h		cqf/gqf.h hashutil.h util.h zipf.h
+hashutil.o: 																				hashutil.h
+util.o: 																									 		 util.h
 
 # dependencies between .o files and .cc (or .c) files
 
 %.o: %.cc
 cqf/gqf.o: cqf/gqf.c cqf/gqf.h
+zipf.o: zipf.c zipf.h
 
 #
 # generic build rules

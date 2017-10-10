@@ -141,4 +141,35 @@ void destroy_zipfian (ZIPFIAN z) {
     free((struct zipfian *)z);
 }
 
+void generate_random_keys (uint64_t *elems, long N, long gencount, double s) {
+	int i;
+	uint32_t *counts;
+	/*struct timeval a,b,c;*/
+	printf("Generating %ld elements in universe of %ld items with characteristic \
+				 exponent %f\n", gencount, N, s);
+	/*gettimeofday(&a, NULL);*/
+	ZIPFIAN z = create_zipfian(1, N, RFUN);
+	counts = (uint32_t*)calloc(N, sizeof(counts));
+
+	/*gettimeofday(&b, NULL);*/
+	/*printf("Setup time    = %0.6fs\n", tdiff(&a, &b));*/
+	for (i=0; i<gencount; i++) {
+		long g = zipfian_gen(z);
+		assert(0<=g && g<N);
+		counts[g]++;
+		elems[i] = g;
+	}
+	/*gettimeofday(&c, NULL);*/
+	/*double rtime = tdiff(&b, &c);*/
+	/*printf("Generate time = %0.6fs (%f per second)\n", rtime, gencount/rtime);*/
+	if (0) {
+		for (i=0; i<N; i++) {
+			printf("%4.1f (%4.1f)\n", counts[0]/(double)counts[i],
+						 i/(counts[0]/(double)counts[i]));
+				/*printf("%d ", counts[i]);*/
+		}
+		printf("\n");
+	}
+	destroy_zipfian(z);
+}
 

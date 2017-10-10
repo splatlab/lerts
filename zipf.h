@@ -14,6 +14,12 @@
  * Copyright 2011 Bradley C. Kuszmaul 
  */
 
+#include <inttypes.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct zipfian const *ZIPFIAN;
 ZIPFIAN create_zipfian (double s, long N, long int (*randomfun)(void));
 // Effect: Create a generator of zipfian numbers.
@@ -28,5 +34,11 @@ long zipfian_gen (const ZIPFIAN);
 
 long zipfian_hash (const ZIPFIAN);
 // Effect: Return a random 64-bit number.  The numbers themselves are uniform hashes of the numbers from 0 (inclusive) to N (exclusive)
+
+void generate_random_keys (uint64_t *elems, long N, long gencount, double s);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

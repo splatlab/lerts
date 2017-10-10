@@ -8,43 +8,44 @@
 #include <stdint.h>
 #include <openssl/evp.h>
 
-namespace kmercounting {
-	class HashUtil {
-		public:
-			// Bob Jenkins Hash
-			static uint32_t BobHash(const void *buf, size_t length, uint32_t seed = 0);
-			static uint32_t BobHash(const std::string &s, uint32_t seed = 0);
+class HashUtil {
+	public:
+		// Bob Jenkins Hash
+		static uint32_t BobHash(const void *buf, size_t length, uint32_t seed = 0);
+		static uint32_t BobHash(const std::string &s, uint32_t seed = 0);
 
-			// Bob Jenkins Hash that returns two indices in one call
-			// Useful for Cuckoo hashing, power of two choices, etc.
-			// Use idx1 before idx2, when possible. idx1 and idx2 should be initialized to seeds.
-			static void BobHash(const void *buf, size_t length, uint32_t *idx1,  uint32_t *idx2);
-			static void BobHash(const std::string &s, uint32_t *idx1,  uint32_t *idx2);
+		// Bob Jenkins Hash that returns two indices in one call
+		// Useful for Cuckoo hashing, power of two choices, etc.
+		// Use idx1 before idx2, when possible. idx1 and idx2 should be initialized to seeds.
+		static void BobHash(const void *buf, size_t length, uint32_t *idx1,  uint32_t *idx2);
+		static void BobHash(const std::string &s, uint32_t *idx1,  uint32_t *idx2);
 
-			// MurmurHash2
-			static uint32_t MurmurHash(const void *buf, size_t length, uint32_t seed = 0);
-			static uint32_t MurmurHash(const std::string &s, uint32_t seed = 0);
-			static uint64_t MurmurHash64B ( const void * key, int len, unsigned int seed );
-			static uint64_t MurmurHash64A ( const void * key, int len, unsigned int seed );
+		// MurmurHash2
+		static uint32_t MurmurHash(const void *buf, size_t length, uint32_t seed = 0);
+		static uint32_t MurmurHash(const std::string &s, uint32_t seed = 0);
+		static uint64_t MurmurHash64B ( const void * key, int len, unsigned int seed );
+		static uint64_t MurmurHash64A ( const void * key, int len, unsigned int seed );
 
-			// SuperFastHash
-			static uint32_t SuperFastHash(const void *buf, size_t len);
-			static uint32_t SuperFastHash(const std::string &s);
+		// AES hash
+		static uint64_t AES_HASH(uint64_t x);
 
-			static uint64_t hash_64(uint64_t key, uint64_t mask);
-			static uint64_t hash_64i(uint64_t key, uint64_t mask);
+		// SuperFastHash
+		static uint32_t SuperFastHash(const void *buf, size_t len);
+		static uint32_t SuperFastHash(const std::string &s);
 
-			// Null hash (shift and mask)
-			static uint32_t NullHash(const void* buf, size_t length, uint32_t shiftbytes);
+		static uint64_t hash_64(uint64_t key, uint64_t mask);
+		static uint64_t hash_64i(uint64_t key, uint64_t mask);
 
-			// Wrappers for MD5 and SHA1 hashing using EVP
-			static std::string MD5Hash(const char* inbuf, size_t in_length);
-			static std::string SHA1Hash(const char* inbuf, size_t in_length);
+		// Null hash (shift and mask)
+		static uint32_t NullHash(const void* buf, size_t length, uint32_t shiftbytes);
 
-		private:
-			HashUtil();
-	};
-}	// namespace kmercounting
+		// Wrappers for MD5 and SHA1 hashing using EVP
+		static std::string MD5Hash(const char* inbuf, size_t in_length);
+		static std::string SHA1Hash(const char* inbuf, size_t in_length);
+
+	private:
+		HashUtil();
+};
 
 #endif  // #ifndef _HASHUTIL_H_
 

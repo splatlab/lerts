@@ -15,11 +15,8 @@
  *
  * ============================================================================
  */
-#include <iostream>
-#include <cstring>
-#include <vector>
-#include <cassert>
-#include <fstream>
+
+#include "util.h"
 
 void print_time_elapsed(std::string desc, struct timeval* start, struct
 												timeval* end)
@@ -35,5 +32,4 @@ void print_time_elapsed(std::string desc, struct timeval* start, struct
 	std::cout << desc << "Total Time Elapsed: " << std::to_string(time_elapsed) << 
 		"seconds" << std::endl;
 }
-
 
