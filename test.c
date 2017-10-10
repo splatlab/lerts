@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <openssl/rand.h>
 
-#include "threadsafe-gqf/gqf.h"
+#include "cqf/gqf.h"
 
 uint64_t tv2msec(struct timeval tv)
 {
@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 	/*}*/
 
 	/*qf_init(&cf, nslots, nhashbits, 0);*/
-	qf_init(&cf, nslots, nhashbits, 0, mem, "test_qf.ser", 23425);
+	qf_init(&cf, nslots, nhashbits, 0, mem, "raw/test_qf.ser", 23425);
 
 	vals = (uint64_t*)malloc(nvals*sizeof(vals[0]));
 	RAND_pseudo_bytes((unsigned char *)vals, sizeof(*vals) * nvals);
@@ -77,7 +77,7 @@ int main(int argc, char **argv)
 
 	/*for (uint64_t i = 0; i < 5; i++) {*/
 	for (uint64_t j = 0; j < nvals; j++) {
-		qf_insert(&cf, vals[j], 0, 1, false, false);
+		qf_insert(&cf, vals[j], 0, 1, NO_LOCK);
 	}
 	fprintf(stdout, "Inserted all items.\n");
 	for (uint64_t j = 0; j < nvals; j++) {

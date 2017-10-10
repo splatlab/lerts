@@ -33,11 +33,10 @@ class CascadeFilter {
 		const QF* get_filter(uint32_t level) const;
 
 		/* Increment the counter for this key/value pair by count. */
-		bool insert(uint64_t key, uint64_t value, uint64_t count, bool lock,
-								bool spin);
+		bool insert(uint64_t key, uint64_t value, uint64_t count, enum lock flag);
 
 		/* Remove count instances of this key/value combination. */
-		void remove(uint64_t key, uint64_t value, uint64_t count, bool lock);
+		void remove(uint64_t key, uint64_t value, uint64_t count, enum lock flag);
 
 		/* Replace the association (key, oldvalue, count) with the association
 			 (key, newvalue, count). If there is already an association (key,

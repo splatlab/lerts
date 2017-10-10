@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 			std::cout << "Inserting items in the CQF: " << i << std::endl;
 			gettimeofday(&start1, &tzp);
 			for (uint32_t j = 0; j < nvals; j++) {
-				qf_insert(&cfs[i], vals[j], 0, 1, /*lock*/false, /*spin*/false);
+				qf_insert(&cfs[i], vals[j], 0, 1, LOCK_AND_SPIN);
 				uint64_t cnt = qf_count_key_value(&cfs[i], vals[j], 0);
 				if (!cnt) {
 					std::cout << "Failed lookup while inserting for " <<
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
 		std::cout << "Merging " << total_num_elements << " elements from " <<
 			nfilters << " CQFs" << std::endl;
 		gettimeofday(&start1, &tzp);
-		qf_multi_merge(cf_arr, nfilters, &cfr, false, false);	// no lock and no spin
+		qf_multi_merge(cf_arr, nfilters, &cfr, LOCK_AND_SPIN);
 		gettimeofday(&end1, &tzp);
 		print_time_elapsed("", &start1, &end1);
 	}

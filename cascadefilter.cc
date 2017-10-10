@@ -105,7 +105,7 @@ void CascadeFilter::merge() {
 		qf_copy(&filters[num_levels_to_merge], to_merge[0]);
 	else
 		qf_multi_merge(to_merge, num_levels_to_merge, &filters[num_levels_to_merge],
-									 true, true);
+									 LOCK_AND_SPIN);
 
 	/* Reset the filter that were merged. */
 	for (uint32_t i = 0; i < num_levels_to_merge; i++)
@@ -143,12 +143,12 @@ void CascadeFilter::shuffle_merge(uint32_t num_levels) {
 		else {
 			for (int32_t i = num_levels; i >= 0; i--) {
 				if (cur_count >= thresholds[i]) {
-					qf_insert(&new_filters[i], cur_key, cur_value, thresholds[i], true,
-										true);
+					qf_insert(&new_filters[i], cur_key, cur_value, thresholds[i],
+										LOCK_AND_SPIN);
 					cur_count -= thresholds[i];
 				} else if (cur_count > 0) {
-					qf_insert(&new_filters[i], cur_key, cur_value, cur_count, true,
-										true);
+					qf_insert(&new_filters[i], cur_key, cur_value, cur_count,
+										LOCK_AND_SPIN);
 				} else
 					break;
 			}
@@ -157,18 +157,18 @@ void CascadeFilter::shuffle_merge(uint32_t num_levels) {
 }
 
 bool CascadeFilter::insert(uint64_t key, uint64_t value, uint64_t count,
-													 bool lock, bool spin) {
+													 enum lock flag) {
 	if (is_full(0))
 		merge();
 
-	qf_insert(&filters[0], key, value, count, lock, spin);
+	qf_insert(&filters[0], key, value, count, flag);
 	return true;
 }
 
-void CascadeFilter::remove(uint64_t key, uint64_t value, uint64_t count, bool
-													 lock) {
+void CascadeFilter::remove(uint64_t key, uint64_t value, uint64_t count, enum
+													 lock flag) {
 	for (uint32_t i = 0; i < total_num_levels; i++)
-		qf_remove(&filters[i], key, value, count, lock);
+		qf_remove(&filters[i], key, value, count, flag);
 }
 
 uint64_t CascadeFilter::count_key_value(uint64_t key, uint64_t value) const {
@@ -290,7 +290,7 @@ main ( int argc, char *argv[] )
 	std::cout << "Inserting elements." << std::endl;
 	gettimeofday(&start, &tzp);
 	for (uint64_t k = 0; k < nvals; k++)
-		if (!cf.insert(vals[k], 0, 1, true, true)) {
+		if (!cf.insert(vals[k], 0, 1, LOCK_AND_SPIN)) {
 			std::cerr << "Failed insertion for " <<
 				(uint64_t)vals[k] << std::endl;
 			abort();

@@ -14,7 +14,11 @@ extern "C" {
 	struct __attribute__ ((__packed__)) qfblock;
 	typedef struct qfblock qfblock;
 
-	uint64_t shift_into_b2(uint64_t a, uint64_t b, int bstart, int bend, int amount);
+	enum lock {
+		LOCK_NO_SPIN,
+		LOCK_AND_SPIN,
+		NO_LOCK
+	};
 
 	typedef struct {
 		uint64_t total_time_single;
@@ -87,11 +91,11 @@ extern "C" {
 
 	/* Increment the counter for this key/value pair by count. */
 	bool qf_insert(QF *qf, uint64_t key, uint64_t value, uint64_t count,
-								 bool lock, bool spin);
+								 enum lock flag);
 
 	/* Remove count instances of this key/value combination. */
-	void qf_remove(QF *qf, uint64_t key, uint64_t value, uint64_t count, bool
-								 lock);
+	void qf_remove(QF *qf, uint64_t key, uint64_t value, uint64_t count, enum
+								 lock flag);
 
 	/* Remove all instances of this key/value pair. */
 	void qf_delete_key_value(QF *qf, uint64_t key, uint64_t value);
@@ -147,10 +151,10 @@ extern "C" {
 	void qf_read(QF *qf, const char *path);
 
 	/* merge two QFs into the third one. */
-	void qf_merge(QF *qfa, QF *qfb, QF *qfc, bool lock, bool spin);
+	void qf_merge(QF *qfa, QF *qfb, QF *qfc, enum lock flag);
 
 	/* merge multiple QFs into the final QF one. */
-	void qf_multi_merge(QF *qf_arr[], int nqf, QF *qfr, bool lock, bool spin);
+	void qf_multi_merge(QF *qf_arr[], int nqf, QF *qfr, enum lock flag);
 
 	/* find cosine similarity between two QFs. */
 	uint64_t qf_inner_product(QF *qfa, QF *qfb);
