@@ -36,7 +36,7 @@
 #include <sys/mman.h>
 #include <openssl/rand.h>
 
-#include "threadsafe-gqf/gqf.h"
+#include "cqf/gqf.h"
 #include "hashutil.h"
 #include "util.h"
 

@@ -21,7 +21,7 @@
 
 #include <sys/types.h>
 
-#include "threadsafe-gqf/gqf.h"
+#include "cqf/gqf.h"
 
 #define NUM_MAX_FILTERS 10
 

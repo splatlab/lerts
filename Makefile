@@ -40,24 +40,24 @@ all: $(TARGETS)
 
 # dependencies between programs and .o files
 
-test:									 test.o									                   threadsafe-gqf/gqf.o
-main:                  main.o 								 util.o hashutil.o threadsafe-gqf/gqf.o
-merge:                 merge.o 								 util.o hashutil.o threadsafe-gqf/gqf.o
-cascadefilter:         cascadefilter.o 				 util.o hashutil.o threadsafe-gqf/gqf.o
+test:									 test.o									                   cqf/gqf.o
+main:                  main.o 								 util.o hashutil.o cqf/gqf.o
+merge:                 merge.o 								 util.o hashutil.o cqf/gqf.o
+cascadefilter:         cascadefilter.o 				 util.o hashutil.o cqf/gqf.o
 
 # dependencies between .o files and .h files
 
-test.o:																		threadsafe-gqf/gqf.h
-main.o: 								 									threadsafe-gqf/gqf.h hashutil.h util.h
-merge.o: 								 									threadsafe-gqf/gqf.h hashutil.h util.h
-cascadefilter.o: 				cascadefilter.h		threadsafe-gqf/gqf.h hashutil.h util.h
+test.o:																		cqf/gqf.h
+main.o: 								 									cqf/gqf.h hashutil.h util.h
+merge.o: 								 									cqf/gqf.h hashutil.h util.h
+cascadefilter.o: 				cascadefilter.h		cqf/gqf.h hashutil.h util.h
 hashutil.o: 																									 hashutil.h
 util.o: 																									 								util.h
 
 # dependencies between .o files and .cc (or .c) files
 
 %.o: %.cc
-threadsafe-gqf/gqf.o: threadsafe-gqf/gqf.c threadsafe-gqf/gqf.h
+cqf/gqf.o: cqf/gqf.c cqf/gqf.h
 
 #
 # generic build rules
@@ -73,4 +73,4 @@ $(TARGETS):
 	$(CC) $(CFLAGS) $(INCLUDE) $< -c -o $@
 
 clean:
-	rm -f *.o core threadsafe-gqf/gqf.o $(TARGETS)
+	rm -f *.o core cqf/gqf.o $(TARGETS)
