@@ -53,8 +53,13 @@ class CascadeFilter {
 		/**
 		 * Check if the filter at "level" has exceeded the threshold load factor.
 		 */
-		bool is_full(uint32_t level);
+		bool is_full(uint32_t level) const;
 	
+		/**
+		 * Returns the number of levels to merge based on the first empty level.
+		 */
+		uint32_t num_levels_to_merge();
+
 		/** Perform a standard cascade filter merge. It merges "num_levels" levels
 		 * and inserts all the elements into a new level.  Merge will be called
 		 * whenever in-mem level is full.
@@ -77,7 +82,7 @@ class CascadeFilter {
 		 * After the shuffle-merge the cqfs in @qf_arr will be destroyed and memory
 		 * will be freed.
 		 */
-		void shuffle_merge(uint32_t num_levels);
+		void shuffle_merge();
 
 		QF filters[NUM_MAX_FILTERS];
 		uint32_t thresholds[NUM_MAX_FILTERS];

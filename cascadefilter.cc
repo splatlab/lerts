@@ -52,7 +52,7 @@ CascadeFilter::CascadeFilter(uint32_t nhashbits, uint32_t filter_thlds[],
 	memcpy(sizes, filter_sizes, num_filters * sizeof(sizes[0]));
 
 	/* Initialize all the filters. */
-	//TODO: (prashant) Maybe make is a lazy initilization.
+	//TODO: (prashant) Maybe make this a lazy initilization.
 	for (uint32_t i = 0; i < total_num_levels; i++) {
 		DEBUG_CF("Creating level: " << i << " of " << sizes[i] << " slots.");
 		std::string file("_cqf.ser");
@@ -65,7 +65,7 @@ const QF* CascadeFilter::get_filter(uint32_t level) const {
 	return &filters[level];
 }
 
-bool CascadeFilter::is_full(uint32_t level) {
+bool CascadeFilter::is_full(uint32_t level) const {
 	double load_factor = filters[level].metadata->noccupied_slots /
 											 (double)filters[level].metadata->nslots;
 	if (load_factor > 0.75) {
@@ -75,7 +75,7 @@ bool CascadeFilter::is_full(uint32_t level) {
 	return false;
 }
 
-void CascadeFilter::merge() {
+uint32_t CascadeFilter::num_levels_to_merge() {
 	uint32_t empty_level;
 	for (empty_level = 1; empty_level < total_num_levels; empty_level++) {
 		if (!is_full(empty_level))
@@ -96,35 +96,43 @@ void CascadeFilter::merge() {
 		total_num_levels++;
 	}
 
-	QF *to_merge[num_levels_to_merge];
-	for (uint32_t i = 0; i < num_levels_to_merge; i++)
+	return num_levels_to_merge;
+}
+
+void CascadeFilter::merge() {
+	uint32_t nlevels = num_levels_to_merge();
+	assert(nlevels <= total_num_levels);
+
+	QF *to_merge[nlevels];
+	for (uint32_t i = 0; i < nlevels; i++)
 		to_merge[i] = &filters[i];
-	DEBUG_CF("Merging CQFs 0 to " << num_levels_to_merge - 1 << " into the CQF "
-					 << num_levels_to_merge);
+	DEBUG_CF("Merging CQFs 0 to " << nlevels - 1 << " into the CQF "
+					 << nlevels);
 	/* If the in-mem filter needs to be merged to the first level on disk. */
-	if (filters[num_levels_to_merge].metadata->size ==
-			to_merge[0]->metadata->size && num_levels_to_merge == 1)
-		qf_copy(&filters[num_levels_to_merge], to_merge[0]);
+	if (filters[nlevels].metadata->size ==
+			to_merge[0]->metadata->size && nlevels == 1)
+		qf_copy(&filters[nlevels], to_merge[0]);
 	else
-		qf_multi_merge(to_merge, num_levels_to_merge, &filters[num_levels_to_merge],
+		qf_multi_merge(to_merge, nlevels, &filters[nlevels],
 									 LOCK_AND_SPIN);
 
 	/* Reset the filter that were merged. */
-	for (uint32_t i = 0; i < num_levels_to_merge; i++)
+	for (uint32_t i = 0; i < nlevels; i++)
 		qf_reset(&filters[i]);
 }
 
-void CascadeFilter::shuffle_merge(uint32_t num_levels) {
-	assert(num_levels < total_num_levels);
+void CascadeFilter::shuffle_merge() {
+	uint32_t nlevels = num_levels_to_merge();
+	assert(nlevels <= total_num_levels);
 
 	uint64_t cur_key, cur_value, cur_count;
 	uint64_t next_key, next_value, next_count;
 	uint32_t cur_level, next_level;
-	QF new_filters[num_levels];
+	QF new_filters[nlevels];
 
 	/* Initialize new filters. */
 	//TODO: (prashant) Add a version number to file names.
-	for (uint32_t i = 0; i < num_levels; i++) {
+	for (uint32_t i = 0; i < nlevels; i++) {
 		std::string file("_cqf.ser");
 		file = std::to_string(i) + file;
 		qf_init(&new_filters[i], sizes[i], num_hash_bits, 0, false, file.c_str(),
@@ -132,7 +140,7 @@ void CascadeFilter::shuffle_merge(uint32_t num_levels) {
 	}
 
 	/* Initialize cascade filter iterator. */
-	CascadeFilterIterator cfi(this, num_levels);
+	CascadeFilterIterator cfi(this, nlevels);
 	cfi.get(&cur_key, &cur_value, &cur_count, &cur_level);
 	
 	while(!cfi.end()) {
@@ -143,7 +151,7 @@ void CascadeFilter::shuffle_merge(uint32_t num_levels) {
 		if (next_key == cur_key)
 			cur_count += next_count;
 		else {
-			for (int32_t i = num_levels; i >= 0; i--) {
+			for (int32_t i = nlevels; i >= 0; i--) {
 				if (cur_count >= thresholds[i]) {
 					qf_insert(&new_filters[i], cur_key, cur_value, thresholds[i],
 										LOCK_AND_SPIN);
@@ -262,6 +270,9 @@ main ( int argc, char *argv[] )
 	uint32_t nfilters = atoi(argv[2]);
 	uint32_t gfactor = atoi(argv[3]);
 	uint32_t nhashbits = qbits + 10;
+	uint32_t randominput = 1;	// Default value is uniform-random distribution.
+	if (argc > 4)
+		randominput = atoi(argv[4]);
 
 	uint64_t sizes[nfilters];
 	uint32_t thlds[nfilters];
@@ -270,10 +281,16 @@ main ( int argc, char *argv[] )
 	struct timezone tzp;
 	
 	sizes[0] = (1ULL << qbits);
-	for (uint32_t i = 1; i < nfilters; i++) {
+	for (uint32_t i = 1; i < nfilters; i++)
 		sizes[i] = pow(gfactor, i - 1) * sizes[0];
-	}
+
 	uint64_t nvals = 750 * (sizes[nfilters - 1]) / 1000;
+
+	thlds[nfilters - 1] = 1;
+	uint32_t j = 1;
+	for (uint32_t i = nfilters - 2; i > 0; i--, j++)
+		thlds[i] = pow(gfactor, j) * thlds[nfilters - 1];
+	thlds[0] = thlds[1];
 
 	/* Create a cascade filter. */
 	std::cout << "Create a cascade filter with " << nhashbits << "-bit hashes, "
@@ -286,15 +303,18 @@ main ( int argc, char *argv[] )
 	std::cout << "Generating " << nvals << " random numbers." << std::endl;
 	memset(vals, 0, nvals*sizeof(vals[0]));
 
-	//RAND_pseudo_bytes((unsigned char *)vals, sizeof(*vals) * nvals);
-	//for (uint64_t k = 0; k < nvals; k++)
-		//vals[k] = (1 * vals[k]) % cf.get_filter(0)->metadata->range;
-
-  generate_random_keys(vals, nvals, nvals, 1.5);
-	for (uint64_t i = 0; i < nvals; i++) {
-		vals[i] = HashUtil::AES_HASH(vals[i]) % cf.get_filter(0)->metadata->range;
+	if (randominput) {
+		/* Generate random keys from a uniform-random distribution. */
+		RAND_pseudo_bytes((unsigned char *)vals, sizeof(*vals) * nvals);
+		for (uint64_t k = 0; k < nvals; k++)
+		vals[k] = (1 * vals[k]) % cf.get_filter(0)->metadata->range;
+	} else {
+		/* Generate random keys from a Zipfian distribution. */
+		generate_random_keys(vals, nvals, nvals, 1.5);
+		for (uint64_t i = 0; i < nvals; i++) {
+			vals[i] = HashUtil::AES_HASH(vals[i]) % cf.get_filter(0)->metadata->range;
+		}
 	}
-
 	std::cout << "Inserting elements." << std::endl;
 	gettimeofday(&start, &tzp);
 	for (uint64_t k = 0; k < nvals; k++)
