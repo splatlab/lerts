@@ -133,6 +133,11 @@ CascadeFilter<key_object>::begin(uint32_t num_levels) const {
 			qfi_get(&qfi_arr[i], &key, &value, &count);
 			if (key < smallest_key)
 				cur_level = i;
+		} else {
+			/* remove the qf iterator that is already reached the end. */
+			memmove(&qfi_arr[i], &qfi_arr[i + 1], (num_levels - i -
+																						 1) * sizeof(qfi_arr[0]));
+			num_levels--;
 		}
 
 	return Iterator(qfi_arr, num_levels, cur_level);
@@ -144,7 +149,7 @@ CascadeFilter<key_object>::end() const {
 	QFi qfi_arr[1];
 
 	/* Initialize the iterator for all the levels. */
-	qf_iterator(get_filter(total_num_levels - 1), &qfi_arr[0],
+	qf_iterator(get_filter(0), &qfi_arr[0],
 							0xffffffffffffffff);
 
 	return Iterator(qfi_arr, 1, 0);
@@ -165,9 +170,9 @@ void CascadeFilter<key_object>::Iterator::operator++(void) {
 	/* Move the iterator for "iter_cur_level". */
 	qfi_next(&qfi_arr[iter_cur_level]);
 
-	/* End of the cascade filter. */
-	//if (iter_num_levels == 1 && qfi_end(&qfi_arr[iter_cur_level]))
-		//return -1;
+	 //End of the cascade filter. 
+	if (iter_num_levels == 1 && qfi_end(&qfi_arr[iter_cur_level]))
+		return;
 
 	/* remove the qf iterator that is exhausted from the array if it is not
 	 * the last level. */
@@ -246,7 +251,7 @@ void CascadeFilter<key_object>::shuffle_merge() {
 
 	DEBUG_CF("Old CQFs");
 	for (uint32_t i = 0; i < nlevels; i++) {
-		DEBUG_CF("CQF " << i);
+		DEBUG_CF("CQF " << i << " thresholds " << thresholds[i]);
 		DEBUG_DUMP(&filters[i]);
 	}
 
