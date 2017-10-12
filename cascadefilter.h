@@ -112,6 +112,11 @@ class CascadeFilter {
 		 */
 		void shuffle_merge();
 
+		/**
+		 * Spread the count of the key in the cascade filter.
+		 */
+		void smear_element(QF qf_arr[], key_object k, uint32_t nlevels);
+
 		QF filters[NUM_MAX_FILTERS];
 		uint32_t thresholds[NUM_MAX_FILTERS];
 		uint64_t sizes[NUM_MAX_FILTERS];

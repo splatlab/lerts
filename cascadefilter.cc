@@ -117,6 +117,25 @@ uint32_t CascadeFilter<key_object>::find_first_empty_level() {
 }
 
 template <class key_object>
+void CascadeFilter<key_object>::smear_element(QF qf_arr[], key_object k,
+																							uint32_t nlevels) {
+	for (int32_t i = nlevels - 1; i > 0; i--) {
+		if (k.count > thresholds[i]) {
+			qf_insert(&qf_arr[i], k.key, k.value, thresholds[i],
+								LOCK_AND_SPIN);
+			k.count -= thresholds[i];
+		} else {
+			qf_insert(&qf_arr[i], k.key, k.value, k.count, LOCK_AND_SPIN);
+			k.count = 0;
+			break;
+		}
+	}
+	/* If some observations are left then insert them in the first level. */
+	if (k.count > 0)
+		qf_insert(&qf_arr[0], k.key, k.value, k.count, LOCK_AND_SPIN);
+}
+
+template <class key_object>
 CascadeFilter<key_object>::Iterator::Iterator(QFi arr[], uint32_t num_levels,
 																							uint32_t cur_level) :
 	iter_num_levels(num_levels), iter_cur_level(cur_level) {
@@ -132,7 +151,7 @@ CascadeFilter<key_object>::begin(uint32_t num_levels) const {
 	for (uint32_t i = 0; i < num_levels; i++)
 		qf_iterator(get_filter(i), &qfi_arr[i], 0);
 
-	/* Find the smallest key across levels. */
+	/* Find the level with the smallest key. */
 	uint32_t cur_level = 0;
 	uint64_t key, value, count;
 	uint64_t smallest_key = UINT64_MAX;
@@ -142,7 +161,7 @@ CascadeFilter<key_object>::begin(uint32_t num_levels) const {
 			if (key < smallest_key)
 				cur_level = i;
 		} else {
-			/* remove the qf iterator that is already reached the end. */
+			/* remove the qf iterator that has already reached the end. */
 			memmove(&qfi_arr[i], &qfi_arr[i + 1], (num_levels - i -
 																						 1) * sizeof(qfi_arr[0]));
 			num_levels--;
@@ -178,7 +197,7 @@ void CascadeFilter<key_object>::Iterator::operator++(void) {
 	/* Move the iterator for "iter_cur_level". */
 	qfi_next(&qfi_arr[iter_cur_level]);
 
-	 //End of the cascade filter. 
+	// End of the cascade filter. 
 	if (iter_num_levels == 1 && qfi_end(&qfi_arr[iter_cur_level]))
 		return;
 
@@ -268,8 +287,7 @@ void CascadeFilter<key_object>::shuffle_merge() {
 	cur_key = *it;
 	++it;
 
-	uint64_t iters = 1;
-	while(it != end()) {
+	do {
 		next_key = *it;
 		/* If next_key is same as cur_key then aggregate counts.
 		 * Else, smear the count across levels starting from the bottom one.
@@ -277,31 +295,17 @@ void CascadeFilter<key_object>::shuffle_merge() {
 		if (cur_key == next_key)
 			cur_key.count += next_key.count;
 		else {
-			for (int32_t i = nlevels - 1; i > 0; i--) {
-				if (cur_key.count > thresholds[i]) {
-					qf_insert(&new_filters[i], cur_key.key, cur_key.value, thresholds[i],
-										LOCK_AND_SPIN);
-					cur_key.count -= thresholds[i];
-				} else {
-					qf_insert(&new_filters[i], cur_key.key, cur_key.value, cur_key.count,
-										LOCK_AND_SPIN);
-					cur_key.count = 0;
-					break;
-				}
-			}
-			/* If some observations are left then insert them in the first level. */
-			if (cur_key.count > 0)
-				qf_insert(&new_filters[0], cur_key.key, cur_key.value, cur_key.count,
-									LOCK_AND_SPIN);
+			smear_element(new_filters, cur_key, nlevels);
 			/* Update cur_key. */
 			cur_key = next_key;
 		}
 		/* Increment the iterator. */
 		++it;
-		iters++;
-	}
+	} while(!it.done());
 
-	DEBUG_CF("Num iterations " <<  iters);
+	/* Insert the last key in the cascade filter. */
+	smear_element(new_filters, cur_key, nlevels);
+
 	DEBUG_CF("New CQFs");
 	for (uint32_t i = 0; i < nlevels; i++) {
 		DEBUG_CF("CQF " << i);
@@ -417,6 +421,22 @@ main ( int argc, char *argv[] )
 	std::cout << "Finished insertions." << std::endl;
 
 	DEBUG_CF("Number of elements in the CascadeFilter " << cf.get_num_elements());
+
+	//QF new_cf;
+	//qf_init(&new_cf, sizes[nfilters - 1], nhashbits, 0, [>mem<] true,
+					//"", 0);
+	//for (auto it = cf.begin(nfilters); it != cf.end(); ++it) {
+		//KeyObject k; 
+		//k = *it;
+		//qf_insert(&new_cf, k.key, k.value, k.count, LOCK_AND_SPIN);
+	//}
+	//for (uint64_t k = 0; k < nvals; k++)
+		//if (qf_count_key_value(&new_cf, vals[k], 0) < 1) {
+			//std::cerr << "Failed lookup for " <<
+				//(uint64_t)vals[k] << " " << k << " " << nvals << std::endl;
+			//abort();
+		//}
+	//DEBUG_CF("Iterator verified!");
 
 	std::cout << "Querying elements." << std::endl;
 	gettimeofday(&start, &tzp);
