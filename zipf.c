@@ -145,8 +145,8 @@ void generate_random_keys (uint64_t *elems, long N, long gencount, double s) {
 	int i;
 	uint32_t *counts;
 	/*struct timeval a,b,c;*/
-	printf("Generating %ld elements in universe of %ld items with characteristic \
-				 exponent %f\n", gencount, N, s);
+	printf("Generating %ld elements in universe of %ld items with characteristic exponent %f\n",
+				 gencount, N, s);
 	/*gettimeofday(&a, NULL);*/
 	ZIPFIAN z = create_zipfian(1, N, RFUN);
 	counts = (uint32_t*)calloc(N, sizeof(counts));
