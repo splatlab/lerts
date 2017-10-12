@@ -33,6 +33,8 @@ class CascadeFilter {
 
 		const QF* get_filter(uint32_t level) const;
 
+		uint64_t get_num_elements(void) const;
+
 		/* Increment the counter for this key/value pair by count. */
 		bool insert(const key_object& key_val_cnt, enum lock flag);
 

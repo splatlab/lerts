@@ -72,6 +72,14 @@ const QF* CascadeFilter<key_object>::get_filter(uint32_t level) const {
 }
 
 template <class key_object>
+uint64_t CascadeFilter<key_object>::get_num_elements(void) const {
+	uint64_t total_count = 0;
+	for (uint32_t i = 0; i < total_num_levels; i++)
+		total_count += filters[i].metadata->nelts;
+	return total_count;
+}
+
+template <class key_object>
 bool CascadeFilter<key_object>::is_full(uint32_t level) const {
 	double load_factor = filters[level].metadata->noccupied_slots /
 											 (double)filters[level].metadata->nslots;
@@ -251,7 +259,7 @@ void CascadeFilter<key_object>::shuffle_merge() {
 
 	DEBUG_CF("Old CQFs");
 	for (uint32_t i = 0; i < nlevels; i++) {
-		DEBUG_CF("CQF " << i << " thresholds " << thresholds[i]);
+		DEBUG_CF("CQF " << i << " threshold " << thresholds[i]);
 		DEBUG_DUMP(&filters[i]);
 	}
 
@@ -260,6 +268,7 @@ void CascadeFilter<key_object>::shuffle_merge() {
 	cur_key = *it;
 	++it;
 
+	uint64_t iters = 1;
 	while(it != end()) {
 		next_key = *it;
 		/* If next_key is same as cur_key then aggregate counts.
@@ -268,7 +277,7 @@ void CascadeFilter<key_object>::shuffle_merge() {
 		if (cur_key == next_key)
 			cur_key.count += next_key.count;
 		else {
-			for (int32_t i = nlevels - 1; i >= 0; i--) {
+			for (int32_t i = nlevels - 1; i > 0; i--) {
 				if (cur_key.count > thresholds[i]) {
 					qf_insert(&new_filters[i], cur_key.key, cur_key.value, thresholds[i],
 										LOCK_AND_SPIN);
@@ -276,16 +285,23 @@ void CascadeFilter<key_object>::shuffle_merge() {
 				} else {
 					qf_insert(&new_filters[i], cur_key.key, cur_key.value, cur_key.count,
 										LOCK_AND_SPIN);
+					cur_key.count = 0;
 					break;
 				}
 			}
+			/* If some observations are left then insert them in the first level. */
+			if (cur_key.count > 0)
+				qf_insert(&new_filters[0], cur_key.key, cur_key.value, cur_key.count,
+									LOCK_AND_SPIN);
+			/* Update cur_key. */
+			cur_key = next_key;
 		}
-		/* Update cur_key. */
-		cur_key = next_key;
 		/* Increment the iterator. */
 		++it;
+		iters++;
 	}
 
+	DEBUG_CF("Num iterations " <<  iters);
 	DEBUG_CF("New CQFs");
 	for (uint32_t i = 0; i < nlevels; i++) {
 		DEBUG_CF("CQF " << i);
@@ -399,6 +415,8 @@ main ( int argc, char *argv[] )
 	gettimeofday(&end, &tzp);
 	print_time_elapsed("", &start, &end);
 	std::cout << "Finished insertions." << std::endl;
+
+	DEBUG_CF("Number of elements in the CascadeFilter " << cf.get_num_elements());
 
 	std::cout << "Querying elements." << std::endl;
 	gettimeofday(&start, &tzp);
