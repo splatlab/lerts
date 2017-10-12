@@ -16,12 +16,6 @@
 
 #include "gqf.h"
 
-/* Can be 
-	 0 (choose size at run-time), 
-	 8, 16, 32, or 64 (for optimized versions),
-	 or other integer <= 56 (for compile-time-optimized bit-shifting-based versions)
-	 */
-
 /******************************************************************
  * Code for managing the metadata bits and slots w/o interpreting *
  * the content of the slots.
@@ -72,14 +66,8 @@ typedef struct __attribute__ ((__packed__)) qfblock {
 #define PRINT_DEBUG 0
 #endif
 
-/* Forward declaration for the macro. */
-void qf_dump_metadata(const QF *qf);
-
 #define DEBUG_CQF(fmt, ...) \
 	do { if (PRINT_DEBUG) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
-
-#define DEBUG_DUMP(qf) \
-	do { if (PRINT_DEBUG) qf_dump_metadata(qf); } while (0)
 
 static __inline__ unsigned long long rdtsc(void)
 {

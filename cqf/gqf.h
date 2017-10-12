@@ -9,6 +9,11 @@
 extern "C" {
 #endif
 
+	/* Can be 
+		 0 (choose size at run-time), 
+		 8, 16, 32, or 64 (for optimized versions),
+		 or other integer <= 56 (for compile-time-optimized bit-shifting-based versions)
+		 */
 #define BITS_PER_SLOT 0
 
 	struct __attribute__ ((__packed__)) qfblock;
@@ -52,7 +57,7 @@ extern "C" {
 		uint64_t noccupied_slots;
 		uint64_t num_locks;
 	} quotient_filter_metadata;
-	
+
 	typedef quotient_filter_metadata qfmetadata;
 
 	typedef struct quotient_filter {
@@ -79,6 +84,15 @@ extern "C" {
 	} quotient_filter_iterator;
 
 	typedef quotient_filter_iterator QFi;
+
+	/* Forward declaration for the macro. */
+	void qf_dump_metadata(const QF *qf);
+
+#define DEBUG_CQF(fmt, ...) \
+	do { if (PRINT_DEBUG) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
+
+#define DEBUG_DUMP(qf) \
+	do { if (PRINT_DEBUG) qf_dump_metadata(qf); } while (0)
 
 	void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t
 							 value_bits, bool mem, const char *path, uint32_t seed);
