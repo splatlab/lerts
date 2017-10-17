@@ -75,14 +75,14 @@ template <class key_object>
 uint64_t CascadeFilter<key_object>::get_num_elements(void) const {
 	uint64_t total_count = 0;
 	for (uint32_t i = 0; i < total_num_levels; i++)
-		total_count += filters[i].metadata->nelts;
+		total_count += get_filter(i)->metadata->nelts;
 	return total_count;
 }
 
 template <class key_object>
 bool CascadeFilter<key_object>::is_full(uint32_t level) const {
-	double load_factor = filters[level].metadata->noccupied_slots /
-											 (double)filters[level].metadata->nslots;
+	double load_factor = get_filter(level)->metadata->noccupied_slots /
+											 (double)get_filter(level)->metadata->nslots;
 	if (load_factor > 0.75) {
 		DEBUG_CF("Load factor: " << load_factor);
 		return true;
@@ -93,9 +93,17 @@ bool CascadeFilter<key_object>::is_full(uint32_t level) const {
 template <class key_object>
 uint32_t CascadeFilter<key_object>::find_first_empty_level() {
 	uint32_t empty_level;
+	uint64_t total_occupied_slots = get_filter(0)->metadata->noccupied_slots;
 	for (empty_level = 1; empty_level < total_num_levels; empty_level++) {
-		if (!is_full(empty_level))
+		/* (prashant): This is a upper-bound on the number of slots that are needed in the
+		 * empty level for the shuffle-merge to finish successfully.
+		 * We can probably give a little slack in the constraints here.
+		 */
+		uint64_t available_slots = 	get_filter(empty_level)->metadata->nslots -
+			get_filter(empty_level)->metadata->noccupied_slots;
+		if (!is_full(empty_level) && total_occupied_slots <= available_slots)
 			break;
+		total_occupied_slots += get_filter(empty_level)->metadata->noccupied_slots;
 	}
 	/* If found an empty level. Merge all levels before the empty level into the
 	 * empty level. Else create a new level and merge all the levels. */
@@ -103,7 +111,8 @@ uint32_t CascadeFilter<key_object>::find_first_empty_level() {
 	if (empty_level < total_num_levels)
 		nlevels = empty_level;
 	else {
-		/* Assuing we are creating all the levels in the constructor the below
+		/* This is for lazy initialization of CQFs in the levels.
+		 * Assuing we are creating all the levels in the constructor, code below
 		 * will never be called. */
 		std::string file("_cqf.ser");
 		file = "raw/" + std::to_string(total_num_levels) + file;
@@ -242,7 +251,7 @@ void CascadeFilter<key_object>::merge() {
 
 	QF *to_merge[nlevels];
 	for (uint32_t i = 0; i < nlevels; i++)
-		to_merge[i] = &filters[i];
+		to_merge[i] = get_filter(i);
 	DEBUG_CF("Merging CQFs 0 to " << nlevels - 1 << " into the CQF "
 					 << nlevels);
 	/* If the in-mem filter needs to be merged to the first level on disk. */
@@ -341,7 +350,7 @@ template <class key_object>
 uint64_t CascadeFilter<key_object>::count_key_value(const key_object& k) const {
 	uint64_t count = 0;
 	for (uint32_t i = 0; i < total_num_levels; i++)
-		count += qf_count_key_value(&filters[i], k.key, k.value);
+		count += qf_count_key_value(get_filter(i), k.key, k.value);
 	return count;
 }
 
