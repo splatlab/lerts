@@ -95,8 +95,8 @@ uint32_t CascadeFilter<key_object>::find_first_empty_level() {
 	uint32_t empty_level;
 	uint64_t total_occupied_slots = get_filter(0)->metadata->noccupied_slots;
 	for (empty_level = 1; empty_level < total_num_levels; empty_level++) {
-		/* (prashant): This is a upper-bound on the number of slots that are needed in the
-		 * empty level for the shuffle-merge to finish successfully.
+		/* (prashant): This is a upper-bound on the number of slots that are
+		 * needed in the empty level for the shuffle-merge to finish successfully.
 		 * We can probably give a little slack in the constraints here.
 		 */
 		uint64_t available_slots = 	get_filter(empty_level)->metadata->nslots -
