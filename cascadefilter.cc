@@ -58,7 +58,8 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	/* Initialize all the filters. */
 	//TODO: (prashant) Maybe make this a lazy initilization.
 	for (uint32_t i = 0; i < total_num_levels; i++) {
-		DEBUG_CF("Creating level: " << i << " of " << sizes[i] << " slots.");
+		DEBUG_CF("Creating level: " << i << " of " << sizes[i] <<
+						 " slots and threshold " << thresholds[i]);
 		std::string file("_cqf.ser");
 		file = "raw/" + std::to_string(i) + file;
 		qf_init(&filters[i], sizes[i], num_hash_bits, 0, /*mem*/ false,
@@ -381,18 +382,20 @@ main ( int argc, char *argv[] )
 
 	struct timeval start, end;
 	struct timezone tzp;
-	
+
+	/* level sizes grow by a factor "r". */
 	sizes[0] = (1ULL << qbits);
 	for (uint32_t i = 1; i < nfilters; i++)
-		sizes[i] = pow(gfactor, i - 1) * sizes[0];
+		sizes[i] = pow(gfactor, i) * sizes[0];
 
 	uint64_t nvals = 750 * (sizes[nfilters - 1]) / 1000;
 
 	thlds[nfilters - 1] = 1;
 	uint32_t j = 1;
-	for (uint32_t i = nfilters - 2; i > 0; i--, j++)
-		thlds[i] = pow(gfactor, j) * thlds[nfilters - 1];
-	thlds[0] = thlds[1];
+	/* taus grow with r^0.5. */
+	uint32_t tau_ratio = sqrt(gfactor);
+	for (int32_t i = nfilters - 2; i >= 0; i--, j++)
+		thlds[i] = pow(tau_ratio, j) * thlds[nfilters - 1];
 
 	/* Create a cascade filter. */
 	std::cout << "Create a cascade filter with " << nhashbits << "-bit hashes, "
