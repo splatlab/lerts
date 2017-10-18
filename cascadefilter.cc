@@ -333,6 +333,7 @@ template <class key_object>
 bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 	if (is_full(0)) {
 		num_flush++;
+		DEBUG_CF("Flusing " << num_flush);
 		//merge();
 		shuffle_merge();
 	}
