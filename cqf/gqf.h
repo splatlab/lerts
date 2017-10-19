@@ -16,6 +16,9 @@ extern "C" {
 		 */
 #define BITS_PER_SLOT 0
 
+#define BITMASK(nbits) ((nbits) == 64 ? 0xffffffffffffffff : (1ULL << (nbits)) \
+												- 1ULL)
+
 	struct __attribute__ ((__packed__)) qfblock;
 	typedef struct qfblock qfblock;
 

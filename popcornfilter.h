@@ -33,16 +33,23 @@ class PopcornFilter {
 		PopcornFilter(uint64_t nfilters, uint32_t nthreads, uint32_t qbits, uint32_t
 									nlevels, uint32_t gfactor);
 
-		bool insert(key_object k);
+		bool insert(const key_object& k, enum lock flag);
 
-		uint64_t query(key_object k);
+		uint64_t query(const key_object& k) const;
 
-		uint32_t get_num_hash_bits(void);
+		uint32_t get_num_hash_bits(void) const;
 
-		uint32_t get_seed(void);
+		uint32_t get_seed(void) const;
+
+		uint64_t get_range(void) const;
+
+		uint64_t get_max_size(void) const;
+
+		uint64_t get_total_elements(void) const;
 
 	private:
 		uint32_t qbits;
+		uint32_t fbits;
 		uint32_t nlevels;
 		uint32_t gfactor;
 		uint64_t nfilters;
@@ -57,9 +64,10 @@ class ThreadArgs {
 		key_object *vals;
 		uint64_t start;
 		uint64_t end;
+		PopcornFilter<key_object> *pf;
 
-		ThreadArgs(key_object *vals, uint64_t start,
-							 uint64_t end) : vals(vals), start(start), end(end) {};
+		ThreadArgs(PopcornFilter<key_object> *pf, key_object *vals, uint64_t start,
+							 uint64_t end) : pf(pf), vals(vals), start(start), end(end) {};
 };
 
 #endif

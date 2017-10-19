@@ -36,6 +36,7 @@ class CascadeFilter {
 		uint64_t get_num_elements(void) const;
 		uint32_t get_num_hash_bits(void) const;
 		uint32_t get_seed(void) const;
+		uint64_t get_max_size(void) const;
 
 		/* Increment the counter for this key/value pair by count. */
 		bool insert(const key_object& key_val_cnt, enum lock flag);

@@ -84,6 +84,11 @@ uint32_t CascadeFilter<key_object>::get_seed(void) const {
 }
 
 template <class key_object>
+uint64_t CascadeFilter<key_object>::get_max_size(void) const {
+	return sizes[total_num_levels - 1];
+}
+
+template <class key_object>
 uint64_t CascadeFilter<key_object>::get_num_elements(void) const {
 	uint64_t total_count = 0;
 	for (uint32_t i = 0; i < total_num_levels; i++)
@@ -413,6 +418,7 @@ uint64_t CascadeFilter<key_object>::count_key_value(const key_object& k) {
 	return count;
 }
 
+#if 0
 /* 
  * ===  FUNCTION  =============================================================
  *         Name:  main
@@ -522,4 +528,4 @@ main ( int argc, char *argv[] )
 
 	return EXIT_SUCCESS;
 }				/* ----------  end of function main  ---------- */
-
+#endif
