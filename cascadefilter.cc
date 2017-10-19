@@ -52,6 +52,7 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	num_hash_bits = nhashbits;
 	num_flush = 0;
 	seed = time(NULL);
+	locked = 0;
 	memcpy(thresholds, filter_thlds, num_filters * sizeof(thresholds[0]));
 	memcpy(sizes, filter_sizes, num_filters * sizeof(sizes[0]));
 
@@ -73,11 +74,42 @@ const QF* CascadeFilter<key_object>::get_filter(uint32_t level) const {
 }
 
 template <class key_object>
+uint32_t CascadeFilter<key_object>::get_num_hash_bits(void) const {
+	return num_hash_bits;
+}
+
+template <class key_object>
+uint32_t CascadeFilter<key_object>::get_seed(void) const {
+	return seed;
+}
+
+template <class key_object>
 uint64_t CascadeFilter<key_object>::get_num_elements(void) const {
 	uint64_t total_count = 0;
 	for (uint32_t i = 0; i < total_num_levels; i++)
 		total_count += get_filter(i)->metadata->nelts;
 	return total_count;
+}
+
+template <class key_object>
+bool CascadeFilter<key_object>::lock(enum lock flag)
+{
+	if (flag != LOCK_AND_SPIN) {
+		return !__sync_lock_test_and_set(&locked, 1);
+	} else {
+		while (__sync_lock_test_and_set(&locked, 1))
+			while (locked);
+		return true;
+	}
+
+	return false;
+}
+
+template <class key_object>
+void CascadeFilter<key_object>::unlock(void)
+{
+	__sync_lock_release(&locked);
+	return;
 }
 
 template <class key_object>
@@ -331,6 +363,10 @@ void CascadeFilter<key_object>::shuffle_merge() {
 
 template <class key_object>
 bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
+	if (flag != NO_LOCK)
+		if (!lock(flag))
+			return false;
+
 	if (is_full(0)) {
 		num_flush++;
 		DEBUG_CF("Flusing " << num_flush);
@@ -338,21 +374,42 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 		shuffle_merge();
 	}
 
-	qf_insert(&filters[0], k.key, k.value, k.count, flag);
+	/* we don't need a lock on the in-memory CQF while inserting. However, I
+	 * still have the flag "LOCK_AND_SPIN" here just to be extra sure that we
+	 * will not corrupt the data structure.
+	 */
+	bool ret = qf_insert(&filters[0], k.key, k.value, k.count, LOCK_AND_SPIN);
+
+	if (flag != NO_LOCK)
+		unlock();
+
+	return ret;
+}
+
+template <class key_object>
+bool CascadeFilter<key_object>::remove(const key_object& k, enum lock flag) {
+	if (flag != NO_LOCK)
+		if (!lock(flag))
+			return false;
+
+	for (uint32_t i = 0; i < total_num_levels; i++)
+		qf_remove(&filters[i], k.key, k.value, k.count, LOCK_AND_SPIN);
+
+	if (flag != NO_LOCK)
+		unlock();
+
 	return true;
 }
 
 template <class key_object>
-void CascadeFilter<key_object>::remove(const key_object& k, enum lock flag) {
-	for (uint32_t i = 0; i < total_num_levels; i++)
-		qf_remove(&filters[i], k.key, k.value, k.count, flag);
-}
+uint64_t CascadeFilter<key_object>::count_key_value(const key_object& k) {
+	lock(LOCK_AND_SPIN);
 
-template <class key_object>
-uint64_t CascadeFilter<key_object>::count_key_value(const key_object& k) const {
 	uint64_t count = 0;
 	for (uint32_t i = 0; i < total_num_levels; i++)
 		count += qf_count_key_value(get_filter(i), k.key, k.value);
+
+	unlock();
 	return count;
 }
 
@@ -371,38 +428,38 @@ main ( int argc, char *argv[] )
 	}
 
 	uint64_t qbits = atoi(argv[1]);
-	uint32_t nfilters = atoi(argv[2]);
+	uint32_t nlevels = atoi(argv[2]);
 	uint32_t gfactor = atoi(argv[3]);
 	uint32_t nhashbits = qbits + 10;
 	uint32_t randominput = 1;	// Default value is uniform-random distribution.
 	if (argc > 4)
 		randominput = atoi(argv[4]);
 
-	uint64_t sizes[nfilters];
-	uint32_t thlds[nfilters];
+	uint64_t sizes[nlevels];
+	uint32_t thlds[nlevels];
 
 	struct timeval start, end;
 	struct timezone tzp;
 
 	/* level sizes grow by a factor "r". */
 	sizes[0] = (1ULL << qbits);
-	for (uint32_t i = 1; i < nfilters; i++)
+	for (uint32_t i = 1; i < nlevels; i++)
 		sizes[i] = pow(gfactor, i) * sizes[0];
 
-	uint64_t nvals = 750 * (sizes[nfilters - 1]) / 1000;
+	uint64_t nvals = 750 * (sizes[nlevels - 1]) / 1000;
 
-	thlds[nfilters - 1] = 1;
+	thlds[nlevels - 1] = 1;
 	uint32_t j = 1;
 	/* taus grow with r^0.5. */
 	uint32_t tau_ratio = sqrt(gfactor);
-	for (int32_t i = nfilters - 2; i >= 0; i--, j++)
-		thlds[i] = pow(tau_ratio, j) * thlds[nfilters - 1];
+	for (int32_t i = nlevels - 2; i >= 0; i--, j++)
+		thlds[i] = pow(tau_ratio, j) * thlds[nlevels - 1];
 
 	/* Create a cascade filter. */
 	std::cout << "Create a cascade filter with " << nhashbits << "-bit hashes, "
-		<< nfilters << " levels, and " << gfactor << " as growth factor." <<
+		<< nlevels << " levels, and " << gfactor << " as growth factor." <<
 		std::endl;
-	CascadeFilter<KeyObject> cf(nhashbits, thlds, sizes, nfilters);
+	CascadeFilter<KeyObject> cf(nhashbits, thlds, sizes, nlevels);
 
 	uint64_t *vals;
 	vals = (uint64_t*)malloc(nvals*sizeof(vals[0]));
@@ -436,9 +493,9 @@ main ( int argc, char *argv[] )
 	DEBUG_CF("Number of elements in the CascadeFilter " << cf.get_num_elements());
 
 	//QF new_cf;
-	//qf_init(&new_cf, sizes[nfilters - 1], nhashbits, 0, [>mem<] true,
+	//qf_init(&new_cf, sizes[nlevels - 1], nhashbits, 0, [>mem<] true,
 					//"", 0);
-	//for (auto it = cf.begin(nfilters); it != cf.end(); ++it) {
+	//for (auto it = cf.begin(nlevels); it != cf.end(); ++it) {
 		//KeyObject k; 
 		//k = *it;
 		//qf_insert(&new_cf, k.key, k.value, k.count, LOCK_AND_SPIN);

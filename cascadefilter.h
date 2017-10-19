@@ -34,12 +34,14 @@ class CascadeFilter {
 		const QF* get_filter(uint32_t level) const;
 
 		uint64_t get_num_elements(void) const;
+		uint32_t get_num_hash_bits(void) const;
+		uint32_t get_seed(void) const;
 
 		/* Increment the counter for this key/value pair by count. */
 		bool insert(const key_object& key_val_cnt, enum lock flag);
 
 		/* Remove count instances of this key/value combination. */
-		void remove(const key_object& key_val_cnt, enum lock flag);
+		bool remove(const key_object& key_val_cnt, enum lock flag);
 
 		/* Replace the association (key, oldvalue, count) with the association
 			 (key, newvalue, count). If there is already an association (key,
@@ -50,7 +52,7 @@ class CascadeFilter {
 
 		/* Return the number of times key has been inserted, with the given
 			 value, into the cascade qf. */
-		uint64_t count_key_value(const key_object& key_val_cnt) const;
+		uint64_t count_key_value(const key_object& key_val_cnt);
 
 		class Iterator {
 			public:
@@ -117,6 +119,14 @@ class CascadeFilter {
 		 */
 		void smear_element(QF qf_arr[], key_object k, uint32_t nlevels);
 
+		/**
+		 * Try to acquire a lock once and return even if the lock is busy.
+		 * If spin flag is set, then spin until the lock is available.
+		 */
+		bool lock(enum lock flag);
+
+		void unlock(void);
+
 		QF filters[NUM_MAX_FILTERS];
 		uint32_t thresholds[NUM_MAX_FILTERS];
 		uint64_t sizes[NUM_MAX_FILTERS];
@@ -124,23 +134,25 @@ class CascadeFilter {
 		uint32_t num_flush;
 		uint32_t num_hash_bits;
 		uint32_t seed;
+		volatile int locked;
 };
 
 class KeyObject {
-public:
-	KeyObject() : key(0), value(0), count(0), level(0) {};
-	KeyObject(uint64_t k, uint64_t v, uint64_t c, uint32_t l) : key(k),
-	value(v), count(c), level(l) {};
+	public:
+		KeyObject() : key(0), value(0), count(0), level(0) {};
 
-	KeyObject(KeyObject& k) : key(k.key), value(k.value), count(k.count),
-	level(k.level) {};
+		KeyObject(uint64_t k, uint64_t v, uint64_t c, uint32_t l) : key(k),
+		value(v), count(c), level(l) {};
 
-	bool operator==(KeyObject k) { return key == k.key; }
+		KeyObject(KeyObject& k) : key(k.key), value(k.value), count(k.count),
+		level(k.level) {};
 
-	uint64_t key;
-	uint64_t value;
-	uint64_t count;
-	uint32_t level;
+		bool operator==(KeyObject k) { return key == k.key; }
+
+		uint64_t key;
+		uint64_t value;
+		uint64_t count;
+		uint32_t level;
 };
 
 template <class key_object = KeyObject>
