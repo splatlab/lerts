@@ -187,7 +187,7 @@ CascadeFilter<key_object>::Iterator::Iterator(QFi arr[], uint32_t num_levels,
 template <class key_object>
 typename CascadeFilter<key_object>::Iterator
 CascadeFilter<key_object>::begin(uint32_t num_levels) const {
-	QFi qfi_arr[NUM_MAX_FILTERS];
+	QFi qfi_arr[NUM_MAX_LEVELS];
 
 	/* Initialize the iterator for all the levels. */
 	for (uint32_t i = 0; i < num_levels; i++)

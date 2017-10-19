@@ -23,7 +23,7 @@
 
 #include "cqf/gqf.h"
 
-#define NUM_MAX_FILTERS 10
+#define NUM_MAX_LEVELS 10
 
 template <class key_object>
 class CascadeFilter {
@@ -71,7 +71,7 @@ class CascadeFilter {
 
 			private:
 
-				QFi qfi_arr[NUM_MAX_FILTERS];
+				QFi qfi_arr[NUM_MAX_LEVELS];
 				uint32_t iter_num_levels;
 				uint32_t iter_cur_level;
 		};
@@ -127,9 +127,9 @@ class CascadeFilter {
 
 		void unlock(void);
 
-		QF filters[NUM_MAX_FILTERS];
-		uint32_t thresholds[NUM_MAX_FILTERS];
-		uint64_t sizes[NUM_MAX_FILTERS];
+		QF filters[NUM_MAX_LEVELS];
+		uint32_t thresholds[NUM_MAX_LEVELS];
+		uint64_t sizes[NUM_MAX_LEVELS];
 		uint32_t total_num_levels;
 		uint32_t num_flush;
 		uint32_t num_hash_bits;
