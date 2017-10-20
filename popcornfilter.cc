@@ -111,16 +111,18 @@ uint64_t PopcornFilter<key_object>::get_total_elements(void) const {
 
 template <class key_object>
 bool PopcornFilter<key_object>::insert(const key_object& k, enum lock flag) {
-	uint32_t filter_idx = (k.key >> nhashbits) & BITMASK(fbits);
-	k.key = k.key & BITMASK(nhashbits);
-	return cf[filter_idx]->insert(k, flag);
+	KeyObject dup_k(k);
+	uint32_t filter_idx = (dup_k.key >> nhashbits) & BITMASK(fbits);
+	dup_k.key = dup_k.key & BITMASK(nhashbits);
+	return cf[filter_idx]->insert(dup_k, flag);
 }
 
 template <class key_object>
 uint64_t PopcornFilter<key_object>::query(const key_object& k) const {
-	uint32_t filter_idx = (k.key >> nhashbits) & BITMASK(fbits);
-	k.key = k.key & BITMASK(nhashbits);
-	return cf[filter_idx]->count_key_value(k);
+	KeyObject dup_k(k);
+	uint32_t filter_idx = (dup_k.key >> nhashbits) & BITMASK(fbits);
+	dup_k.key = dup_k.key & BITMASK(nhashbits);
+	return cf[filter_idx]->count_key_value(dup_k);
 }
 
 template <class key_object>

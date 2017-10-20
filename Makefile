@@ -1,4 +1,4 @@
-TARGETS=test main merge cascadefilter popcornfilter
+TARGETS=test main merge popcornfilter
 
 ifdef D
 	DEBUG=-g -DDEBUG
@@ -58,7 +58,6 @@ util.o: 																									 		 				 util.h
 
 # dependencies between .o files and .cc (or .c) files
 
-%.o: %.cc
 cqf/gqf.o: cqf/gqf.c cqf/gqf.h
 zipf.o: zipf.c zipf.h
 

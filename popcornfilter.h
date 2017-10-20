@@ -48,12 +48,12 @@ class PopcornFilter {
 		uint64_t get_total_elements(void) const;
 
 	private:
-		uint32_t qbits;
-		uint32_t fbits;
-		uint32_t nlevels;
-		uint32_t gfactor;
 		uint64_t nfilters;
 		uint32_t nthreads;
+		uint32_t qbits;
+		uint32_t nlevels;
+		uint32_t gfactor;
+		uint32_t fbits;
 		uint32_t nhashbits;
 		CascadeFilter<key_object> *cf[NUM_MAX_FILTERS];
 };

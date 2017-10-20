@@ -145,7 +145,7 @@ class KeyObject {
 		KeyObject(uint64_t k, uint64_t v, uint64_t c, uint32_t l) : key(k),
 		value(v), count(c), level(l) {};
 
-		KeyObject(KeyObject& k) : key(k.key), value(k.value), count(k.count),
+		KeyObject(const KeyObject& k) : key(k.key), value(k.value), count(k.count),
 		level(k.level) {};
 
 		bool operator==(KeyObject k) { return key == k.key; }
