@@ -28,6 +28,7 @@
 #include <cassert>
 #include <fstream>
 
+#include <math.h>
 #include <time.h>
 #include <stdio.h>
 #include <fcntl.h>
