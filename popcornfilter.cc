@@ -102,7 +102,7 @@ void *thread_insert(void *a) {
 	int
 main ( int argc, char *argv[] )
 {
-	if (argc < 6) {
+	if (argc < 5) {
 		std::cout << "Not suffcient args." << std::endl;
 		abort();
 	}
@@ -111,9 +111,9 @@ main ( int argc, char *argv[] )
 	uint32_t nlevels = atoi(argv[2]);
 	uint32_t gfactor = atoi(argv[3]);
 	uint64_t nfilters = atoi(argv[4]);
-	uint64_t nthreads = atoi(argv[5]);
+	//uint64_t nthreads = atoi(argv[5]);
 
-	PopcornFilter<KeyObject> pf(nfilters, nthreads, qbits, nlevels, gfactor);
+	PopcornFilter<KeyObject> pf(nfilters, qbits, nlevels, gfactor);
 
 	uint64_t nvals = 750 * pf.get_max_size() / 1000;
 

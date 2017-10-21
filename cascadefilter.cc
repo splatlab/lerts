@@ -91,7 +91,7 @@ main ( int argc, char *argv[] )
 	std::cout << "Create a cascade filter with " << nhashbits << "-bit hashes, "
 		<< nlevels << " levels, and " << gfactor << " as growth factor." <<
 		std::endl;
-	CascadeFilter<KeyObject> cf(nhashbits, thlds, sizes, nlevels);
+	CascadeFilter<KeyObject> cf(nhashbits, thlds, sizes, nlevels, "raw/");
 
 	uint64_t *vals;
 	vals = (uint64_t*)malloc(nvals*sizeof(vals[0]));

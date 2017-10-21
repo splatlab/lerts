@@ -58,7 +58,7 @@
 template <class key_object>
 class PopcornFilter {
 	public:
-		PopcornFilter(uint64_t nfilters, uint32_t nthreads, uint32_t qbits, uint32_t
+		PopcornFilter(uint64_t nfilters, uint32_t qbits, uint32_t
 									nlevels, uint32_t gfactor);
 
 		bool insert(const key_object& k, enum lock flag);
@@ -77,7 +77,6 @@ class PopcornFilter {
 
 	private:
 		uint64_t nfilters;
-		uint32_t nthreads;
 		uint32_t qbits;
 		uint32_t nlevels;
 		uint32_t gfactor;
@@ -101,10 +100,9 @@ class ThreadArgs {
 #define REMAINDER_BITS 10
 
 template <class key_object>
-PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t
-																				 nthreads, uint32_t qbits, uint32_t
-																				 nlevels, uint32_t gfactor) :
-	nfilters(nfilters), nthreads(nthreads), qbits(qbits), nlevels(nlevels),
+PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
+																				 uint32_t nlevels, uint32_t gfactor) :
+	nfilters(nfilters), qbits(qbits), nlevels(nlevels),
 	gfactor(gfactor) {
 		fbits = log2(nfilters); 	// assuming nfilters is a power of 2.
 		nhashbits = qbits + REMAINDER_BITS;
@@ -129,7 +127,9 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t
 			std::cout << "Create a cascade filter with " << nhashbits << "-bit hashes, "
 				<< nlevels << " levels, and " << gfactor << " as growth factor." <<
 				std::endl;
-			cf[i] = new CascadeFilter<KeyObject>(nhashbits, thlds, sizes, nlevels);
+			std::string prefix = "raw/" + std::to_string(i) + "_";
+			cf[i] = new CascadeFilter<KeyObject>(nhashbits, thlds, sizes, nlevels,
+																					 prefix);
 		}
 	}
 
@@ -166,7 +166,7 @@ uint64_t PopcornFilter<key_object>::get_total_elements(void) const {
 template <class key_object>
 bool PopcornFilter<key_object>::insert(const key_object& k, enum lock flag) {
 	KeyObject dup_k(k);
-	uint32_t filter_idx = (dup_k.key >> nhashbits) & BITMASK(fbits);
+	uint32_t filter_idx = dup_k.key >> nhashbits;
 	dup_k.key = dup_k.key & BITMASK(nhashbits);
 	return cf[filter_idx]->insert(dup_k, flag);
 }
@@ -174,7 +174,7 @@ bool PopcornFilter<key_object>::insert(const key_object& k, enum lock flag) {
 template <class key_object>
 uint64_t PopcornFilter<key_object>::query(const key_object& k) const {
 	KeyObject dup_k(k);
-	uint32_t filter_idx = (dup_k.key >> nhashbits) & BITMASK(fbits);
+	uint32_t filter_idx = dup_k.key >> nhashbits;
 	dup_k.key = dup_k.key & BITMASK(nhashbits);
 	return cf[filter_idx]->count_key_value(dup_k);
 }
