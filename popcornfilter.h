@@ -152,7 +152,7 @@ uint64_t PopcornFilter<key_object>::get_range(void) const {
 
 template <class key_object>
 uint64_t PopcornFilter<key_object>::get_max_size(void) const {
-	return cf[0]->get_max_size();
+	return cf[0]->get_max_size() * nfilters;
 }
 
 template <class key_object>
