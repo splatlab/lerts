@@ -45,7 +45,6 @@
 #include "zipf.h"
 #include "util.h"
 
-template <class key_object>
 void *thread_insert(void *a) {
 	QF buffer;
 	QFi it_buffer;
@@ -59,10 +58,8 @@ void *thread_insert(void *a) {
 	 * cascade filter.
 	 */
 	for (uint64_t i = args->start; i < args->end; i++) {
-		if (!args->pf->insert(args->vals[i], LOCK_NO_SPIN)) {
-			qf_insert(&buffer, args->vals[i].key, args->vals[i].value,
-								args->vals[i].count, LOCK_AND_SPIN);
-
+		if (!args->pf->insert(KeyObject(args->vals[i], 0, 1, 0), LOCK_NO_SPIN)) {
+			qf_insert(&buffer, args->vals[i], 0, 1, NO_LOCK);
 			double load_factor = buffer.metadata->noccupied_slots /
 				(double)buffer.metadata->nslots;
 			if (load_factor > 0.75) {
@@ -70,8 +67,7 @@ void *thread_insert(void *a) {
 				do {
 					uint64_t key, value, count;
 					qfi_get(&it_buffer, &key, &value, &count);
-					key_object k(key, value, count, 0);
-					args->pf->insert(k, LOCK_AND_SPIN);
+					args->pf->insert(KeyObject(key, value, count, 0), LOCK_AND_SPIN);
 					qfi_next(&it_buffer);
 				} while(!qfi_end(&it_buffer));
 				qf_reset(&buffer);
@@ -84,13 +80,28 @@ void *thread_insert(void *a) {
 		do {
 			uint64_t key, value, count;
 			qfi_get(&it_buffer, &key, &value, &count);
-			key_object k(key, value, count, 0);
-			args->pf->insert(k, LOCK_AND_SPIN);
+			args->pf->insert(KeyObject(key, value, count, 0), LOCK_AND_SPIN);
 			qfi_next(&it_buffer);
 		} while(!qfi_end(&it_buffer));
 	}
 
 	return NULL;
+}
+
+void multithreaded_insertion(ThreadArgs<KeyObject> args[], uint32_t nthreads) {
+	pthread_t threads[nthreads];
+
+	for (uint32_t i = 0; i < nthreads; i++)
+		if (pthread_create(&threads[i], NULL, &thread_insert, &args[i])) {
+			std::cerr << "Error creating thread " << i << std::endl;
+			abort();
+		}
+
+	for (uint32_t i = 0; i < nthreads; i++)
+		if (pthread_join(threads[i], NULL)) {
+			std::cerr << "Error joining thread " << i << std::endl;
+			abort();
+		}
 }
 
 /* 
@@ -102,7 +113,7 @@ void *thread_insert(void *a) {
 	int
 main ( int argc, char *argv[] )
 {
-	if (argc < 5) {
+	if (argc < 6) {
 		std::cout << "Not suffcient args." << std::endl;
 		abort();
 	}
@@ -111,7 +122,7 @@ main ( int argc, char *argv[] )
 	uint32_t nlevels = atoi(argv[2]);
 	uint32_t gfactor = atoi(argv[3]);
 	uint64_t nfilters = atoi(argv[4]);
-	//uint64_t nthreads = atoi(argv[5]);
+	uint64_t nthreads = atoi(argv[5]);
 
 	PopcornFilter<KeyObject> pf(nfilters, qbits, nlevels, gfactor);
 
@@ -130,20 +141,31 @@ main ( int argc, char *argv[] )
 
 	struct timeval start, end;
 	struct timezone tzp;
+	ThreadArgs<KeyObject> args[NUM_MAX_THREADS];
+
+	for (uint64_t i = 0; i < nthreads; i++) {
+		args[i].pf = &pf;
+		args[i].vals = vals;
+		args[i].start = i * (nvals / nthreads);
+		args[i].end = (i + 1) * (nvals / nthreads);
+	}
 
 	std::cout << "Inserting elements." << std::endl;
 	gettimeofday(&start, &tzp);
-	for (uint64_t k = 0; k < nvals; k++)
-		if (!pf.insert(KeyObject(vals[k], 0, 1, 0), LOCK_AND_SPIN)) {
-			std::cerr << "Failed insertion for " <<
-				(uint64_t)vals[k] << std::endl;
-			abort();
-		}
+	if (nthreads > 1)
+		multithreaded_insertion(args, nthreads);
+	else
+		for (uint64_t k = 0; k < nvals; k++)
+			if (!pf.insert(KeyObject(vals[k], 0, 1, 0), LOCK_AND_SPIN)) {
+				std::cerr << "Failed insertion for " <<
+					(uint64_t)vals[k] << std::endl;
+				abort();
+			}
 	gettimeofday(&end, &tzp);
 	print_time_elapsed("", &start, &end);
 	std::cout << "Finished insertions." << std::endl;
 
-	DEBUG_CF("Number of elements in the CascadeFilter " <<
+	DEBUG_CF("Number of elements in the PopcornFilter " <<
 					 pf.get_total_elements());
 
 	std::cout << "Querying elements." << std::endl;

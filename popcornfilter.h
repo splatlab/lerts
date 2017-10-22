@@ -54,6 +54,7 @@
 #include "cascadefilter.h"
 
 #define NUM_MAX_FILTERS 10
+#define NUM_MAX_THREADS 20
 
 template <class key_object>
 class PopcornFilter {
@@ -88,11 +89,12 @@ class PopcornFilter {
 template <class key_object>
 class ThreadArgs {
 	public:
-		key_object *vals;
+		PopcornFilter<key_object> *pf;
+		uint64_t *vals;
 		uint64_t start;
 		uint64_t end;
-		PopcornFilter<key_object> *pf;
 
+		ThreadArgs() : pf(NULL), vals(NULL), start(0), end(0) {};
 		ThreadArgs(PopcornFilter<key_object> *pf, key_object *vals, uint64_t start,
 							 uint64_t end) : pf(pf), vals(vals), start(start), end(end) {};
 };
