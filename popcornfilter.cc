@@ -67,7 +67,11 @@ void *thread_insert(void *a) {
 				do {
 					uint64_t key, value, count;
 					qfi_get(&it_buffer, &key, &value, &count);
-					args->pf->insert(KeyObject(key, value, count, 0), LOCK_AND_SPIN);
+					if (!args->pf->insert(KeyObject(key, value, count, 0),
+																LOCK_AND_SPIN)) {
+						std::cerr << "Failed insertion for " << (uint64_t)key << std::endl;
+						abort();
+					}
 					qfi_next(&it_buffer);
 				} while(!qfi_end(&it_buffer));
 				qf_reset(&buffer);
@@ -80,7 +84,10 @@ void *thread_insert(void *a) {
 		do {
 			uint64_t key, value, count;
 			qfi_get(&it_buffer, &key, &value, &count);
-			args->pf->insert(KeyObject(key, value, count, 0), LOCK_AND_SPIN);
+			if (!args->pf->insert(KeyObject(key, value, count, 0), LOCK_AND_SPIN)) {
+				std::cerr << "Failed insertion for " << (uint64_t)key << std::endl;
+				abort();
+			}
 			qfi_next(&it_buffer);
 		} while(!qfi_end(&it_buffer));
 	}
@@ -88,7 +95,7 @@ void *thread_insert(void *a) {
 	return NULL;
 }
 
-void multithreaded_insertion(ThreadArgs<KeyObject> args[], uint32_t nthreads) {
+void perform_insertion(ThreadArgs<KeyObject> args[], uint32_t nthreads) {
 	pthread_t threads[nthreads];
 
 	for (uint32_t i = 0; i < nthreads; i++)
@@ -152,15 +159,7 @@ main ( int argc, char *argv[] )
 
 	std::cout << "Inserting elements." << std::endl;
 	gettimeofday(&start, &tzp);
-	if (nthreads > 1)
-		multithreaded_insertion(args, nthreads);
-	else
-		for (uint64_t k = 0; k < nvals; k++)
-			if (!pf.insert(KeyObject(vals[k], 0, 1, 0), LOCK_AND_SPIN)) {
-				std::cerr << "Failed insertion for " <<
-					(uint64_t)vals[k] << std::endl;
-				abort();
-			}
+	perfom_insertion(args, nthreads);
 	gettimeofday(&end, &tzp);
 	print_time_elapsed("", &start, &end);
 	std::cout << "Finished insertions." << std::endl;
