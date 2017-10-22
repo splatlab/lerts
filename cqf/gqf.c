@@ -1669,6 +1669,7 @@ void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t value_bits,
 		qf->blocks = (qfblock *)(qf->metadata + 1);
 	}
 
+	strcpy(qf->metadata->filepath, path);
 	qf->metadata->size = size;
 	qf->metadata->seed = seed;
 	qf->metadata->nslots = num_slots;
@@ -1723,8 +1724,9 @@ void qf_destroy(QF *qf, bool mem)
 		free(qf->metadata);
 		free(qf->blocks);
 	} else {
-	munmap(qf->metadata, qf->metadata->size + sizeof(qfmetadata));
-	close(qf->mem->fd);
+		munmap(qf->metadata, qf->metadata->size + sizeof(qfmetadata));
+		close(qf->mem->fd);
+		remove(qf->metadata->filepath);
 	}
 }
 

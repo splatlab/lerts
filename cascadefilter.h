@@ -210,8 +210,8 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	for (uint32_t i = 0; i < total_num_levels; i++) {
 		DEBUG_CF("Creating level: " << i << " of " << sizes[i] <<
 						 " slots and threshold " << thresholds[i]);
-		std::string file("_cqf.ser");
-		file = prefix + std::to_string(i) + file;
+		std::string file_ext("_cqf.ser");
+		std::string file = prefix + std::to_string(i) + file_ext;
 		qf_init(&filters[i], sizes[i], num_hash_bits, 0, /*mem*/ false,
 						file.c_str(), seed);
 	}
@@ -301,8 +301,8 @@ uint32_t CascadeFilter<key_object>::find_first_empty_level() {
 		/* This is for lazy initialization of CQFs in the levels.
 		 * Assuing we are creating all the levels in the constructor, code below
 		 * will never be called. */
-		std::string file("_cqf.ser");
-		file = "raw/" + std::to_string(total_num_levels) + file;
+		std::string file_ext("_cqf.ser");
+		std::string file = "raw/" + std::to_string(total_num_levels) + file_ext;
 		qf_init(&filters[total_num_levels], sizes[total_num_levels],
 						num_hash_bits, 0, /*mem*/ false, file.c_str(), seed);
 		nlevels = total_num_levels;
@@ -466,8 +466,9 @@ void CascadeFilter<key_object>::shuffle_merge() {
 
 	/* Initialize new filters. */
 	for (uint32_t i = 0; i < nlevels; i++) {
-		std::string file("_cqf.ser");
-		file = prefix + std::to_string(num_flush) + "_" + std::to_string(i) + file;
+		std::string file_ext("_cqf.ser");
+		std::string file = prefix + std::to_string(num_flush) + "_" +
+			std::to_string(i) + file_ext;
 		qf_init(&new_filters[i], sizes[i], num_hash_bits, 0, /*mem*/ false,
 						file.c_str(), seed);
 	}
@@ -523,7 +524,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 
 	if (is_full(0)) {
 		num_flush++;
-		DEBUG_CF("Flusing " << num_flush);
+		DEBUG_CF("Flushing " << num_flush);
 		//merge();
 		shuffle_merge();
 	}

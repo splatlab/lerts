@@ -98,11 +98,14 @@ void *thread_insert(void *a) {
 void perform_insertion(ThreadArgs<KeyObject> args[], uint32_t nthreads) {
 	pthread_t threads[nthreads];
 
-	for (uint32_t i = 0; i < nthreads; i++)
+	for (uint32_t i = 0; i < nthreads; i++) {
+		DEBUG_CF("Starting thread " << i << " from " << args[i].start << " to " <<
+						 args[i].end);
 		if (pthread_create(&threads[i], NULL, &thread_insert, &args[i])) {
 			std::cerr << "Error creating thread " << i << std::endl;
 			abort();
 		}
+	}
 
 	for (uint32_t i = 0; i < nthreads; i++)
 		if (pthread_join(threads[i], NULL)) {
@@ -159,7 +162,7 @@ main ( int argc, char *argv[] )
 
 	std::cout << "Inserting elements." << std::endl;
 	gettimeofday(&start, &tzp);
-	perfom_insertion(args, nthreads);
+	perform_insertion(args, nthreads);
 	gettimeofday(&end, &tzp);
 	print_time_elapsed("", &start, &end);
 	std::cout << "Finished insertions." << std::endl;

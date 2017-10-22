@@ -45,6 +45,7 @@ extern "C" {
 	typedef quotient_filter_mem qfmem;
 
 	typedef struct quotient_filter_metadata {
+		char filepath[50];
 		uint64_t size;
 		uint32_t seed;
 		uint64_t nslots;
