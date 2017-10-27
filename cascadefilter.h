@@ -57,7 +57,7 @@ template <class key_object>
 class CascadeFilter {
 	public:
 		CascadeFilter(uint32_t nhashbits, uint32_t filter_thlds[],
-									uint64_t filter_sizes[], uint32_t num_filters, std::string
+									uint64_t filter_sizes[], uint32_t num_filters, std::string&
 									prefix);
 
 		const QF* get_filter(uint32_t level) const;
@@ -194,7 +194,7 @@ template <class key_object>
 CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 																				 filter_thlds[], uint64_t
 																				 filter_sizes[], uint32_t num_filters,
-																				 std::string prefix) :
+																				 std::string& prefix) :
 	total_num_levels(num_filters), num_hash_bits(nhashbits), prefix(prefix)
 {
 	total_num_levels = num_filters;
@@ -469,6 +469,7 @@ void CascadeFilter<key_object>::shuffle_merge() {
 		std::string file_ext("_cqf.ser");
 		std::string file = prefix + std::to_string(num_flush) + "_" +
 			std::to_string(i) + file_ext;
+		DEBUG_CF("Creating new level " << file);
 		qf_init(&new_filters[i], sizes[i], num_hash_bits, 0, /*mem*/ false,
 						file.c_str(), seed);
 	}

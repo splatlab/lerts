@@ -139,7 +139,7 @@ main ( int argc, char *argv[] )
 	uint64_t nvals = 750 * pf.get_max_size() / 1000;
 
 	uint64_t *vals;
-	vals = (uint64_t*)malloc(nvals*sizeof(vals[0]));
+	vals = (uint64_t*)calloc(nvals, sizeof(vals[0]));
 	std::cout << "Generating " << nvals << " random numbers." << std::endl;
 	memset(vals, 0, nvals*sizeof(vals[0]));
 
