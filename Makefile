@@ -1,4 +1,4 @@
-TARGETS=test main merge popcornfilter
+TARGETS=test main merge popcornfilter anomaly
 
 ifdef D
 	DEBUG=-g -DDEBUG
@@ -41,10 +41,11 @@ all: $(TARGETS)
 # dependencies between programs and .o files
 
 test:					 				  test.o													cqf/gqf.o
-main:                   main.o cascadefilter.o  zipf.o cqf/gqf.o util.o hashutil.o
-merge:                  merge.o 											  cqf/gqf.o util.o hashutil.o
-cascadefilter:         				 cascadefilter.o  zipf.o cqf/gqf.o util.o hashutil.o
-popcornfilter: popcornfilter.o cascadefilter.o  zipf.o cqf/gqf.o util.o hashutil.o
+main:                   main.o cascadefilter.o  zipf.o cqf/gqf.o hashutil.o
+merge:                  merge.o 											 cqf/gqf.o hashutil.o
+cascadefilter:         				 cascadefilter.o  zipf.o cqf/gqf.o hashutil.o
+popcornfilter: popcornfilter.o cascadefilter.o  zipf.o cqf/gqf.o hashutil.o
+anomaly:       anomaly.o                               cqf/gqf.o hashutil.o
 
 # dependencies between .o files and .h files
 
@@ -54,7 +55,7 @@ merge.o: 								 									        cqf/gqf.h hashutil.h util.h
 cascadefilter.o: 				         cascadefilter.h	cqf/gqf.h hashutil.h util.h zipf.h
 popcornfilter.o: popcornfilter.h cascadefilter.h	cqf/gqf.h hashutil.h util.h zipf.h
 hashutil.o: 																								hashutil.h
-util.o: 																									 		 				 util.h
+anomaly.o: 								 									        cqf/gqf.h hashutil.h util.h
 
 # dependencies between .o files and .cc (or .c) files
 
