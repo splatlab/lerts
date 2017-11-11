@@ -183,7 +183,7 @@ int main(int argc, char **argv)
 
 	// create a file and mmap it to log <keys, value> from the stream.
 	uint64_t arr_size = (1ULL << size) * sizeof(*arr);
-	DEBUG_CF("File size: " << arr_size);
+	std::cout << "File size: " << arr_size << std::endl;
 	int fd = open(filename.c_str(), O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
 	if (fd < 0) {
 		perror("Couldn't open file");
