@@ -182,17 +182,19 @@ int main(int argc, char **argv)
 	qf_init(&cf, 1ULL << size, size + 8, 0, true, "", seed);
 
 	// create a file and mmap it to log <keys, value> from the stream.
+	uint64_t arr_size = (1ULL << size) * sizeof(*arr);
+	DEBUG_CF("File size: " << arr_size);
 	int fd = open(filename.c_str(), O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
 	if (fd < 0) {
 		perror("Couldn't open file");
 		exit(EXIT_FAILURE);
 	}
-	int ret = fallocate(fd, 0, 0, 1ULL << size);
+	int ret = fallocate(fd, 0, 0, arr_size);
 	if (ret < 0) {
 		perror("Couldn't fallocate file");
 		exit(EXIT_FAILURE);
 	}
-	arr = (uint64_t *)mmap(NULL, 1ULL << size, PROT_READ |
+	arr = (uint64_t *)mmap(NULL, arr_size, PROT_READ |
 												 PROT_WRITE, MAP_SHARED, fd, 0);
 	if (ret < 0) {
 		perror("Couldn't mmap file");

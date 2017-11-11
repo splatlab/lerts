@@ -40,9 +40,6 @@
 #include <openssl/rand.h>
 
 #include "cascadefilter.h"
-#include "hashutil.h"
-#include "zipf.h"
-#include "util.h"
 
 #if 0
 /* 

@@ -37,8 +37,6 @@
 #include <sys/mman.h>
 #include <openssl/rand.h>
 
-#include	"cascadefilter.h"
-
 /* 
  * ===  FUNCTION  =============================================================
  *         Name:  main

@@ -45,11 +45,9 @@
 #include <sys/mman.h>
 #include <openssl/rand.h>
 
-#include "popcornfilter.h"
 #include "cascadefilter.h"
 #include "hashutil.h"
 #include "zipf.h"
-#include "util.h"
 
 #include "cascadefilter.h"
 

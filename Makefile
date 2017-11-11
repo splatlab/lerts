@@ -41,11 +41,11 @@ all: $(TARGETS)
 # dependencies between programs and .o files
 
 test:					 				  test.o													cqf/gqf.o
-main:                   main.o cascadefilter.o  zipf.o cqf/gqf.o hashutil.o
-merge:                  merge.o 											 cqf/gqf.o hashutil.o
-cascadefilter:         				 cascadefilter.o  zipf.o cqf/gqf.o hashutil.o
-popcornfilter: popcornfilter.o cascadefilter.o  zipf.o cqf/gqf.o hashutil.o
-anomaly:       anomaly.o                               cqf/gqf.o hashutil.o
+main:                   main.o cascadefilter.o  zipf.o cqf/gqf.o util.o hashutil.o
+merge:                  merge.o 											 cqf/gqf.o util.o hashutil.o
+cascadefilter:         				 cascadefilter.o  zipf.o cqf/gqf.o util.o hashutil.o
+popcornfilter: popcornfilter.o cascadefilter.o  zipf.o cqf/gqf.o util.o hashutil.o
+anomaly:       anomaly.o                               cqf/gqf.o util.o hashutil.o
 
 # dependencies between .o files and .h files
 
