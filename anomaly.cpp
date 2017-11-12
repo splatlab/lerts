@@ -274,11 +274,15 @@ int main(int argc, char **argv)
 
 			key = HashUtil::MurmurHash64A( ((void*)&key), sizeof(key), seed);
 			key = (key << 1) | value;
-			arr[cnt++] = key & cf.metadata->range;
+			arr[cnt++] = key % cf.metadata->range;
+			//std::cout << arr[cnt - 1] << std::endl;
 		}
 	}
 
 	std::cout << "Dumped " << cnt << " keys in " << filename << std::endl;
+
+	// unmap
+	munmap(arr, arr_size);
 
 	// close the file.
 	close(fd);
