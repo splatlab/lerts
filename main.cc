@@ -51,7 +51,7 @@ main ( int argc, char *argv[] )
 
 	uint64_t *arr;
 	std::string filename("raw/streamdump");
-	uint64_t cnt = 50000000;
+	uint64_t cnt = 250000000;
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> key_lifetime;
 	std::multiset<uint64_t> key_counts;
 	

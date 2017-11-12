@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 	qf_init(&cf, 1ULL << size, size + 8, 0, true, "", seed);
 
 	// create a file and mmap it to log <keys, value> from the stream.
-	uint64_t arr_size = 50000000 * sizeof(*arr);
+	uint64_t arr_size = 250000000 * sizeof(*arr);
 	std::cout << "File size: " << arr_size << std::endl;
 	int fd = open(filename.c_str(), O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
 	if (fd < 0) {
