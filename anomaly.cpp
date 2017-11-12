@@ -5,6 +5,15 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
+#include <iostream>
+#include <algorithm>
+#include <cstring>
+#include <vector>
+#include <set>
+#include <unordered_set>
+#include <unordered_map>
+#include <bitset>
+#include <cassert>
 #include <fstream>
 
 #include <math.h>
@@ -27,12 +36,9 @@
 #include <fcntl.h>
 
 #include <vector>
-#include <tr1/unordered_map>
 #include <time.h>
 
-#include "cqf/gqf.h"
-#include "hashutil.h"
-#include "util.h"
+#include "popcornfilter.h"
 
 // hard-coded settings from generator #1
 
@@ -44,7 +50,7 @@ int port;
 
 // defaults for command-line switches
 
-int size = 32;
+uint64_t range = (1ULL << 32);
 int perpacket = 50;
 int nthresh = 24;
 int mthresh = 4;
@@ -65,10 +71,6 @@ int pfalse = 0;
 int nfalse = 0;
 int ntrue = 0;
 
-// key-value hash table for received datums
-
-//std::tr1::unordered_map<uint64_t, std::pair<int,int> > kv(1);
-
 // parse command line
 // regular argument = port to read from
 // optional arguments:
@@ -82,11 +84,8 @@ void read_cmd_options(int argc, char **argv)
 {
 	int op;
 
-	while ( (op = getopt(argc, argv, "s:b:t:m:p:c:")) != EOF) {
+	while ( (op = getopt(argc, argv, "b:t:m:p:c:")) != EOF) {
 		switch (op) {
-			case 's':
-				size = atoi(optarg);
-				break;
 			case 'b':
 				perpacket = atoi(optarg);
 				break;
@@ -151,15 +150,6 @@ void stats()
 	uint64_t ndatum = nrecv * perpacket;
 	fprintf(stdout,"datums received = %" PRIu64 "\n",ndatum);
 
-	//	std::tr1::unordered_map<uint64_t, std::pair<int,int> >::iterator i;
-	//	int kmax = 0;
-	//	for (i = kv.begin(); i != kv.end(); i++) {
-	//		std::pair<int,int>& tuple = i->second;
-	//		if (tuple.first > kmax) kmax = tuple.first;
-	//	}
-	//
-	//	printf("unique keys = %d\n",(int) kv.size());
-	//	printf("max occurrence of any key = %d\n",kmax);
 	printf("true anomalies = %d\n",ptrue);
 	printf("false positives = %d\n",pfalse);
 	printf("false negatives = %d\n",nfalse);
@@ -170,16 +160,10 @@ void stats()
 
 int main(int argc, char **argv)
 {
-	// declare quotient filter object
-	QF cf;
-
 	uint32_t seed = 2038074761;
 	uint64_t *arr;
 	std::string filename("raw/streamdump");
 	uint64_t cnt = 0;
-
-	// create a QF.
-	qf_init(&cf, 1ULL << size, size + 8, 0, true, "", seed);
 
 	// create a file and mmap it to log <keys, value> from the stream.
 	uint64_t arr_size = 250000000 * sizeof(*arr);
@@ -226,9 +210,6 @@ int main(int argc, char **argv)
 
 	// pre-allocate to maxkeys per generator, in agreement with generator #1
 
-	//kv.rehash(nsenders*maxkeys)
-	//kv.rehash(ceil(nsenders*maxkeys / kv.max_load_factor()));
-
 	// packet buffer length of 64 bytes per datum is ample
 
 	int maxbuf = 64*perpacket;
@@ -274,12 +255,43 @@ int main(int argc, char **argv)
 
 			key = HashUtil::MurmurHash64A( ((void*)&key), sizeof(key), seed);
 			key = (key << 1) | value;
-			arr[cnt++] = key % cf.metadata->range;
+			arr[cnt++] = key % range;
 			//std::cout << arr[cnt - 1] << std::endl;
 		}
 	}
 
 	std::cout << "Dumped " << cnt << " keys in " << filename << std::endl;
+
+	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> key_lifetime;
+	std::multiset<uint64_t> key_counts;
+
+	std::cout << "Analyzing the steam dump." << std::endl;
+
+	for (uint32_t i = 0; i < cnt; i++) {
+		uint64_t key = arr[i] >> 1;
+		if (key_counts.count(key) == 0) {
+			key_counts.insert(key);
+			key_lifetime[key] = std::pair<uint64_t, uint64_t>(i, i);
+		} else if (key_counts.count(key) < 23) {
+			key_counts.insert(key);
+		} else if (key_counts.count(key) == 23) {
+			key_counts.insert(key);
+			key_lifetime[key].second = i;
+		}
+	}
+
+	std::string statsfilename("raw/streamstats");
+	std::cout << "Writing stats to " << statsfilename << std::endl;
+
+	std::ofstream statsfile(statsfilename.c_str());
+	statsfile << "Key Birthday_index T_index" << std::endl;
+	for (auto it : key_lifetime) {
+		assert (it.second.first <= it.second.second);
+		if (it.second.first < it.second.second)
+			statsfile << it.first << " " << it.second.first << " " <<
+				it.second.second << std::endl;
+	}
+	statsfile.close();
 
 	// unmap
 	munmap(arr, arr_size);
@@ -289,5 +301,5 @@ int main(int argc, char **argv)
 
 	// close UDP port and print stats
 	::close(socket);
-	stats();
+	//stats();
 }

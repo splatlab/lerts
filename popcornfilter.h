@@ -97,7 +97,7 @@ class ThreadArgs {
 							 uint64_t end) : pf(pf), vals(vals), start(start), end(end) {};
 };
 
-#define REMAINDER_BITS 10
+#define NUM_HASH_BITS 32
 
 template <class key_object>
 PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
@@ -105,7 +105,7 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 	nfilters(nfilters), qbits(qbits), nlevels(nlevels),
 	gfactor(gfactor) {
 		fbits = log2(nfilters); 	// assuming nfilters is a power of 2.
-		nhashbits = qbits + REMAINDER_BITS;
+		nhashbits = NUM_HASH_BITS;
 		uint64_t sizes[nlevels];
 		uint32_t thlds[nlevels];
 
