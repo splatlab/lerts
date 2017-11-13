@@ -503,6 +503,8 @@ void CascadeFilter<key_object>::shuffle_merge() {
 		if (cur_key == next_key)
 			cur_key.count += next_key.count;
 		else {
+			// TODO: If the count of the key is equal to THRESHOLD_VALUE then we
+			// need to report this key. This is an organic popcorn.
 			smear_element(new_filters, cur_key, nlevels);
 			/* Update cur_key. */
 			cur_key = next_key;
@@ -546,6 +548,8 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 	 */
 	bool ret = qf_insert(&filters[0], k.key, k.value, k.count, LOCK_AND_SPIN);
 
+	// TODO: If the count of the key is equal to THRESHOLD_VALUE/2 then we will
+	// have to perform an on-demand popcorn.
 	if (flag != NO_LOCK)
 		unlock();
 
