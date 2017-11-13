@@ -163,8 +163,9 @@ main ( int argc, char *argv[] )
 	print_time_elapsed("", &start, &end);
 	std::cout << "Finished insertions." << std::endl;
 
-	DEBUG_CF("Number of elements in the PopcornFilter " <<
-					 pf.get_total_elements());
+	PRINT_CF("Total elements inserted: " << pf.get_total_elements());
+	PRINT_CF("Total distinct elements inserted: " <<
+					 pf.get_total_dist_elements());
 
 	std::cout << "Querying elements." << std::endl;
 	gettimeofday(&start, &tzp);

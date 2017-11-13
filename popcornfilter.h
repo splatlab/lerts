@@ -65,14 +65,11 @@ class PopcornFilter {
 		uint64_t query(const key_object& k) const;
 
 		uint32_t get_num_hash_bits(void) const;
-
 		uint32_t get_seed(void) const;
-
 		uint64_t get_range(void) const;
-
 		uint64_t get_max_size(void) const;
-
 		uint64_t get_total_elements(void) const;
+		uint64_t get_total_dist_elements(void) const;
 
 	private:
 		uint64_t nfilters;
@@ -160,6 +157,14 @@ uint64_t PopcornFilter<key_object>::get_total_elements(void) const {
 	uint64_t total = 0;
 	for (uint32_t i = 0; i < nfilters; i++)
 		total += cf[i]->get_num_elements();
+	return total;
+}
+
+template <class key_object>
+uint64_t PopcornFilter<key_object>::get_total_dist_elements(void) const {
+	uint64_t total = 0;
+	for (uint32_t i = 0; i < nfilters; i++)
+		total += cf[i]->get_num_dist_elements();
 	return total;
 }
 

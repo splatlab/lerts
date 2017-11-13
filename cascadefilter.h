@@ -52,6 +52,7 @@
 #include "cqf/gqf.h"
 
 #define NUM_MAX_LEVELS 10
+#define THRESHOLD_VALUE 24
 
 template <class key_object>
 class CascadeFilter {
@@ -63,6 +64,7 @@ class CascadeFilter {
 		const QF* get_filter(uint32_t level) const;
 
 		uint64_t get_num_elements(void) const;
+		uint64_t get_num_dist_elements(void) const;
 		uint32_t get_num_hash_bits(void) const;
 		uint32_t get_seed(void) const;
 		uint64_t get_max_size(void) const;
@@ -200,7 +202,7 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	total_num_levels = num_filters;
 	num_hash_bits = nhashbits;
 	num_flush = 0;
-	seed = time(NULL);
+	seed = 2038074761;
 	locked = 0;
 	memcpy(thresholds, filter_thlds, num_filters * sizeof(thresholds[0]));
 	memcpy(sizes, filter_sizes, num_filters * sizeof(sizes[0]));
@@ -242,6 +244,14 @@ uint64_t CascadeFilter<key_object>::get_num_elements(void) const {
 	uint64_t total_count = 0;
 	for (uint32_t i = 0; i < total_num_levels; i++)
 		total_count += get_filter(i)->metadata->nelts;
+	return total_count;
+}
+
+template <class key_object>
+uint64_t CascadeFilter<key_object>::get_num_dist_elements(void) const {
+	uint64_t total_count = 0;
+	for (uint32_t i = 0; i < total_num_levels; i++)
+		total_count += get_filter(i)->metadata->ndistinct_elts;
 	return total_count;
 }
 

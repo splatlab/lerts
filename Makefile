@@ -1,4 +1,4 @@
-TARGETS=test main merge popcornfilter anomaly
+TARGETS=test main merge popcornfilter anomaly streamanalysis
 
 ifdef D
 	DEBUG=-g -DDEBUG
@@ -46,6 +46,7 @@ merge:                  merge.o 											 cqf/gqf.o util.o hashutil.o
 cascadefilter:         				 cascadefilter.o  zipf.o cqf/gqf.o util.o hashutil.o
 popcornfilter: popcornfilter.o cascadefilter.o  zipf.o cqf/gqf.o util.o hashutil.o
 anomaly:       anomaly.o                               cqf/gqf.o util.o hashutil.o
+streamanalysis: streamanalysis.o                       cqf/gqf.o util.o hashutil.o
 
 # dependencies between .o files and .h files
 
@@ -56,6 +57,7 @@ cascadefilter.o: 				         cascadefilter.h	cqf/gqf.h hashutil.h util.h zipf.h
 popcornfilter.o: popcornfilter.h cascadefilter.h	cqf/gqf.h hashutil.h util.h zipf.h
 hashutil.o: 																								hashutil.h
 anomaly.o: 								 									        cqf/gqf.h hashutil.h util.h
+streamanalysis.o: 								 							    cqf/gqf.h hashutil.h util.h
 
 # dependencies between .o files and .cc (or .c) files
 

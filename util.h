@@ -35,6 +35,10 @@
 	  if (PRINT_DEBUG) { std::cerr << x << std::endl; } \
 } while (0)
 
+#define PRINT_CF(x) do { \
+	  { std::cout << x << std::endl; } \
+} while (0)
+
 /* Print elapsed time using the start and end timeval */
 void print_time_elapsed(std::string desc, struct timeval* start, struct
 												timeval* end);
