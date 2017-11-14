@@ -57,9 +57,9 @@
 template <class key_object>
 class CascadeFilter {
 	public:
-		CascadeFilter(uint32_t nhashbits, uint32_t filter_thlds[],
-									uint64_t filter_sizes[], uint32_t num_filters, std::string&
-									prefix);
+		CascadeFilter(uint32_t nhashbits, uint32_t nvaluebits, uint32_t
+									filter_thlds[], uint64_t filter_sizes[], uint32_t
+									num_filters, std::string& prefix);
 
 		const QF* get_filter(uint32_t level) const;
 
@@ -162,6 +162,7 @@ class CascadeFilter {
 		QF filters[NUM_MAX_LEVELS];
 		uint32_t total_num_levels;
 		uint32_t num_hash_bits;
+		uint32_t num_value_bits;
 		std::string prefix;
 		uint32_t thresholds[NUM_MAX_LEVELS];
 		uint64_t sizes[NUM_MAX_LEVELS];
@@ -194,13 +195,14 @@ bool operator!=(const typename CascadeFilter<key_object>::Iterator& a, const
 
 template <class key_object>
 CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
-																				 filter_thlds[], uint64_t
-																				 filter_sizes[], uint32_t num_filters,
-																				 std::string& prefix) :
+																				 nvaluebits, uint32_t filter_thlds[],
+																				 uint64_t filter_sizes[], uint32_t
+																				 num_filters, std::string& prefix) :
 	total_num_levels(num_filters), num_hash_bits(nhashbits), prefix(prefix)
 {
 	total_num_levels = num_filters;
 	num_hash_bits = nhashbits;
+	num_value_bits = nvaluebits;
 	num_flush = 0;
 	seed = 2038074761;
 	locked = 0;
@@ -214,8 +216,8 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 						 " slots and threshold " << thresholds[i]);
 		std::string file_ext("_cqf.ser");
 		std::string file = prefix + std::to_string(i) + file_ext;
-		qf_init(&filters[i], sizes[i], num_hash_bits, 0, /*mem*/ false,
-						file.c_str(), seed);
+		qf_init(&filters[i], sizes[i], num_hash_bits, num_value_bits, /*mem*/
+						false, file.c_str(), seed);
 	}
 }
 

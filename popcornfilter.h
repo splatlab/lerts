@@ -78,6 +78,7 @@ class PopcornFilter {
 		uint32_t gfactor;
 		uint32_t fbits;
 		uint32_t nhashbits;
+		uint32_t nvaluebits;
 		CascadeFilter<key_object> *cf[NUM_MAX_FILTERS];
 };
 
@@ -95,6 +96,9 @@ class ThreadArgs {
 };
 
 #define NUM_HASH_BITS 32
+/* We use value bits to store the age of the key or to store the value of the
+ * key from FireHose or both. */
+#define NUM_VALUE_BITS 0
 
 template <class key_object>
 PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
@@ -103,6 +107,7 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 	gfactor(gfactor) {
 		fbits = log2(nfilters); 	// assuming nfilters is a power of 2.
 		nhashbits = NUM_HASH_BITS;
+		nvaluebits = NUM_VALUE_BITS;
 		uint64_t sizes[nlevels];
 		uint32_t thlds[nlevels];
 
@@ -125,8 +130,8 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 				<< nlevels << " levels, and " << gfactor << " as growth factor." <<
 				std::endl;
 			std::string prefix = "raw/" + std::to_string(i) + "_";
-			cf[i] = new CascadeFilter<KeyObject>(nhashbits, thlds, sizes, nlevels,
-																					 prefix);
+			cf[i] = new CascadeFilter<KeyObject>(nhashbits, nvaluebits, thlds,
+																					 sizes, nlevels, prefix);
 		}
 	}
 
