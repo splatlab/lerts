@@ -140,7 +140,7 @@ main ( int argc, char *argv[] )
 	memset(vals, 0, nvals*sizeof(vals[0]));
 
 	/* Generate random keys from a Zipfian distribution. */
-	generate_random_keys(vals, nvals, nvals, 1.5);
+	generate_random_keys(vals, 536870912, nvals, 1.5);
 	for (uint64_t i = 0; i < nvals; i++) {
 		vals[i] = HashUtil::AES_HASH(vals[i]) % pf.get_range();
 	}

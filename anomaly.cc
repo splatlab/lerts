@@ -234,7 +234,8 @@ int main(int argc, char **argv)
 			// then check for the anomaly threshhold against the count <key+1>
 
 			key = HashUtil::MurmurHash64A( ((void*)&key), sizeof(key), seed);
-			key = ((key << 1) | value) % pf.get_range();
+			key = key % pf.get_range();
+			//key = ((key << 1) | value) % pf.get_range();
 
 			pf.insert(KeyObject(key, 0, 1, 0), LOCK_AND_SPIN);
 
