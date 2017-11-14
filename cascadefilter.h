@@ -58,8 +58,8 @@ template <class key_object>
 class CascadeFilter {
 	public:
 		CascadeFilter(uint32_t nhashbits, uint32_t nvaluebits, uint32_t
-									filter_thlds[], uint64_t filter_sizes[], uint32_t
-									num_filters, std::string& prefix);
+									nagebits, uint32_t filter_thlds[], uint64_t filter_sizes[],
+									uint32_t num_filters, std::string& prefix);
 
 		const QF* get_filter(uint32_t level) const;
 
@@ -134,8 +134,13 @@ class CascadeFilter {
 		 * For the cascade filter, the size of the first level, i.e., the level in
 		 * RAM and the second level, i.e., the first level on-disk should same.
 		 * The rest of the levels on-disk grow exponentially in size.
+		 *
+		 * It uses a fix scheule for merges. There are "r" merges to the first
+		 * level on disk and "r^2" merges to the second level and so on.
+		 *
+		 * It uses "num_flush" to determine the last level to flush to.
 		 */
-		void merge();
+		void merge(uint32_t num_flush);
 
 		/**
 		 * Perform a shuffle-merge among @nqf cqfs from @qf_arr and put elements in
@@ -163,6 +168,7 @@ class CascadeFilter {
 		uint32_t total_num_levels;
 		uint32_t num_hash_bits;
 		uint32_t num_value_bits;
+		uint32_t num_age_bits;
 		std::string prefix;
 		uint32_t thresholds[NUM_MAX_LEVELS];
 		uint64_t sizes[NUM_MAX_LEVELS];
@@ -195,7 +201,8 @@ bool operator!=(const typename CascadeFilter<key_object>::Iterator& a, const
 
 template <class key_object>
 CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
-																				 nvaluebits, uint32_t filter_thlds[],
+																				 nvaluebits, uint32_t nagebits,
+																				 uint32_t filter_thlds[],
 																				 uint64_t filter_sizes[], uint32_t
 																				 num_filters, std::string& prefix) :
 	total_num_levels(num_filters), num_hash_bits(nhashbits), prefix(prefix)
@@ -203,6 +210,7 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	total_num_levels = num_filters;
 	num_hash_bits = nhashbits;
 	num_value_bits = nvaluebits;
+	num_age_bits = nagebits;
 	num_flush = 0;
 	seed = 2038074761;
 	locked = 0;
@@ -316,7 +324,7 @@ uint32_t CascadeFilter<key_object>::find_first_empty_level() {
 		std::string file_ext("_cqf.ser");
 		std::string file = "raw/" + std::to_string(total_num_levels) + file_ext;
 		qf_init(&filters[total_num_levels], sizes[total_num_levels],
-						num_hash_bits, 0, /*mem*/ false, file.c_str(), seed);
+						num_hash_bits, num_value_bits, /*mem*/ false, file.c_str(), seed);
 		nlevels = total_num_levels;
 		total_num_levels++;
 	}
@@ -444,11 +452,11 @@ bool operator!=(const typename CascadeFilter<key_object>::Iterator& a, const
 }
 
 template <class key_object>
-void CascadeFilter<key_object>::merge() {
+void CascadeFilter<key_object>::merge(uint32_t num_flush) {
 	uint32_t nlevels = find_first_empty_level();
 	assert(nlevels <= total_num_levels);
 
-	QF *to_merge[nlevels];
+	const QF *to_merge[nlevels];
 	for (uint32_t i = 0; i < nlevels; i++)
 		to_merge[i] = get_filter(i);
 	DEBUG_CF("Merging CQFs 0 to " << nlevels - 1 << " into the CQF "
@@ -482,8 +490,8 @@ void CascadeFilter<key_object>::shuffle_merge() {
 		std::string file = prefix + std::to_string(num_flush) + "_" +
 			std::to_string(i) + file_ext;
 		DEBUG_CF("Creating new level " << file);
-		qf_init(&new_filters[i], sizes[i], num_hash_bits, 0, /*mem*/ false,
-						file.c_str(), seed);
+		qf_init(&new_filters[i], sizes[i], num_hash_bits, num_value_bits, /*mem*/
+						false, file.c_str(), seed);
 	}
 
 	DEBUG_CF("Old CQFs");
@@ -538,17 +546,29 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 			return false;
 
 	if (is_full(0)) {
-		num_flush++;
 		DEBUG_CF("Flushing " << num_flush);
-		//merge();
-		shuffle_merge();
+		if (num_age_bits)
+			merge(num_flush);
+		else
+			shuffle_merge();
 	}
 
+	key_object dup_k(k);
+ 	/* use lower-order bits to store the age. */
+	if (num_age_bits) {
+		uint32_t max_age = (1ULL << num_age_bits);
+		dup_k.count *= max_age;
+		dup_k.count += num_flush % max_age;
+	}
 	/* we don't need a lock on the in-memory CQF while inserting. However, I
 	 * still have the flag "LOCK_AND_SPIN" here just to be extra sure that we
 	 * will not corrupt the data structure.
 	 */
-	bool ret = qf_insert(&filters[0], k.key, k.value, k.count, LOCK_AND_SPIN);
+	bool ret = qf_insert(&filters[0], dup_k.key, dup_k.value, dup_k.count,
+											 LOCK_AND_SPIN);
+
+	// Increment the flushing count.
+	num_flush++;
 
 	// TODO: If the count of the key is equal to THRESHOLD_VALUE/2 then we will
 	// have to perform an on-demand popcorn.
@@ -578,8 +598,13 @@ uint64_t CascadeFilter<key_object>::count_key_value(const key_object& k) {
 	lock(LOCK_AND_SPIN);
 
 	uint64_t count = 0;
-	for (uint32_t i = 0; i < total_num_levels; i++)
-		count += qf_count_key_value(get_filter(i), k.key, k.value);
+	for (uint32_t i = 0; i < total_num_levels; i++) {
+		uint64_t cur = qf_count_key_value(get_filter(i), k.key, k.value);
+		if (num_age_bits) {
+			cur >>= num_age_bits;
+		}
+		count += cur;
+	}
 
 	unlock();
 	return count;

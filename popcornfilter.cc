@@ -120,7 +120,7 @@ void perform_insertion(ThreadArgs<KeyObject> args[], uint32_t nthreads) {
 main ( int argc, char *argv[] )
 {
 	if (argc < 6) {
-		std::cout << "Not suffcient args." << std::endl;
+		PRINT_CF("Not suffcient args.");
 		abort();
 	}
 
@@ -136,7 +136,7 @@ main ( int argc, char *argv[] )
 
 	uint64_t *vals;
 	vals = (uint64_t*)calloc(nvals, sizeof(vals[0]));
-	std::cout << "Generating " << nvals << " random numbers." << std::endl;
+	PRINT_CF("Generating " << nvals << " random numbers.");
 	memset(vals, 0, nvals*sizeof(vals[0]));
 
 	/* Generate random keys from a Zipfian distribution. */
@@ -156,18 +156,18 @@ main ( int argc, char *argv[] )
 		args[i].end = (i + 1) * (nvals / nthreads);
 	}
 
-	std::cout << "Inserting elements." << std::endl;
+	PRINT_CF("Inserting elements.");
 	gettimeofday(&start, &tzp);
 	perform_insertion(args, nthreads);
 	gettimeofday(&end, &tzp);
 	print_time_elapsed("", &start, &end);
-	std::cout << "Finished insertions." << std::endl;
+	PRINT_CF("Finished insertions.");
 
 	PRINT_CF("Total elements inserted: " << pf.get_total_elements());
 	PRINT_CF("Total distinct elements inserted: " <<
 					 pf.get_total_dist_elements());
 
-	std::cout << "Querying elements." << std::endl;
+	PRINT_CF("Querying elements.");
 	gettimeofday(&start, &tzp);
 	for (uint64_t k = 0; k < nvals; k++)
 		if (pf.query(KeyObject(vals[k], 0, 0, 0)) < 1) {
@@ -177,7 +177,7 @@ main ( int argc, char *argv[] )
 		}
 	gettimeofday(&end, &tzp);
 	print_time_elapsed("", &start, &end);
-	std::cout << "Finished lookups." << std::endl;
+	PRINT_CF("Finished lookups.");
 
 	return EXIT_SUCCESS;
 }				/* ----------  end of function main  ---------- */

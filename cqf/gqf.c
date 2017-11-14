@@ -1700,7 +1700,7 @@ void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t value_bits,
 
 /* The caller should call qf_init on the dest QF before calling this function. 
  */
-void qf_copy(QF *dest, QF *src)
+void qf_copy(QF *dest, const QF *src)
 {
 	DEBUG_CQF("%s\n","Source CQF");
 	DEBUG_DUMP(src);
@@ -2068,7 +2068,7 @@ void qf_merge(QF *qfa, QF *qfb, QF *qfc, enum lock flag)
 /*
  * Merge an array of qfs into the resultant QF
  */
-void qf_multi_merge(QF *qf_arr[], int nqf, QF *qfr, enum lock flag)
+void qf_multi_merge(const QF *qf_arr[], int nqf, QF *qfr, enum lock flag)
 {
 	int i;
 	QFi qfi_arr[nqf];

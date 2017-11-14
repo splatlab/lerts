@@ -105,7 +105,7 @@ extern "C" {
 
 	void qf_destroy(QF *qf, bool mem);
 
-	void qf_copy(QF *dest, QF *src);
+	void qf_copy(QF *dest, const QF *src);
 
 	/* Increment the counter for this key/value pair by count. */
 	bool qf_insert(QF *qf, uint64_t key, uint64_t value, uint64_t count,
@@ -172,7 +172,7 @@ extern "C" {
 	void qf_merge(QF *qfa, QF *qfb, QF *qfc, enum lock flag);
 
 	/* merge multiple QFs into the final QF one. */
-	void qf_multi_merge(QF *qf_arr[], int nqf, QF *qfr, enum lock flag);
+	void qf_multi_merge(const QF *qf_arr[], int nqf, QF *qfr, enum lock flag);
 
 	/* find cosine similarity between two QFs. */
 	uint64_t qf_inner_product(QF *qfa, QF *qfb);

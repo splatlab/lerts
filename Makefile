@@ -1,4 +1,4 @@
-TARGETS=test main merge popcornfilter anomaly streamanalysis
+TARGETS=test main popcornfilter anomaly streamanalysis
 
 ifdef D
 	DEBUG=-g -DDEBUG
@@ -42,7 +42,6 @@ all: $(TARGETS)
 
 test:					 				  test.o													cqf/gqf.o
 main:                   main.o cascadefilter.o  zipf.o cqf/gqf.o util.o hashutil.o
-merge:                  merge.o 											 cqf/gqf.o util.o hashutil.o
 cascadefilter:         				 cascadefilter.o  zipf.o cqf/gqf.o util.o hashutil.o
 popcornfilter: popcornfilter.o cascadefilter.o  zipf.o cqf/gqf.o util.o hashutil.o
 anomaly:       anomaly.o                               cqf/gqf.o util.o hashutil.o
@@ -52,7 +51,6 @@ streamanalysis: streamanalysis.o                       cqf/gqf.o util.o hashutil
 
 test.o:																		        cqf/gqf.h
 main.o: 								         cascadefilter.h	cqf/gqf.h hashutil.h util.h zipf.h
-merge.o: 								 									        cqf/gqf.h hashutil.h util.h
 cascadefilter.o: 				         cascadefilter.h	cqf/gqf.h hashutil.h util.h zipf.h
 popcornfilter.o: popcornfilter.h cascadefilter.h	cqf/gqf.h hashutil.h util.h zipf.h
 hashutil.o: 																								hashutil.h
