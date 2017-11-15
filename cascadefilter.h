@@ -603,21 +603,19 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 
 	if (is_full(0)) {
 		DEBUG_CF("Flushing " << num_flush);
-		//if (num_age_bits)
+		if (max_age)
 			merge();
-		//else
-			//shuffle_merge();
+		else
+			shuffle_merge();
 		// Increment the flushing count.
 		num_flush++;
 	}
 
 	key_object dup_k(k);
-
-#if 0
 	// Get the current RAM count/age of the key.
 	uint64_t ram_count = filters[0].query(dup_k);
-	//uint64_t ram_count = qf_count_key_value(&filters[0], k.key, k.value);
 
+#if 0
 	// This code is for the immediate reporting case.
 	// If the count of the key is equal to "THRESHOLD_VALUE/2 - 1" then we will
 	// have to perform an on-demand poprorn.
@@ -631,6 +629,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 			return true;
 		}
 	}
+#endif
 
 	// This code is for the time-stretch case.
 	/* use lower-order bits to store the age. */
@@ -640,9 +639,8 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 			uint32_t cur_age = ram_count & max_age;
 			dup_k.count += cur_age;
 		} else
-			dup_k.count += num_flush % max_age;
+			dup_k.count += ages[0];
 	}
-#endif
 
 	/**
 	 * we don't need a lock on the in-memory CQF while inserting. However, I
@@ -679,7 +677,7 @@ uint64_t CascadeFilter<key_object>::count_key_value(const key_object& k) {
 	uint64_t count = 0;
 	for (uint32_t i = 0; i < total_num_levels; i++) {
 		uint64_t cur = filters[i].query(k);
-		if (num_age_bits) {
+		if (max_age) {
 			cur >>= num_age_bits;
 		}
 		count += cur;
