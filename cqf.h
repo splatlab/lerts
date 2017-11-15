@@ -74,8 +74,6 @@ class CQF {
 				bool done(void) const;
 
 			private:
-				void skip_keys();
-
 				QFi iter;
 				uint32_t age;
 				uint32_t max_age;
@@ -154,17 +152,16 @@ void CQF<key_obj>::destroy() {
 	qf_destroy(&cqf, false);
 }
 
-template <class key_obj>
-void CQF<key_obj>::Iterator::skip_keys() {
-	do {
+static void skip_keys(QFi *iter, uint32_t level_age, uint32_t max_age) {
+	while (!qfi_end(iter)) {
 		uint64_t key, value, count;
-		qfi_get(&iter, &key, &value, &count);
+		qfi_get(iter, &key, &value, &count);
 		uint32_t age = count & max_age;
-		if (age != (age + 1) % max_age)
-			qfi_next(&iter);
+		if (age != (level_age + 1) % max_age)
+			qfi_next(iter);
 		else
 			break;
-	} while (!qfi_end(&iter));
+	}
 }
 
 template <class key_obj>
@@ -181,6 +178,8 @@ key_obj CQF<key_obj>::Iterator::operator*(void) const {
 template<class key_obj>
 void CQF<key_obj>::Iterator::operator++(void) {
 	qfi_next(&iter);
+	if (max_age)
+		skip_keys(&iter, age, max_age);
 }
 
 template<class key_obj>
@@ -193,6 +192,8 @@ typename CQF<key_obj>::Iterator CQF<key_obj>::begin(uint32_t age, uint32_t
 																										max_age) const {
 	QFi qfi;
 	qf_iterator(&this->cqf, &qfi, 0);
+	if (max_age)
+		skip_keys(&qfi, age, max_age);
 
 	return Iterator(qfi, age, max_age);
 }
