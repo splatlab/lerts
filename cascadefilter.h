@@ -120,7 +120,12 @@ class CascadeFilter {
 		/**
 		 * Returns the index of the first empty level.
 		 */
-		uint32_t find_first_empty_level();
+		uint32_t find_first_empty_level(void) const;
+
+		/**
+		 * Return the number of levels to merge into given "num_flush" . 
+		 */
+		uint32_t find_levels_to_flush();
 
 		/** Perform a standard cascade filter merge. It merges "num_levels" levels
 		 * and inserts all the elements into a new level.  Merge will be called
@@ -137,10 +142,8 @@ class CascadeFilter {
 		 *
 		 * It uses a fix scheule for merges. There are "r" merges to the first
 		 * level on disk and "r^2" merges to the second level and so on.
-		 *
-		 * It uses "num_flush" to determine the last level to flush to.
 		 */
-		void merge(uint32_t num_flush);
+		void merge();
 
 		/**
 		 * Perform a shuffle-merge among @nqf cqfs from @qf_arr and put elements in
@@ -155,6 +158,11 @@ class CascadeFilter {
 		 * Spread the count of the key in the cascade filter.
 		 */
 		void smear_element(QF qf_arr[], key_object k, uint32_t nlevels);
+
+		/**
+		 * Insert count in the last level.
+		 */
+		void insert_element(key_object cur_key, uint32_t level);
 
 		/**
 		 * Try to acquire a lock once and return even if the lock is busy.
@@ -172,7 +180,10 @@ class CascadeFilter {
 		std::string prefix;
 		uint32_t thresholds[NUM_MAX_LEVELS];
 		uint64_t sizes[NUM_MAX_LEVELS];
+		uint64_t flushes[NUM_MAX_LEVELS];
+		uint64_t ages[NUM_MAX_LEVELS];
 		uint32_t num_flush;
+		uint32_t gfactor;
 		uint32_t seed;
 		volatile int locked;
 };
@@ -212,10 +223,13 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	num_value_bits = nvaluebits;
 	num_age_bits = nagebits;
 	num_flush = 0;
+	gfactor = filter_sizes[1] / filter_sizes[0];
 	seed = 2038074761;
 	locked = 0;
 	memcpy(thresholds, filter_thlds, num_filters * sizeof(thresholds[0]));
 	memcpy(sizes, filter_sizes, num_filters * sizeof(sizes[0]));
+	memset(flushes, 0, num_filters *  sizeof(flushes[0]));
+	memset(ages, 0, num_filters *  sizeof(ages[0]));
 
 	/* Initialize all the filters. */
 	//TODO: (prashant) Maybe make this a lazy initilization.
@@ -298,7 +312,7 @@ bool CascadeFilter<key_object>::is_full(uint32_t level) const {
 }
 
 template <class key_object>
-uint32_t CascadeFilter<key_object>::find_first_empty_level() {
+uint32_t CascadeFilter<key_object>::find_first_empty_level(void) const {
 	uint32_t empty_level;
 	uint64_t total_occupied_slots = get_filter(0)->metadata->noccupied_slots;
 	for (empty_level = 1; empty_level < total_num_levels; empty_level++) {
@@ -314,22 +328,27 @@ uint32_t CascadeFilter<key_object>::find_first_empty_level() {
 	}
 	/* If found an empty level. Merge all levels before the empty level into the
 	 * empty level. Else create a new level and merge all the levels. */
-	uint32_t nlevels;
+	uint32_t nlevels = 0;
 	if (empty_level < total_num_levels)
 		nlevels = empty_level;
-	else {
-		/* This is for lazy initialization of CQFs in the levels.
-		 * Assuing we are creating all the levels in the constructor, code below
-		 * will never be called. */
-		std::string file_ext("_cqf.ser");
-		std::string file = "raw/" + std::to_string(total_num_levels) + file_ext;
-		qf_init(&filters[total_num_levels], sizes[total_num_levels],
-						num_hash_bits, num_value_bits, /*mem*/ false, file.c_str(), seed);
-		nlevels = total_num_levels;
-		total_num_levels++;
-	}
 
 	return nlevels;
+}
+
+template <class key_object>
+uint32_t CascadeFilter<key_object>::find_levels_to_flush(void) {
+	uint32_t empty_level;
+	for (empty_level = 1; empty_level < total_num_levels; empty_level++) {
+		if (flushes[empty_level] < gfactor) {
+			uint32_t max_age = (1ULL << num_age_bits);
+			ages[empty_level] = (ages[empty_level] + 1) % max_age;
+			flushes[empty_level]++;
+			break;
+		}
+		else
+			flushes[empty_level] = 0;
+	}
+	return empty_level - 1;
 }
 
 template <class key_object>
@@ -349,6 +368,20 @@ void CascadeFilter<key_object>::smear_element(QF qf_arr[], key_object k,
 	/* If some observations are left then insert them in the first level. */
 	if (k.count > 0)
 		qf_insert(&qf_arr[0], k.key, k.value, k.count, LOCK_AND_SPIN);
+}
+
+template <class key_object>
+void CascadeFilter<key_object>::insert_element(key_object k, uint32_t level) {
+	uint64_t cur_count = qf_count_key_value(&filters[level], k.key,
+																					k.value);
+	uint32_t max_age = (1ULL << num_age_bits);
+	if (cur_count) { // if key is already present then use the exisiting age.
+		uint32_t cur_age = cur_count & max_age;
+		k.count += cur_age;
+	} else {	// assign the age based in the current num_flush of the level
+		k.count += ages[level];
+	}
+	qf_insert(&filters[level], k.key, k.value, k.count, LOCK_AND_SPIN);
 }
 
 template <class key_object>
@@ -452,22 +485,37 @@ bool operator!=(const typename CascadeFilter<key_object>::Iterator& a, const
 }
 
 template <class key_object>
-void CascadeFilter<key_object>::merge(uint32_t num_flush) {
-	uint32_t nlevels = find_first_empty_level();
-	assert(nlevels <= total_num_levels);
+void CascadeFilter<key_object>::merge() {
+	uint32_t nlevels = find_levels_to_flush();
+	assert(nlevels < total_num_levels);
 
-	const QF *to_merge[nlevels];
-	for (uint32_t i = 0; i < nlevels; i++)
-		to_merge[i] = get_filter(i);
+	/* merge nlevels in (nlevels+1)th level. */
+	KeyObject cur_key, next_key;
 	DEBUG_CF("Merging CQFs 0 to " << nlevels - 1 << " into the CQF "
 					 << nlevels);
-	/* If the in-mem filter needs to be merged to the first level on disk. */
-	if (filters[nlevels].metadata->size ==
-			to_merge[0]->metadata->size && nlevels == 1)
-		qf_copy(&filters[nlevels], to_merge[0]);
-	else
-		qf_multi_merge(to_merge, nlevels, &filters[nlevels],
-									 LOCK_AND_SPIN);
+
+	/* Initialize cascade filter iterator. */
+	CascadeFilter<key_object>::Iterator it = begin(nlevels);
+	cur_key = *it;
+	++it;
+	do {
+		next_key = *it;
+		/* If next_key is same as cur_key then aggregate counts.
+		 * Else, smear the count across levels starting from the bottom one.
+		 * */
+		if (cur_key == next_key)
+			cur_key.count += next_key.count;
+		else {
+			insert_element(cur_key, nlevels);
+			/* Update cur_key. */
+			cur_key = next_key;
+		}
+		/* Increment the iterator. */
+		++it;
+	} while(!it.done());
+
+	/* Insert the last key in the cascade filter. */
+	insert_element(cur_key, nlevels);
 
 	/* Reset the filter that were merged. */
 	for (uint32_t i = 0; i < nlevels; i++)
@@ -548,30 +596,52 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 	if (is_full(0)) {
 		DEBUG_CF("Flushing " << num_flush);
 		if (num_age_bits)
-			merge(num_flush);
+			merge();
 		else
 			shuffle_merge();
+		// Increment the flushing count.
+		num_flush++;
 	}
 
 	key_object dup_k(k);
- 	/* use lower-order bits to store the age. */
+
+	// Get the current RAM count/age of the key.
+	uint64_t ram_count = qf_count_key_value(&filters[0], k.key, k.value);
+
+	// This code is for the immediate reporting case.
+	// If the count of the key is equal to "THRESHOLD_VALUE/2 - 1" then we will
+	// have to perform an on-demand poprorn.
+	uint64_t aggr_count;
+	if (num_age_bits == 0 && ram_count == THRESHOLD_VALUE/2 - 1) {
+		aggr_count = count_key_value(k);
+		if (aggr_count == THRESHOLD_VALUE) {
+			// TODO: Insert in the anomaly hash table.
+			if (flag != NO_LOCK)
+				unlock();
+			return true;
+		}
+	}
+
+	// This code is for the time-stretch case.
+	/* use lower-order bits to store the age. */
 	if (num_age_bits) {
 		uint32_t max_age = (1ULL << num_age_bits);
-		dup_k.count *= max_age;
-		dup_k.count += num_flush % max_age;
+		dup_k.count *= max_age;	// this is the count.
+		if (ram_count) { // if key is already present then use the exisiting age.
+			uint32_t cur_age = ram_count & max_age;
+			dup_k.count += cur_age;
+		} else
+			dup_k.count += num_flush % max_age;
 	}
-	/* we don't need a lock on the in-memory CQF while inserting. However, I
+
+	/**
+	 * we don't need a lock on the in-memory CQF while inserting. However, I
 	 * still have the flag "LOCK_AND_SPIN" here just to be extra sure that we
 	 * will not corrupt the data structure.
 	 */
 	bool ret = qf_insert(&filters[0], dup_k.key, dup_k.value, dup_k.count,
 											 LOCK_AND_SPIN);
 
-	// Increment the flushing count.
-	num_flush++;
-
-	// TODO: If the count of the key is equal to THRESHOLD_VALUE/2 then we will
-	// have to perform an on-demand popcorn.
 	if (flag != NO_LOCK)
 		unlock();
 
