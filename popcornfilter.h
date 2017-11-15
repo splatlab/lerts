@@ -149,7 +149,7 @@ uint32_t PopcornFilter<key_object>::get_seed(void) const {
 
 template <class key_object>
 uint64_t PopcornFilter<key_object>::get_range(void) const {
-	uint64_t range = cf[0]->get_filter(0)->metadata->range;
+	uint64_t range = cf[0]->get_filter(0)->range();
 	range <<= fbits;
 	return range;
 }

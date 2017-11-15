@@ -33,7 +33,7 @@ template <class key_obj>
 class CQF {
 	public:
 		CQF();
-		CQF(uint32_t nqbits, uint32_t nhashbits, uint32_t nvalbits, bool mem,
+		CQF(uint64_t nslots, uint32_t nhashbits, uint32_t nvalbits, bool mem,
 				const char *filename, uint32_t seed);
 		CQF(std::string& filename, bool flag);
 		CQF(const CQF<key_obj>& copy_cqf);
@@ -41,7 +41,7 @@ class CQF {
 		bool insert(const key_obj& k, enum lock flag);
 		/* Will return the count. */
 		uint64_t query(const key_obj& k);
-		void remove(const key_object& k, enum lock flag);
+		void remove(const key_obj& k, enum lock flag);
 		void destroy();
 
 		void serialize(std::string filename) {
@@ -50,7 +50,15 @@ class CQF {
 
 		uint64_t range(void) const { return cqf.metadata->range; }
 		uint32_t seed(void) const { return cqf.metadata->seed; }
-		uint64_t size(void) const { return cqf.metadata->ndistinct_elts; }
+		uint64_t total_elements(void) const { return cqf.metadata->nelts; }
+		uint64_t distinct_elements(void) const {
+			return cqf.metadata->ndistinct_elts;
+		}
+		uint64_t total_slots(void) const { return cqf.metadata->nslots; }
+		uint64_t occupied_slots(void) const {
+			return cqf.metadata->noccupied_slots;
+		}
+		
 		//uint64_t set_size(void) const { return set.size(); }
 		void reset(void) { qf_reset(&cqf); }
 
@@ -60,18 +68,21 @@ class CQF {
 
 		class Iterator {
 			public:
-				Iterator(QFi it);
+				Iterator(QFi it, uint32_t age, uint32_t max_age);
 				key_obj operator*(void) const;
 				void operator++(void);
 				bool done(void) const;
 
 			private:
+				void skip_keys();
+
 				QFi iter;
-				struct aiocb aiocb;
+				uint32_t age;
+				uint32_t max_age;
 		};
 
-		Iterator begin(void) const;
-		Iterator end(void) const;
+		Iterator begin(uint32_t age, uint32_t max_age) const;
+		Iterator end(uint32_t age, uint32_t max_age) const;
 
 	private:
 		QF cqf;
@@ -103,9 +114,9 @@ CQF<key_obj>::CQF() {
 }
 
 template <class key_obj>
-CQF<key_obj>::CQF(uint32_t nqbits, uint32_t nhashbits, uint32_t nvalbits, bool
+CQF<key_obj>::CQF(uint64_t nslots, uint32_t nhashbits, uint32_t nvalbits, bool
 									mem, const char *filename, uint32_t seed) {
-	qf_init(&cqf, 1ULL << nqbits, nhashbits, nvalbits, mem, filename, seed);
+	qf_init(&cqf, nslots, nhashbits, nvalbits, mem, filename, seed);
 }
 
 template <class key_obj>
@@ -134,24 +145,37 @@ uint64_t CQF<key_obj>::query(const key_obj& k) {
 }
 
 template <class key_obj>
-uint64_t CQF<key_obj>::remove(const key_object& k, enum lock flag) {
+void CQF<key_obj>::remove(const key_obj& k, enum lock flag) {
 	qf_remove(&cqf, k.key, k.value, k.count, flag);
 }
 
 template <class key_obj>
-uint64_t CQF<key_obj>::destroy() {
-	return qf_destroy(&cqf, false);
+void CQF<key_obj>::destroy() {
+	qf_destroy(&cqf, false);
 }
 
 template <class key_obj>
-CQF<key_obj>::Iterator::Iterator(QFi it)
-	: iter(it) {};
+void CQF<key_obj>::Iterator::skip_keys() {
+	do {
+		uint64_t key, value, count;
+		qfi_get(&iter, &key, &value, &count);
+		uint32_t age = count & max_age;
+		if (age != (age + 1) % max_age)
+			qfi_next(&iter);
+		else
+			break;
+	} while (!qfi_end(&iter));
+}
+
+template <class key_obj>
+CQF<key_obj>::Iterator::Iterator(QFi it, uint32_t age, uint32_t max_age)
+	: iter(it), age(age), max_age(max_age) {};
 
 template <class key_obj>
 key_obj CQF<key_obj>::Iterator::operator*(void) const {
 	uint64_t key = 0, value = 0, count = 0;
 	qfi_get(&iter, &key, &value, &count);
-	return key_obj(key, value, count);
+	return key_obj(key, value, count, 0);
 }
 
 template<class key_obj>
@@ -165,18 +189,20 @@ bool CQF<key_obj>::Iterator::done(void) const {
 }
 
 template<class key_obj>
-typename CQF<key_obj>::Iterator CQF<key_obj>::begin(void) const {
+typename CQF<key_obj>::Iterator CQF<key_obj>::begin(uint32_t age, uint32_t
+																										max_age) const {
 	QFi qfi;
 	qf_iterator(&this->cqf, &qfi, 0);
 
-	return Iterator(qfi);
+	return Iterator(qfi, age, max_age);
 }
 
 template<class key_obj>
-typename CQF<key_obj>::Iterator CQF<key_obj>::end(void) const {
+typename CQF<key_obj>::Iterator CQF<key_obj>::end(uint32_t age, uint32_t
+																									max_age) const {
 	QFi qfi;
 	qf_iterator(&this->cqf, &qfi, 0xffffffffffffffff);
-	return Iterator(qfi);
+	return Iterator(qfi, age, max_age);
 }
 
 #endif
