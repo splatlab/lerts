@@ -377,10 +377,8 @@ CascadeFilter<key_object>::Iterator::Iterator(typename
 																							uint32_t num_levels,
 																							uint32_t cur_level, uint32_t
 																							num_age_bits) :
-	iter_num_levels(num_levels), iter_cur_level(cur_level),
-	num_age_bits(num_age_bits) {
-		memcpy(qfi_arr, arr,  num_levels * sizeof(qfi_arr[0]));
-	};
+	qfi_arr(arr), iter_num_levels(num_levels), iter_cur_level(cur_level),
+	num_age_bits(num_age_bits) {};
 
 template <class key_object>
 typename CascadeFilter<key_object>::Iterator
