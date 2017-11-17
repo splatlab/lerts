@@ -578,7 +578,8 @@ void CascadeFilter<key_object>::shuffle_merge() {
 
 	DEBUG_CF("Old CQFs");
 	for (uint32_t i = 0; i < nlevels; i++) {
-		DEBUG_CF("CQF " << i << " threshold " << thresholds[i]);
+		DEBUG_CF("CQF " << i << " threshold " << thresholds[i] << " age " <<
+						 ages[i]);
 		filters[i].dump_metadata();
 	}
 
@@ -612,7 +613,7 @@ void CascadeFilter<key_object>::shuffle_merge() {
 
 	DEBUG_CF("New CQFs");
 	for (uint32_t i = 0; i < nlevels; i++) {
-		DEBUG_CF("CQF " << i);
+		DEBUG_CF("CQF " << i << " age " << ages[i]);
 		new_filters[i].dump_metadata();
 	}
 
