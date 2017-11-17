@@ -100,7 +100,7 @@ class ThreadArgs {
 /* We use value bits to store the value of the key from FireHose. */
 #define NUM_VALUE_BITS 1
 /* We use the lower-order bits of the counter to store the age of the key. */
-#define NUM_AGE_BITS 0
+#define NUM_AGE_BITS 1
 
 template <class key_object>
 PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
@@ -119,14 +119,18 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 		for (uint32_t i = 1; i < nlevels; i++)
 			sizes[i] = pow(gfactor, i) * sizes[0];
 
-
-		thlds[nlevels - 1] = 1;
-		uint32_t j = 1;
-		/* taus grow with r^0.5. */
-		uint32_t tau_ratio = sqrt(gfactor);
-		for (int32_t i = nlevels - 2; i >= 0; i--, j++)
-			thlds[i] = pow(tau_ratio, j) * thlds[nlevels - 1];
-
+		// if there are age bits then taus are infinity.
+		if (NUM_AGE_BITS) {
+			for (int32_t i = 0; i < nlevels; i++)
+				thlds[i] = UINT32_MAX;
+		} else {
+			thlds[nlevels - 1] = 1;
+			uint32_t j = 1;
+			/* taus grow with r^0.5. */
+			uint32_t tau_ratio = sqrt(gfactor);
+			for (int32_t i = nlevels - 2; i >= 0; i--, j++)
+				thlds[i] = pow(tau_ratio, j) * thlds[nlevels - 1];
+		}
 		/* Create a cascade filter. */
 		for (uint32_t i = 0; i < nfilters; i++) {
 			PRINT_CF("Create a cascade filter with " << nhashbits << "-bit hashes, "

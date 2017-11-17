@@ -178,8 +178,8 @@ key_obj CQF<key_obj>::Iterator::operator*(void) const {
 template<class key_obj>
 void CQF<key_obj>::Iterator::operator++(void) {
 	qfi_next(&iter);
-	if (max_age)
-		skip_keys(&iter, age, max_age);
+	//if (max_age)
+		//skip_keys(&iter, age, max_age);
 }
 
 template<class key_obj>
@@ -192,8 +192,8 @@ typename CQF<key_obj>::Iterator CQF<key_obj>::begin(uint32_t age, uint32_t
 																										max_age) const {
 	QFi qfi;
 	qf_iterator(&this->cqf, &qfi, 0);
-	if (max_age)
-		skip_keys(&qfi, age, max_age);
+	//if (max_age)
+		//skip_keys(&qfi, age, max_age);
 
 	return Iterator(qfi, age, max_age);
 }

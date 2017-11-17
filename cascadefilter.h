@@ -165,7 +165,8 @@ class CascadeFilter {
 		/**
 		 * Insert count in the last level.
 		 */
-		void insert_element(key_object cur_key, uint32_t level);
+		void insert_element(CQF<key_object> *qf_arr, key_object cur, key_object
+												next, uint32_t level);
 
 		/**
 		 * Try to acquire a lock once and return even if the lock is busy.
@@ -297,7 +298,13 @@ template <class key_object>
 bool CascadeFilter<key_object>::is_full(uint32_t level) const {
 	double load_factor = get_filter(level)->occupied_slots() /
 											 (double)get_filter(level)->total_slots();
-	if (load_factor > 0.75) {
+	if (max_age) {
+		double flush_fraction = 1 / (double) max_age;
+		if (load_factor > flush_fraction) {
+			DEBUG_CF("Load factor: " << load_factor);
+			return true;
+		}
+	} else if (load_factor > 0.75) {
 		DEBUG_CF("Load factor: " << load_factor);
 		return true;
 	}
@@ -331,15 +338,19 @@ uint32_t CascadeFilter<key_object>::find_first_empty_level(void) const {
 template <class key_object>
 uint32_t CascadeFilter<key_object>::find_levels_to_flush(void) {
 	uint32_t empty_level;
+	// Level 0 is always involved in the flush.
+	if (max_age)
+		ages[0] = (ages[0] + 1) % max_age;
 	for (empty_level = 1; empty_level < total_num_levels; empty_level++) {
 		if (flushes[empty_level] < gfactor) {
-			if (max_age)
-				ages[empty_level] = (ages[empty_level] + 1) % max_age;
 			flushes[empty_level]++;
 			break;
 		}
-		else
+		else {
+			if (max_age)
+				ages[empty_level] = (ages[empty_level] + 1) % max_age;
 			flushes[empty_level] = 0;
+		}
 	}
 	return empty_level;
 }
@@ -353,6 +364,15 @@ void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 			qf_arr[i].insert(cur, LOCK_AND_SPIN);
 			k.count -= thresholds[i];
 		} else {
+			if (max_age) {
+				uint64_t cur_count = filters[i].query(k);
+				if (cur_count) { // if key is already present then use the exisiting age.
+					uint32_t cur_age = cur_count & BITMASK(num_age_bits);
+					k.count += cur_age;
+				} else {	// assign the age based in the current num_flush of the level
+					k.count += ages[i];
+				}
+			}
 			qf_arr[i].insert(k, LOCK_AND_SPIN);
 			k.count = 0;
 			break;
@@ -364,17 +384,18 @@ void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 }
 
 template <class key_object>
-void CascadeFilter<key_object>::insert_element(key_object k, uint32_t level) {
-	uint64_t cur_count = filters[level].query(k);
-	if (cur_count) { // if key is already present then use the exisiting age.
-		if (max_age) {
-			uint32_t cur_age = cur_count & max_age;
-			k.count += cur_age;
-		}
-	} else {	// assign the age based in the current num_flush of the level
-		k.count += ages[level];
-	}
-	filters[level].insert(k, LOCK_AND_SPIN);
+void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
+																							key_object cur, key_object next,
+																							uint32_t nlevels) {
+	if (max_age) {
+		uint32_t cur_age = cur.count & BITMASK(num_age_bits);
+		if (cur_age  == (ages[cur.level] + 1) % max_age) // flush the key down.
+			smear_element(qf_arr, cur, nlevels);
+		// not aged yet. reinsert at the same level with updated count.
+		else
+			qf_arr[cur.level].insert(cur, LOCK_AND_SPIN);
+	} else
+		smear_element(qf_arr, cur, nlevels);
 }
 
 template <class key_object>
@@ -429,7 +450,7 @@ CascadeFilter<key_object>::end() const {
 template <class key_object>
 key_object CascadeFilter<key_object>::Iterator::operator*(void) const {
 	key_object k = *qfi_arr[iter_cur_level];
-	k.count = k.count >> num_age_bits;
+	//k.count = k.count >> num_age_bits;
 	k.level = iter_cur_level;
 	return k;
 }
@@ -506,7 +527,7 @@ void CascadeFilter<key_object>::merge() {
 		if (cur_key == next_key)
 			cur_key.count += next_key.count;
 		else {
-			insert_element(cur_key, nlevels);
+			filters[nlevels].insert(cur_key, LOCK_AND_SPIN);
 			/* Update cur_key. */
 			cur_key = next_key;
 		}
@@ -515,7 +536,7 @@ void CascadeFilter<key_object>::merge() {
 	} while(!it.done());
 
 	/* Insert the last key in the cascade filter. */
-	insert_element(cur_key, nlevels);
+	filters[nlevels].insert(cur_key, LOCK_AND_SPIN);
 
 	/* Reset filters that were merged except the last in which the flush
 	 * happened. */
@@ -532,7 +553,12 @@ void CascadeFilter<key_object>::merge() {
 template <class key_object>
 void CascadeFilter<key_object>::shuffle_merge() {
 	/* The empty level is also involved in the shuffle merge. */
-	uint32_t nlevels = find_first_empty_level() + 1;
+	uint32_t nlevels = 0;
+	if (max_age)
+		nlevels = find_levels_to_flush() + 1;
+	else
+		nlevels = find_first_empty_level() + 1;
+
 	assert(nlevels <= total_num_levels);
 	DEBUG_CF("Shuffle merging CQFs 0 to " << nlevels - 1);
 
@@ -566,12 +592,14 @@ void CascadeFilter<key_object>::shuffle_merge() {
 		/* If next_key is same as cur_key then aggregate counts.
 		 * Else, smear the count across levels starting from the bottom one.
 		 * */
-		if (cur_key == next_key)
+		if (cur_key == next_key) {
+			// we only need the count of the key from other levels.
+			next_key.count = next_key.count >> num_age_bits;
 			cur_key.count += next_key.count;
-		else {
+		} else {
 			// TODO: If the count of the key is equal to THRESHOLD_VALUE then we
 			// need to report this key. This is an organic popcorn.
-			smear_element(new_filters, cur_key, nlevels);
+			insert_element(new_filters, cur_key, next_key, nlevels);
 			/* Update cur_key. */
 			cur_key = next_key;
 		}
@@ -580,7 +608,7 @@ void CascadeFilter<key_object>::shuffle_merge() {
 	}
 
 	/* Insert the last key in the cascade filter. */
-	smear_element(new_filters, cur_key, nlevels);
+	insert_element(new_filters, cur_key, next_key, nlevels);
 
 	DEBUG_CF("New CQFs");
 	for (uint32_t i = 0; i < nlevels; i++) {
@@ -603,10 +631,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 
 	if (is_full(0)) {
 		DEBUG_CF("Flushing " << num_flush);
-		if (max_age)
-			merge();
-		else
-			shuffle_merge();
+		shuffle_merge();
 		// Increment the flushing count.
 		num_flush++;
 	}
@@ -636,7 +661,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 	if (max_age) {
 		dup_k.count *= max_age;	// this is the count.
 		if (ram_count) { // if key is already present then use the exisiting age.
-			uint32_t cur_age = ram_count & max_age;
+			uint32_t cur_age = ram_count & BITMASK(num_age_bits);
 			dup_k.count += cur_age;
 		} else
 			dup_k.count += ages[0];
