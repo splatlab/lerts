@@ -49,16 +49,20 @@ void analyze_stream(uint64_t *vals, uint64_t nvals) {
 
 	PRINT_CF("Analyzing the steam");
 
+	uint64_t total_inserted_keys = 0;
 	for (uint32_t i = 0; i < nvals; i++) {
 		uint64_t key = vals[i];
 		if (key_counts.count(key) == 0) {
 			key_counts.insert(key);
 			key_lifetime[key] = std::pair<uint64_t, uint64_t>(i, i);
+			total_inserted_keys++;
 		} else if (key_counts.count(key) < 23) {
 			key_counts.insert(key);
+			total_inserted_keys++;
 		} else if (key_counts.count(key) == 23) {
 			key_counts.insert(key);
 			key_lifetime[key].second = i;
+			total_inserted_keys++;
 		}
 	}
 	for (auto it : key_lifetime) {
@@ -66,4 +70,5 @@ void analyze_stream(uint64_t *vals, uint64_t nvals) {
 		if (it.second.first < it.second.second)
 			PRINT_CF(it.first << " " << it.second.first << " " << it.second.second);
 	}
+	PRINT_CF("Total inserted keys: " << total_inserted_keys);
 }
