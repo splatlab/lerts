@@ -84,7 +84,7 @@ class CascadeFilter {
 
 		/* Return the number of times key has been inserted, with the given
 			 value, into the cascade qf. */
-		uint64_t count_key_value(const key_object& key_val_cnt);
+		uint64_t count_key_value(const key_object& key_val_cnt, enum lock flag);
 
 		class Iterator {
 			public:
@@ -165,8 +165,8 @@ class CascadeFilter {
 		/**
 		 * Insert count in the last level.
 		 */
-		void insert_element(CQF<key_object> *qf_arr, key_object cur, key_object
-												next, uint32_t level);
+		void insert_element(CQF<key_object> *qf_arr, key_object cur, uint32_t
+												level);
 
 		/**
 		 * Try to acquire a lock once and return even if the lock is busy.
@@ -177,6 +177,7 @@ class CascadeFilter {
 		void unlock(void);
 
 		CQF<key_object> *filters;
+		CQF<key_object> anomalies;
 		uint32_t total_num_levels;
 		uint32_t num_hash_bits;
 		uint32_t num_value_bits;
@@ -188,6 +189,7 @@ class CascadeFilter {
 		uint64_t ages[NUM_MAX_LEVELS];
 		uint32_t num_flush;
 		uint32_t gfactor;
+		uint32_t popcorn_threshold;
 		uint32_t max_age;
 		uint32_t seed;
 		volatile int locked;
@@ -215,6 +217,7 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 		max_age = 0;
 	num_flush = 0;
 	gfactor = filter_sizes[1] / filter_sizes[0];
+	popcorn_threshold = 0;
 	seed = 2038074761;
 	locked = 0;
 	memcpy(thresholds, filter_thlds, num_filters * sizeof(thresholds[0]));
@@ -222,7 +225,18 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	memset(flushes, 0, num_filters *  sizeof(flushes[0]));
 	memset(ages, 0, num_filters *  sizeof(ages[0]));
 
+	// creating an exact CQF to store anomalies.
+	// It is as big as the size of the RAM CQF.
+	anomalies = CQF<key_object>(sizes[0]/2, 64, 0, /* mem */ true, "", seed);
+
 	filters = (CQF<key_object>*)calloc(NUM_MAX_LEVELS, sizeof(CQF<key_object>));
+
+	if (max_age == 0) {
+		uint32_t sum_disk_threshold = 0;
+		for (uint32_t i = 1; i < total_num_levels; i++)
+			sum_disk_threshold += thresholds[i];
+		popcorn_threshold = THRESHOLD_VALUE - sum_disk_threshold;
+	}
 
 	/* Initialize all the filters. */
 	//TODO: (prashant) Maybe make this a lazy initilization.
@@ -296,8 +310,6 @@ void CascadeFilter<key_object>::unlock(void)
 
 template <class key_object>
 bool CascadeFilter<key_object>::is_full(uint32_t level) {
-	double load_factor = get_filter(level)->occupied_slots() /
-											 (double)get_filter(level)->total_slots();
 	if (max_age) {
 		static int last_frac = 0;
 		// we increment the age when the number of observations seen is increased
@@ -312,9 +324,13 @@ bool CascadeFilter<key_object>::is_full(uint32_t level) {
 			if (num_obs_frac > 1)
 				return true;
 		}
-	} else if (load_factor > 0.90) {
-		DEBUG_CF("Load factor: " << load_factor);
-		return true;
+	} else {
+		double load_factor = get_filter(level)->occupied_slots() /
+			(double)get_filter(level)->total_slots();
+		if (load_factor > 0.90) {
+			DEBUG_CF("Load factor: " << load_factor);
+			return true;
+		}
 	}
 	return false;
 }
@@ -391,19 +407,26 @@ void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 
 template <class key_object>
 void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
-																							key_object cur, key_object next,
-																							uint32_t nlevels) {
-	if (max_age) {
-		uint32_t cur_age = cur.value & BITMASK(num_age_bits);
-		// we are not incrementing the age of the level because it is already
-		// incremented.
-		if (cur_age  == ages[cur.level]) // flush the key down.
+																							key_object cur, uint32_t
+																							nlevels) {
+	if (cur.count == THRESHOLD_VALUE) {
+		// I am using the value to store the index at which it is reported as
+		// an anomaly.
+		cur.value = get_num_elements();
+		anomalies.insert(cur, LOCK_AND_SPIN);
+	} else {
+		if (max_age) {
+			uint32_t cur_age = cur.value & BITMASK(num_age_bits);
+			// we are not incrementing the age of the level because it is already
+			// incremented.
+			if (cur_age  == ages[cur.level]) // flush the key down.
+				smear_element(qf_arr, cur, nlevels);
+			// not aged yet. reinsert at the same level with updated count.
+			else
+				qf_arr[cur.level].insert(cur, LOCK_AND_SPIN);
+		} else
 			smear_element(qf_arr, cur, nlevels);
-		// not aged yet. reinsert at the same level with updated count.
-		else
-			qf_arr[cur.level].insert(cur, LOCK_AND_SPIN);
-	} else
-		smear_element(qf_arr, cur, nlevels);
+	}
 }
 
 template <class key_object>
@@ -603,9 +626,7 @@ void CascadeFilter<key_object>::shuffle_merge() {
 		if (cur_key == next_key) {
 			cur_key.count += next_key.count;
 		} else {
-			// TODO: If the count of the key is equal to THRESHOLD_VALUE then we
-			// need to report this key. This is an organic popcorn.
-			insert_element(new_filters, cur_key, next_key, nlevels);
+				insert_element(new_filters, cur_key, nlevels);
 			/* Update cur_key. */
 			cur_key = next_key;
 		}
@@ -614,7 +635,7 @@ void CascadeFilter<key_object>::shuffle_merge() {
 	}
 
 	/* Insert the last key in the cascade filter. */
-	insert_element(new_filters, cur_key, next_key, nlevels);
+	insert_element(new_filters, cur_key, nlevels);
 
 	DEBUG_CF("New CQFs");
 	for (uint32_t i = 0; i < nlevels; i++) {
@@ -635,6 +656,13 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 		if (!lock(flag))
 			return false;
 
+	// if the key is already reported then don't insert.
+	if (anomalies.query(k)) {
+		if (flag != NO_LOCK)
+			unlock();
+		return true;
+	}
+
 	if (is_full(0)) {
 		DEBUG_CF("Flushing " << num_flush);
 		shuffle_merge();
@@ -646,25 +674,27 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 	}
 
 	key_object dup_k(k);
-	uint64_t value;
 	// Get the current RAM count/age of the key.
+	uint64_t value;
 	uint64_t ram_count = filters[0].query_key(dup_k, &value);
 
-#if 0
 	// This code is for the immediate reporting case.
-	// If the count of the key is equal to "THRESHOLD_VALUE/2 - 1" then we will
+	// If the count of the key is equal to "THRESHOLD_VALUE -
+	// TOTAL_DISK_THRESHOLD" then we will
 	// have to perform an on-demand poprorn.
-	uint64_t aggr_count;
-	if (num_age_bits == 0 && ram_count == THRESHOLD_VALUE/2 - 1) {
-		aggr_count = count_key_value(k);
+	//
+	// We will not remove the key if it has been seen THRESHOLD times.
+	// The key will be removed in the next shuffle merge.
+	if (max_age == 0 && ram_count >= popcorn_threshold) {
+		uint64_t aggr_count;
+		aggr_count = count_key_value(k, NO_LOCK);
 		if (aggr_count == THRESHOLD_VALUE) {
-			// TODO: Insert in the anomaly hash table.
-			if (flag != NO_LOCK)
-				unlock();
-			return true;
+			dup_k.value = get_num_elements();
+			anomalies.insert(dup_k, LOCK_AND_SPIN);
+		} else {
+			dup_k.count = aggr_count - ram_count + 1;
 		}
 	}
-#endif
 
 	// This code is for the time-stretch case.
 	/* use lower-order bits to store the age. */
@@ -706,16 +736,22 @@ bool CascadeFilter<key_object>::remove(const key_object& k, enum lock flag) {
 }
 
 template <class key_object>
-uint64_t CascadeFilter<key_object>::count_key_value(const key_object& k) {
-	lock(LOCK_AND_SPIN);
+uint64_t CascadeFilter<key_object>::count_key_value(const key_object& k, enum
+																										lock flag) {
+	if (flag != NO_LOCK)
+		if (!lock(flag))
+			return false;
 
-	uint64_t count = 0;
-	for (uint32_t i = 0; i < total_num_levels; i++) {
-		uint64_t value;
-		count += filters[i].query_key(k, &value);
+	uint64_t count = anomalies.query(k);
+	if (count == 0) {
+		for (uint32_t i = 0; i < total_num_levels; i++) {
+			uint64_t value;
+			count += filters[i].query_key(k, &value);
+		}
 	}
 
-	unlock();
+	if (flag != NO_LOCK)
+		unlock();
 	return count;
 }
 

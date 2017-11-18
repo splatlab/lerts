@@ -170,7 +170,7 @@ main ( int argc, char *argv[] )
 	PRINT_CF("Querying elements.");
 	gettimeofday(&start, &tzp);
 	for (uint64_t k = 0; k < nvals; k++)
-		if (pf.query(KeyObject(vals[k], 0, 0, 0)) < 1) {
+		if (pf.query(KeyObject(vals[k], 0, 0, 0), LOCK_AND_SPIN) < 1) {
 			std::cerr << "Failed lookup for " <<
 				(uint64_t)vals[k] << " " << k << " " << nvals << std::endl;
 			abort();
