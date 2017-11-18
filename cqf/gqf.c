@@ -1884,6 +1884,38 @@ uint64_t qf_count_key_value(const QF *qf, uint64_t key, uint64_t value)
 	return 0;
 }
 
+uint64_t qf_query(const QF *qf, uint64_t key, uint64_t *value)
+{
+	uint64_t hash = key;
+	uint64_t hash_remainder   = hash & BITMASK(qf->metadata->key_remainder_bits);
+	int64_t hash_bucket_index = hash >> qf->metadata->key_remainder_bits;
+
+	if (!is_occupied(qf, hash_bucket_index))
+		return 0;
+
+	int64_t runstart_index = hash_bucket_index == 0 ? 0 : run_end(qf,
+																																hash_bucket_index-1)
+		+ 1;
+	if (runstart_index < hash_bucket_index)
+		runstart_index = hash_bucket_index;
+
+	/* printf("MC RUNSTART: %02lx RUNEND: %02lx\n", runstart_index, runend_index); */
+
+	uint64_t current_remainder, current_count, current_end;
+	do {
+		current_end = decode_counter(qf, runstart_index, &current_remainder,
+																 &current_count);
+		*value = current_remainder & BITMASK(qf->metadata->value_bits);
+		current_remainder = current_remainder >> qf->metadata->value_bits;
+		if (current_remainder == hash_remainder) {
+			return current_count;
+		}
+		runstart_index = current_end + 1;
+	} while (!is_runend(qf, current_end));
+
+	return 0;
+}
+
 /* initialize the iterator at the run corresponding
  * to the position index
  */

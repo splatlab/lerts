@@ -99,7 +99,7 @@ class ThreadArgs {
 #define NUM_HASH_BITS 32
 /* We use value bits to store the value of the key from FireHose. */
 #define NUM_VALUE_BITS 1
-/* We use the lower-order bits of the counter to store the age of the key. */
+/* We also use the value bits to store the age of the key. */
 #define NUM_AGE_BITS 1
 
 template <class key_object>

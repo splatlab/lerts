@@ -41,6 +41,10 @@ class CQF {
 		bool insert(const key_obj& k, enum lock flag);
 		/* Will return the count. */
 		uint64_t query(const key_obj& k);
+		/* returns the count and value associated with the first key in the hash
+		 * table. */
+		uint64_t query_key(const key_obj& k, uint64_t *val);
+
 		void remove(const key_obj& k, enum lock flag);
 		void destroy();
 
@@ -140,6 +144,11 @@ bool CQF<key_obj>::insert(const key_obj& k, enum lock flag) {
 template <class key_obj>
 uint64_t CQF<key_obj>::query(const key_obj& k) {
 	return qf_count_key_value(&cqf, k.key, k.value);
+}
+
+template <class key_obj>
+uint64_t CQF<key_obj>::query_key(const key_obj& k, uint64_t *val) {
+	return qf_query(&cqf, k.key, val);
 }
 
 template <class key_obj>

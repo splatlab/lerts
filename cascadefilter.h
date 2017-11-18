@@ -117,12 +117,12 @@ class CascadeFilter {
 		/**
 		 * Check if the filter at "level" has exceeded the threshold load factor.
 		 */
-		bool is_full(uint32_t level) const;
+		bool is_full(uint32_t level);
 
 		/**
 		 * Returns the index of the first empty level.
 		 */
-		uint32_t find_first_empty_level(void) const;
+		uint32_t find_first_empty_level(void);
 
 		/**
 		 * Return the number of levels to merge into given "num_flush" . 
@@ -207,7 +207,7 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 {
 	total_num_levels = num_filters;
 	num_hash_bits = nhashbits;
-	num_value_bits = nvaluebits;
+	num_value_bits = nvaluebits + nagebits;
 	num_age_bits = nagebits;
 	if (nagebits)
 		max_age = 1 << nagebits;
@@ -295,16 +295,24 @@ void CascadeFilter<key_object>::unlock(void)
 }
 
 template <class key_object>
-bool CascadeFilter<key_object>::is_full(uint32_t level) const {
+bool CascadeFilter<key_object>::is_full(uint32_t level) {
 	double load_factor = get_filter(level)->occupied_slots() /
 											 (double)get_filter(level)->total_slots();
 	if (max_age) {
-		double flush_fraction = 1 / (double) max_age;
-		if (load_factor > flush_fraction) {
-			DEBUG_CF("Load factor: " << load_factor);
-			return true;
+		static int last_frac = 0;
+		// we increment the age when the number of observations seen is increased
+		// by ram_size/2.
+		double num_obs = get_filter(0)->total_slots()/(double)max_age;
+		int num_obs_frac = get_num_elements()/num_obs;
+		if (num_obs_frac > last_frac) {
+			DEBUG_CF("Num obs fraction: " << num_obs_frac);
+			// Age is increases for level 0 whenever it is 1/alpha full.
+			ages[0] = (ages[0] + 1) % max_age;
+			last_frac = num_obs_frac;
+			if (num_obs_frac > 1)
+				return true;
 		}
-	} else if (load_factor > 0.75) {
+	} else if (load_factor > 0.90) {
 		DEBUG_CF("Load factor: " << load_factor);
 		return true;
 	}
@@ -312,7 +320,7 @@ bool CascadeFilter<key_object>::is_full(uint32_t level) const {
 }
 
 template <class key_object>
-uint32_t CascadeFilter<key_object>::find_first_empty_level(void) const {
+uint32_t CascadeFilter<key_object>::find_first_empty_level(void) {
 	uint32_t empty_level;
 	uint64_t total_occupied_slots = get_filter(0)->occupied_slots();
 	for (empty_level = 1; empty_level < total_num_levels; empty_level++) {
@@ -338,9 +346,6 @@ uint32_t CascadeFilter<key_object>::find_first_empty_level(void) const {
 template <class key_object>
 uint32_t CascadeFilter<key_object>::find_levels_to_flush(void) {
 	uint32_t empty_level;
-	// Level 0 is always involved in the flush.
-	if (max_age)
-		ages[0] = (ages[0] + 1) % max_age;
 	for (empty_level = 1; empty_level < total_num_levels; empty_level++) {
 		if (flushes[empty_level] < gfactor) {
 			flushes[empty_level]++;
@@ -365,12 +370,13 @@ void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 			k.count -= thresholds[i];
 		} else {
 			if (max_age) {
-				uint64_t cur_count = filters[i].query(k);
+				uint64_t value;
+				uint64_t cur_count = filters[i].query_key(k, &value);
 				if (cur_count) { // if key is already present then use the exisiting age.
-					uint32_t cur_age = cur_count & BITMASK(num_age_bits);
-					k.count += cur_age;
+					uint32_t cur_age = value & BITMASK(num_age_bits);
+					k.value += cur_age;
 				} else {	// assign the age based in the current num_flush of the level
-					k.count += ages[i];
+					k.value += ages[i];
 				}
 			}
 			qf_arr[i].insert(k, LOCK_AND_SPIN);
@@ -388,8 +394,10 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 																							key_object cur, key_object next,
 																							uint32_t nlevels) {
 	if (max_age) {
-		uint32_t cur_age = cur.count & BITMASK(num_age_bits);
-		if (cur_age  == (ages[cur.level] + 1) % max_age) // flush the key down.
+		uint32_t cur_age = cur.value & BITMASK(num_age_bits);
+		// we are not incrementing the age of the level because it is already
+		// incremented.
+		if (cur_age  == ages[cur.level]) // flush the key down.
 			smear_element(qf_arr, cur, nlevels);
 		// not aged yet. reinsert at the same level with updated count.
 		else
@@ -450,7 +458,6 @@ CascadeFilter<key_object>::end() const {
 template <class key_object>
 key_object CascadeFilter<key_object>::Iterator::operator*(void) const {
 	key_object k = *qfi_arr[iter_cur_level];
-	//k.count = k.count >> num_age_bits;
 	k.level = iter_cur_level;
 	return k;
 }
@@ -594,8 +601,6 @@ void CascadeFilter<key_object>::shuffle_merge() {
 		 * Else, smear the count across levels starting from the bottom one.
 		 * */
 		if (cur_key == next_key) {
-			// we only need the count of the key from other levels.
-			next_key.count = next_key.count >> num_age_bits;
 			cur_key.count += next_key.count;
 		} else {
 			// TODO: If the count of the key is equal to THRESHOLD_VALUE then we
@@ -635,11 +640,15 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 		shuffle_merge();
 		// Increment the flushing count.
 		num_flush++;
+		PRINT_CF("Total elements inserted: " << get_num_elements());
+		PRINT_CF("Total distinct elements inserted: " <<
+						 get_num_dist_elements());
 	}
 
 	key_object dup_k(k);
+	uint64_t value;
 	// Get the current RAM count/age of the key.
-	uint64_t ram_count = filters[0].query(dup_k);
+	uint64_t ram_count = filters[0].query_key(dup_k, &value);
 
 #if 0
 	// This code is for the immediate reporting case.
@@ -660,12 +669,12 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 	// This code is for the time-stretch case.
 	/* use lower-order bits to store the age. */
 	if (max_age) {
-		dup_k.count *= max_age;	// this is the count.
+		dup_k.value *= max_age;	// this is the count.
 		if (ram_count) { // if key is already present then use the exisiting age.
-			uint32_t cur_age = ram_count & BITMASK(num_age_bits);
-			dup_k.count += cur_age;
+			uint32_t cur_age = value & BITMASK(num_age_bits);
+			dup_k.value += cur_age;
 		} else
-			dup_k.count += ages[0];
+			dup_k.value += ages[0];
 	}
 
 	/**
@@ -702,11 +711,8 @@ uint64_t CascadeFilter<key_object>::count_key_value(const key_object& k) {
 
 	uint64_t count = 0;
 	for (uint32_t i = 0; i < total_num_levels; i++) {
-		uint64_t cur = filters[i].query(k);
-		if (max_age) {
-			cur >>= num_age_bits;
-		}
-		count += cur;
+		uint64_t value;
+		count += filters[i].query_key(k, &value);
 	}
 
 	unlock();
