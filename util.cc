@@ -16,6 +16,16 @@
  * ============================================================================
  */
 
+#include <iostream>
+#include <algorithm>
+#include <cstring>
+#include <vector>
+#include <set>
+#include <unordered_set>
+#include <unordered_map>
+#include <bitset>
+#include <cassert>
+
 #include "util.h"
 
 void print_time_elapsed(std::string desc, struct timeval* start, struct
@@ -33,3 +43,27 @@ void print_time_elapsed(std::string desc, struct timeval* start, struct
 		"seconds" << std::endl;
 }
 
+void analyze_stream(uint64_t *vals, uint64_t nvals) {
+	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> key_lifetime;
+	std::multiset<uint64_t> key_counts;
+
+	PRINT_CF("Analyzing the steam");
+
+	for (uint32_t i = 0; i < nvals; i++) {
+		uint64_t key = vals[i];
+		if (key_counts.count(key) == 0) {
+			key_counts.insert(key);
+			key_lifetime[key] = std::pair<uint64_t, uint64_t>(i, i);
+		} else if (key_counts.count(key) < 23) {
+			key_counts.insert(key);
+		} else if (key_counts.count(key) == 23) {
+			key_counts.insert(key);
+			key_lifetime[key].second = i;
+		}
+	}
+	for (auto it : key_lifetime) {
+		assert (it.second.first <= it.second.second);
+		if (it.second.first < it.second.second)
+			PRINT_CF(it.first << " " << it.second.first << " " << it.second.second);
+	}
+}

@@ -228,7 +228,7 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 
 	// creating an exact CQF to store anomalies.
 	// It is half the size of the RAM CQF.
-	anomalies = CQF<key_object>(sizes[0]/2, num_hash_bits, num_value_bits,
+	anomalies = CQF<key_object>(sizes[0], num_hash_bits, num_value_bits,
 															/*mem*/ true, "", seed);
 
 	filters = (CQF<key_object>*)calloc(NUM_MAX_LEVELS, sizeof(CQF<key_object>));

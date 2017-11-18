@@ -43,4 +43,6 @@
 void print_time_elapsed(std::string desc, struct timeval* start, struct
 												timeval* end);
 
+void analyze_stream(uint64_t *vals, uint64_t nvals);
+
 #endif

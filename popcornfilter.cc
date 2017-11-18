@@ -181,5 +181,7 @@ main ( int argc, char *argv[] )
 
 	pf.print_stats();
 
+	analyze_stream(vals, nvals);
+
 	return EXIT_SUCCESS;
 }				/* ----------  end of function main  ---------- */
