@@ -71,6 +71,8 @@ class PopcornFilter {
 		uint64_t get_total_elements(void) const;
 		uint64_t get_total_dist_elements(void) const;
 
+		void print_stats(void) const;
+
 	private:
 		uint64_t nfilters;
 		uint32_t qbits;
@@ -100,7 +102,7 @@ class ThreadArgs {
 /* We use value bits to store the value of the key from FireHose. */
 #define NUM_VALUE_BITS 1
 /* We also use the value bits to store the age of the key. */
-#define NUM_AGE_BITS 1
+#define NUM_AGE_BITS 0
 
 template <class key_object>
 PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
@@ -194,6 +196,14 @@ uint64_t PopcornFilter<key_object>::query(const key_object& k, enum lock flag)
 	uint32_t filter_idx = dup_k.key >> nhashbits;
 	dup_k.key = dup_k.key & BITMASK(nhashbits);
 	return cf[filter_idx]->count_key_value(dup_k, flag);
+}
+
+template <class key_object>
+void PopcornFilter<key_object>::print_stats(void) const {
+	for (uint32_t i = 0; i < nfilters; i++) {
+		PRINT_CF("CascadeFilter " << i);
+		cf[i]->print_anomaly_stats();
+	}
 }
 
 #endif

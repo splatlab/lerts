@@ -179,5 +179,7 @@ main ( int argc, char *argv[] )
 	print_time_elapsed("", &start, &end);
 	PRINT_CF("Finished lookups.");
 
+	pf.print_stats();
+
 	return EXIT_SUCCESS;
 }				/* ----------  end of function main  ---------- */

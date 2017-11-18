@@ -63,6 +63,7 @@ class CascadeFilter {
 
 		const CQF<key_object>* get_filter(uint32_t level) const;
 
+		void print_anomaly_stats(void) const;
 		uint64_t get_num_elements(void) const;
 		uint64_t get_num_dist_elements(void) const;
 		uint32_t get_num_hash_bits(void) const;
@@ -226,8 +227,9 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	memset(ages, 0, num_filters *  sizeof(ages[0]));
 
 	// creating an exact CQF to store anomalies.
-	// It is as big as the size of the RAM CQF.
-	anomalies = CQF<key_object>(sizes[0]/2, 64, 0, /* mem */ true, "", seed);
+	// It is half the size of the RAM CQF.
+	anomalies = CQF<key_object>(sizes[0]/2, num_hash_bits, num_value_bits,
+															/*mem*/ true, "", seed);
 
 	filters = (CQF<key_object>*)calloc(NUM_MAX_LEVELS, sizeof(CQF<key_object>));
 
@@ -306,6 +308,32 @@ void CascadeFilter<key_object>::unlock(void)
 {
 	__sync_lock_release(&locked);
 	return;
+}
+
+template <class key_object>
+void CascadeFilter<key_object>::print_anomaly_stats(void) const {
+	uint64_t num_shuffle_merge = 0, num_odp = 0;
+	typename CQF<key_object>::Iterator it = anomalies.begin();
+	while (!it.done()) {
+		key_object k = *it;
+		if (k.value == 0) {
+			num_shuffle_merge++;
+			PRINT_CF("Shuffle-merge: " << k.key << " index: " << k.count);
+		} else if (k.value == 1) {
+			num_odp++;
+			PRINT_CF("ODP: " << k.key << " index: " << k.count);
+		} else {
+			PRINT_CF("Wrong value in the anomaly CQF.");
+			abort();
+		}
+		++it;
+	}
+
+	PRINT_CF("Number of keys above the THRESHOLD value " <<
+					 anomalies.distinct_elements());
+	PRINT_CF("Number of keys reported through shuffle-merges " <<
+					 num_shuffle_merge);
+	PRINT_CF("Number of keys reported through odp " << num_odp);
 }
 
 template <class key_object>
@@ -409,10 +437,12 @@ template <class key_object>
 void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 																							key_object cur, uint32_t
 																							nlevels) {
-	if (cur.count == THRESHOLD_VALUE) {
-		// I am using the value to store the index at which it is reported as
-		// an anomaly.
-		cur.value = get_num_elements();
+	uint64_t value;
+	if (cur.count >= THRESHOLD_VALUE && anomalies.query_key(cur, &value) == 0) {
+		// count in the index at which the key is reported.
+		// value 0 means that it is reported through shuffle-merge.
+		cur.count = get_num_elements();
+		cur.value = 0;
 		anomalies.insert(cur, LOCK_AND_SPIN);
 	} else {
 		if (max_age) {
@@ -448,7 +478,7 @@ CascadeFilter<key_object>::begin(uint32_t num_levels) const {
 
 	/* Initialize the iterator for all the levels. */
 	for (uint32_t i = 0; i < num_levels; i++)
-		qfi_arr[i] = filters[i].begin(ages[i], max_age);
+		qfi_arr[i] = filters[i].begin();
 
 	/* Find the level with the smallest key. */
 	uint32_t cur_level = 0;
@@ -656,8 +686,9 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 		if (!lock(flag))
 			return false;
 
+	uint64_t value;
 	// if the key is already reported then don't insert.
-	if (anomalies.query(k)) {
+	if (anomalies.query_key(k, &value)) {
 		if (flag != NO_LOCK)
 			unlock();
 		return true;
@@ -675,7 +706,6 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 
 	key_object dup_k(k);
 	// Get the current RAM count/age of the key.
-	uint64_t value;
 	uint64_t ram_count = filters[0].query_key(dup_k, &value);
 
 	// This code is for the immediate reporting case.
@@ -685,14 +715,20 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 	//
 	// We will not remove the key if it has been seen THRESHOLD times.
 	// The key will be removed in the next shuffle merge.
-	if (max_age == 0 && ram_count >= popcorn_threshold) {
+	if (max_age == 0 && ram_count >= popcorn_threshold &&
+			anomalies.query_key(dup_k, &value) == 0) {
 		uint64_t aggr_count;
 		aggr_count = count_key_value(k, NO_LOCK);
-		if (aggr_count == THRESHOLD_VALUE) {
-			dup_k.value = get_num_elements();
+		if (aggr_count >= THRESHOLD_VALUE) {
+			// count in the index at which the key is reported.
+			// value 1 means that it is reported through odp.
+			dup_k.count = get_num_elements();
+			dup_k.value = 1;
 			anomalies.insert(dup_k, LOCK_AND_SPIN);
-		} else {
-			dup_k.count = aggr_count - ram_count + 1;
+
+			if (flag != NO_LOCK)
+				unlock();
+			return true;
 		}
 	}
 
