@@ -90,7 +90,7 @@ class CascadeFilter {
 		class Iterator {
 			public:
 				Iterator(typename CQF<key_object>::Iterator arr[], uint32_t
-								 num_levels, uint32_t cur_level, uint32_t num_age_bits);
+								 num_levels, uint32_t cur_level);
 
 				/* Returns 0 if the iterator is still valid (i.e. has not reached the
 					 end of the QF. */
@@ -108,7 +108,6 @@ class CascadeFilter {
 				typename CQF<key_object>::Iterator *qfi_arr;
 				uint32_t iter_num_levels;
 				uint32_t iter_cur_level;
-				uint32_t num_age_bits;
 		};
 
 		Iterator begin(uint32_t num_levels) const;
@@ -121,6 +120,11 @@ class CascadeFilter {
 		bool is_full(uint32_t level);
 
 		/**
+		 * Returns true if the key is aged at the level it is in.
+		 */
+		bool is_aged(const key_object k) const;
+
+		/**
 		 * Returns the index of the first empty level.
 		 */
 		uint32_t find_first_empty_level(void);
@@ -129,6 +133,11 @@ class CascadeFilter {
 		 * Return the number of levels to merge into given "num_flush" . 
 		 */
 		uint32_t find_levels_to_flush();
+
+		/**
+		 * Update the flush counters.
+		 */
+		void update_flush_counters(uint32_t nlevels);
 
 		/** Perform a standard cascade filter merge. It merges "num_levels" levels
 		 * and inserts all the elements into a new level.  Merge will be called
@@ -186,12 +195,13 @@ class CascadeFilter {
 		std::string prefix;
 		uint32_t thresholds[NUM_MAX_LEVELS];
 		uint64_t sizes[NUM_MAX_LEVELS];
-		uint64_t flushes[NUM_MAX_LEVELS];
-		uint64_t ages[NUM_MAX_LEVELS];
+		uint16_t flushes[NUM_MAX_LEVELS];
+		uint8_t ages[NUM_MAX_LEVELS];
 		uint32_t num_flush;
 		uint32_t gfactor;
 		uint32_t popcorn_threshold;
 		uint32_t max_age;
+		uint32_t num_obs_seen;
 		uint32_t seed;
 		volatile int locked;
 };
@@ -219,6 +229,7 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	num_flush = 0;
 	gfactor = filter_sizes[1] / filter_sizes[0];
 	popcorn_threshold = 0;
+	num_obs_seen = 0;
 	seed = 2038074761;
 	locked = 0;
 	memcpy(thresholds, filter_thlds, num_filters * sizeof(thresholds[0]));
@@ -346,7 +357,7 @@ bool CascadeFilter<key_object>::is_full(uint32_t level) {
 		int num_obs_frac = get_num_elements()/num_obs;
 		if (num_obs_frac > last_frac) {
 			DEBUG_CF("Num obs fraction: " << num_obs_frac);
-			// Age is increases for level 0 whenever it is 1/alpha full.
+			// Age is increased for level 0 whenever it is 1/alpha full.
 			ages[0] = (ages[0] + 1) % max_age;
 			last_frac = num_obs_frac;
 			if (num_obs_frac > 1)
@@ -391,23 +402,38 @@ template <class key_object>
 uint32_t CascadeFilter<key_object>::find_levels_to_flush(void) {
 	uint32_t empty_level;
 	for (empty_level = 1; empty_level < total_num_levels; empty_level++) {
-		if (flushes[empty_level] < gfactor) {
-			flushes[empty_level]++;
+		if (flushes[empty_level] < gfactor)
 			break;
-		}
-		else {
-			if (max_age)
-				ages[empty_level] = (ages[empty_level] + 1) % max_age;
-			flushes[empty_level] = 0;
-		}
 	}
+	if (max_age)
+		ages[empty_level] = (ages[empty_level] + 1) % max_age;
+
 	return empty_level;
+}
+
+template <class key_object>
+void CascadeFilter<key_object>::update_flush_counters(uint32_t nlevels) {
+	for (uint32_t i = 1; i < nlevels; i++)
+		flushes[i] = (flushes[i] + 1) % (gfactor + 1);
+}
+
+// if the age of the level is changed (incremented) during this flush then
+// all the keys are aged that have age equal to the current level age.
+// if the age of level is not changed (incremented) during this flush then
+// all the keys that have age one smaller than the current level age are
+// aged.
+template <class key_object>
+bool CascadeFilter<key_object>::is_aged(const key_object k) const {
+	uint8_t age = k.value & BITMASK(num_age_bits);
+	if (age == ages[k.level])
+		return true;
+	return false;
 }
 
 template <class key_object>
 void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 																							key_object k, uint32_t nlevels) {
-	for (int32_t i = nlevels - 1; i > 0; i--) {
+	for (int32_t i = nlevels; i > 0; i--) {
 		if (k.count > thresholds[i]) {
 			key_object cur(k.key, k.value, thresholds[i], 0);
 			qf_arr[i].insert(cur, LOCK_AND_SPIN);
@@ -417,10 +443,10 @@ void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 				uint64_t value;
 				uint64_t cur_count = filters[i].query_key(k, &value);
 				if (cur_count) { // if key is already present then use the exisiting age.
-					uint32_t cur_age = value & BITMASK(num_age_bits);
-					k.value += cur_age;
+					uint8_t cur_age = value & BITMASK(num_age_bits);
+					k.value = k.value & cur_age;
 				} else {	// assign the age based in the current num_flush of the level
-					k.value += ages[i];
+					k.value = k.value & ages[i];
 				}
 			}
 			qf_arr[i].insert(k, LOCK_AND_SPIN);
@@ -441,17 +467,18 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 	if (cur.count >= THRESHOLD_VALUE && anomalies.query_key(cur, &value) == 0) {
 		// count in the index at which the key is reported.
 		// value 0 means that it is reported through shuffle-merge.
-		cur.count = get_num_elements();
+		cur.count = num_obs_seen;
 		cur.value = 0;
 		anomalies.insert(cur, LOCK_AND_SPIN);
 	} else {
 		if (max_age) {
-			uint32_t cur_age = cur.value & BITMASK(num_age_bits);
-			// we are not incrementing the age of the level because it is already
-			// incremented.
-			if (cur_age  == ages[cur.level]) // flush the key down.
-				smear_element(qf_arr, cur, nlevels);
-			// not aged yet. reinsert at the same level with updated count.
+			// if key is aged then flush it to the next level.
+			if (cur.level < nlevels && is_aged(cur)) { // flush the key down.
+				assert(cur.level < nlevels);
+				smear_element(qf_arr, cur, cur.level + 1);
+			}
+			// not aged yet. reinsert the key with aggregated count in the lowest
+			// leve (involved in the shuffle-merge) it was present in.
 			else
 				qf_arr[cur.level].insert(cur, LOCK_AND_SPIN);
 		} else
@@ -463,10 +490,8 @@ template <class key_object>
 CascadeFilter<key_object>::Iterator::Iterator(typename
 																							CQF<key_object>::Iterator arr[],
 																							uint32_t num_levels,
-																							uint32_t cur_level, uint32_t
-																							num_age_bits) :
-	qfi_arr(arr), iter_num_levels(num_levels), iter_cur_level(cur_level),
-	num_age_bits(num_age_bits) {};
+																							uint32_t cur_level) :
+	qfi_arr(arr), iter_num_levels(num_levels), iter_cur_level(cur_level) {};
 
 template <class key_object>
 typename CascadeFilter<key_object>::Iterator
@@ -497,7 +522,7 @@ CascadeFilter<key_object>::begin(uint32_t num_levels) const {
 		}
 	}
 
-	return Iterator(qfi_arr, num_levels, cur_level, num_age_bits);
+	return Iterator(qfi_arr, num_levels, cur_level);
 }
 
 template <class key_object>
@@ -505,7 +530,7 @@ typename CascadeFilter<key_object>::Iterator
 CascadeFilter<key_object>::end() const {
 	typename CQF<key_object>::Iterator qfi_arr = filters[0].end(ages[0], 0);
 
-	return Iterator(&qfi_arr, 1, 0, num_age_bits);
+	return Iterator(&qfi_arr, 1, 0);
 }
 
 template <class key_object>
@@ -639,7 +664,7 @@ void CascadeFilter<key_object>::shuffle_merge() {
 	DEBUG_CF("Old CQFs");
 	for (uint32_t i = 0; i < nlevels; i++) {
 		DEBUG_CF("CQF " << i << " threshold " << thresholds[i] << " age " <<
-						 ages[i]);
+						 (unsigned)ages[i]);
 		filters[i].dump_metadata();
 	}
 
@@ -651,12 +676,16 @@ void CascadeFilter<key_object>::shuffle_merge() {
 	while(!it.done()) {
 		next_key = *it;
 		/* If next_key is same as cur_key then aggregate counts.
+		 * Also, keep the age (i.e., value) from the lowest level containing the
+		 * key.
 		 * Else, smear the count across levels starting from the bottom one.
 		 * */
 		if (cur_key == next_key) {
 			cur_key.count += next_key.count;
+			cur_key.value = next_key.value;
+			cur_key.level = next_key.level;
 		} else {
-				insert_element(new_filters, cur_key, nlevels);
+				insert_element(new_filters, cur_key, nlevels - 1);
 			/* Update cur_key. */
 			cur_key = next_key;
 		}
@@ -665,11 +694,13 @@ void CascadeFilter<key_object>::shuffle_merge() {
 	}
 
 	/* Insert the last key in the cascade filter. */
-	insert_element(new_filters, cur_key, nlevels);
+	insert_element(new_filters, cur_key, nlevels - 1);
+
+	update_flush_counters(nlevels);
 
 	DEBUG_CF("New CQFs");
 	for (uint32_t i = 0; i < nlevels; i++) {
-		DEBUG_CF("CQF " << i << " age " << ages[i]);
+		DEBUG_CF("CQF " << i << " age " << (unsigned)ages[i]);
 		new_filters[i].dump_metadata();
 	}
 
@@ -686,6 +717,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 		if (!lock(flag))
 			return false;
 
+	num_obs_seen++;
 	uint64_t value;
 	// if the key is already reported then don't insert.
 	if (anomalies.query_key(k, &value)) {
@@ -722,7 +754,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 		if (aggr_count >= THRESHOLD_VALUE) {
 			// count in the index at which the key is reported.
 			// value 1 means that it is reported through odp.
-			dup_k.count = get_num_elements();
+			dup_k.count = num_obs_seen;
 			dup_k.value = 1;
 			anomalies.insert(dup_k, LOCK_AND_SPIN);
 
@@ -735,12 +767,12 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 	// This code is for the time-stretch case.
 	/* use lower-order bits to store the age. */
 	if (max_age) {
-		dup_k.value *= max_age;	// this is the count.
+		dup_k.value *= max_age;	// We shift the value to store age in lower bits.
 		if (ram_count) { // if key is already present then use the exisiting age.
-			uint32_t cur_age = value & BITMASK(num_age_bits);
-			dup_k.value += cur_age;
-		} else
-			dup_k.value += ages[0];
+			uint8_t cur_age = value & BITMASK(num_age_bits);
+			dup_k.value = dup_k.value & cur_age;
+		} else // else we use the current age of the level.
+			dup_k.value = dup_k.value & ages[0];
 	}
 
 	/**
