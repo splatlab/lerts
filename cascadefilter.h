@@ -735,9 +735,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 		shuffle_merge();
 		// Increment the flushing count.
 		num_flush++;
-		PRINT_CF("Total elements inserted: " << get_num_elements());
-		PRINT_CF("Total distinct elements inserted: " <<
-						 get_num_dist_elements());
+		PRINT_CF("Number of observations seen: " << num_obs_seen);
 	}
 
 	key_object dup_k(k);
