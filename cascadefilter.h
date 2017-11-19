@@ -178,6 +178,8 @@ class CascadeFilter {
 		void insert_element(CQF<key_object> *qf_arr, key_object cur, uint32_t
 												level);
 
+		uint64_t ondisk_count(key_object k) const;
+
 		/**
 		 * Try to acquire a lock once and return even if the lock is busy.
 		 * If spin flag is set, then spin until the lock is available.
@@ -464,12 +466,14 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 																							key_object cur, uint32_t
 																							nlevels) {
 	uint64_t value;
-	if (cur.count >= THRESHOLD_VALUE && anomalies.query_key(cur, &value) == 0) {
-		// count in the index at which the key is reported.
-		// value 0 means that it is reported through shuffle-merge.
-		cur.count = num_obs_seen;
-		cur.value = 0;
-		anomalies.insert(cur, LOCK_AND_SPIN);
+	if (cur.count >= THRESHOLD_VALUE) {
+		if (anomalies.query_key(cur, &value) == 0) {
+			// count in the index at which the key is reported.
+			// value 0 means that it is reported through shuffle-merge.
+			cur.count = num_obs_seen - 1;
+			cur.value = 0;
+			anomalies.insert(cur, LOCK_AND_SPIN);
+		}
 	} else {
 		if (max_age) {
 			// if key is aged then flush it to the next level.
@@ -740,30 +744,6 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 	// Get the current RAM count/age of the key.
 	uint64_t ram_count = filters[0].query_key(dup_k, &value);
 
-	// This code is for the immediate reporting case.
-	// If the count of the key is equal to "THRESHOLD_VALUE -
-	// TOTAL_DISK_THRESHOLD" then we will
-	// have to perform an on-demand poprorn.
-	//
-	// We will not remove the key if it has been seen THRESHOLD times.
-	// The key will be removed in the next shuffle merge.
-	if (max_age == 0 && ram_count >= popcorn_threshold &&
-			anomalies.query_key(dup_k, &value) == 0) {
-		uint64_t aggr_count;
-		aggr_count = count_key_value(k, NO_LOCK);
-		if (aggr_count >= THRESHOLD_VALUE) {
-			// count in the index at which the key is reported.
-			// value 1 means that it is reported through odp.
-			dup_k.count = num_obs_seen;
-			dup_k.value = 1;
-			anomalies.insert(dup_k, LOCK_AND_SPIN);
-
-			if (flag != NO_LOCK)
-				unlock();
-			return true;
-		}
-	}
-
 	// This code is for the time-stretch case.
 	/* use lower-order bits to store the age. */
 	if (max_age) {
@@ -781,6 +761,27 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 	 * will not corrupt the data structure.
 	 */
 	bool ret = filters[0].insert(dup_k, LOCK_AND_SPIN);
+
+	// This code is for the immediate reporting case.
+	// If the count of the key is equal to "THRESHOLD_VALUE -
+	// TOTAL_DISK_THRESHOLD" then we will
+	// have to perform an on-demand poprorn.
+	//
+	// We will not remove the key if it has been seen THRESHOLD times.
+	// The key will be removed in the next shuffle merge.
+	ram_count += 1;
+	if (max_age == 0 && ram_count >= popcorn_threshold &&
+			anomalies.query_key(dup_k, &value) == 0) {
+		uint64_t aggr_count;
+		aggr_count = ondisk_count(dup_k) + ram_count;
+		if (aggr_count == THRESHOLD_VALUE) {
+			// count in the index at which the key is reported.
+			// value 1 means that it is reported through odp.
+			dup_k.count = num_obs_seen - 1;
+			dup_k.value = 1;
+			anomalies.insert(dup_k, LOCK_AND_SPIN);
+		}
+	}
 
 	if (flag != NO_LOCK)
 		unlock();
@@ -804,16 +805,26 @@ bool CascadeFilter<key_object>::remove(const key_object& k, enum lock flag) {
 }
 
 template <class key_object>
+uint64_t CascadeFilter<key_object>::ondisk_count(key_object k) const {
+	uint64_t value;
+	uint64_t count = 0;
+	for (uint32_t i = 1; i < total_num_levels; i++) {
+		count += filters[i].query_key(k, &value);
+	}
+	return count;
+}
+
+template <class key_object>
 uint64_t CascadeFilter<key_object>::count_key_value(const key_object& k, enum
 																										lock flag) {
 	if (flag != NO_LOCK)
 		if (!lock(flag))
 			return false;
 
-	uint64_t count = anomalies.query(k);
+	uint64_t value;
+	uint64_t count = anomalies.query_key(k, &value);
 	if (count == 0) {
 		for (uint32_t i = 0; i < total_num_levels; i++) {
-			uint64_t value;
 			count += filters[i].query_key(k, &value);
 		}
 	}

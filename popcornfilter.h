@@ -102,7 +102,7 @@ class ThreadArgs {
 /* We use value bits to store the value of the key from FireHose. */
 #define NUM_VALUE_BITS 1
 /* We use the lower-order value bits to store the age of the key. */
-#define NUM_AGE_BITS 1
+#define NUM_AGE_BITS 0
 
 template <class key_object>
 PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,

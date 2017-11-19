@@ -47,28 +47,25 @@ void analyze_stream(uint64_t *vals, uint64_t nvals) {
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> key_lifetime;
 	std::multiset<uint64_t> key_counts;
 
-	PRINT_CF("Analyzing the steam");
+	PRINT_CF("Stream stats");
 
-	uint64_t total_inserted_keys = 0;
 	for (uint32_t i = 0; i < nvals; i++) {
 		uint64_t key = vals[i];
-		if (key_counts.count(key) == 0) {
-			key_counts.insert(key);
+		key_counts.insert(key);
+		if (key_counts.count(key) == 1)
 			key_lifetime[key] = std::pair<uint64_t, uint64_t>(i, i);
-			total_inserted_keys++;
-		} else if (key_counts.count(key) < 23) {
-			key_counts.insert(key);
-			total_inserted_keys++;
-		} else if (key_counts.count(key) == 23) {
-			key_counts.insert(key);
+
+		if (key_counts.count(key) == 24)
 			key_lifetime[key].second = i;
-			total_inserted_keys++;
-		}
 	}
+	uint64_t total_anomalies = 0;
 	for (auto it : key_lifetime) {
 		assert (it.second.first <= it.second.second);
-		if (it.second.first < it.second.second)
+		if (it.second.first < it.second.second) {
 			PRINT_CF(it.first << " " << it.second.first << " " << it.second.second);
+			total_anomalies++;
+		}
 	}
-	PRINT_CF("Total inserted keys: " << total_inserted_keys);
+
+	PRINT_CF("Number of keys above threshold: " << total_anomalies);
 }
