@@ -28,6 +28,7 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <queue>
 #include <unordered_set>
 #include <bitset>
 #include <cassert>
@@ -90,7 +91,7 @@ class CascadeFilter {
 		class Iterator {
 			public:
 				Iterator(typename CQF<key_object>::Iterator arr[], uint32_t
-								 num_levels, uint32_t cur_level);
+								 num_levels);
 
 				/* Returns 0 if the iterator is still valid (i.e. has not reached the
 					 end of the QF. */
@@ -106,8 +107,9 @@ class CascadeFilter {
 			private:
 
 				typename CQF<key_object>::Iterator *qfi_arr;
+				std::priority_queue<key_object, std::vector<key_object>,
+					compare<key_object>> min_heap;
 				uint32_t iter_num_levels;
-				uint32_t iter_cur_level;
 		};
 
 		Iterator begin(uint32_t num_levels) const;
@@ -493,9 +495,16 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 template <class key_object>
 CascadeFilter<key_object>::Iterator::Iterator(typename
 																							CQF<key_object>::Iterator arr[],
-																							uint32_t num_levels,
-																							uint32_t cur_level) :
-	qfi_arr(arr), iter_num_levels(num_levels), iter_cur_level(cur_level) {};
+																							uint32_t num_levels) :
+	qfi_arr(arr), iter_num_levels(num_levels) {
+		for (uint32_t i = 0; i < iter_num_levels; i++) {
+			if (!qfi_arr[i].done()) {
+				key_object k = *qfi_arr[i];
+				k.level = i;
+				min_heap.push(k);
+			}
+		}
+	}
 
 template <class key_object>
 typename CascadeFilter<key_object>::Iterator
@@ -509,24 +518,7 @@ CascadeFilter<key_object>::begin(uint32_t num_levels) const {
 	for (uint32_t i = 0; i < num_levels; i++)
 		qfi_arr[i] = filters[i].begin();
 
-	/* Find the level with the smallest key. */
-	uint32_t cur_level = 0;
-	key_object key;
-	uint64_t smallest_key = UINT64_MAX;
-	for (uint32_t i = 0; i < num_levels; i++) {
-		if (!qfi_arr[i].done()) {
-			key = *qfi_arr[i];
-			if (key.key < smallest_key)
-				cur_level = i;
-		} else {
-			/* remove the qf iterator that has already reached the end. */
-			memmove(&qfi_arr[i], &qfi_arr[i + 1], (num_levels - i -
-																						 1) * sizeof(qfi_arr[0]));
-			num_levels--;
-		}
-	}
-
-	return Iterator(qfi_arr, num_levels, cur_level);
+	return Iterator(qfi_arr, num_levels);
 }
 
 template <class key_object>
@@ -534,53 +526,41 @@ typename CascadeFilter<key_object>::Iterator
 CascadeFilter<key_object>::end() const {
 	typename CQF<key_object>::Iterator qfi_arr = filters[0].end(ages[0], 0);
 
-	return Iterator(&qfi_arr, 1, 0);
+	return Iterator(&qfi_arr, 1);
 }
 
 template <class key_object>
 key_object CascadeFilter<key_object>::Iterator::operator*(void) const {
-	key_object k = *qfi_arr[iter_cur_level];
-	k.level = iter_cur_level;
+	key_object k = min_heap.top();
 	return k;
 }
 
 template <class key_object>
 void CascadeFilter<key_object>::Iterator::operator++(void) {
-	assert(iter_cur_level < iter_num_levels);
+	key_object k = min_heap.top();
+	min_heap.pop();
 
-	/* Move the iterator for "iter_cur_level". */
-	++qfi_arr[iter_cur_level];
-
-	// End of the cascade filter. 
-	if (iter_num_levels == 1 && qfi_arr[iter_cur_level].done())
-		return;
-
-	/* remove the qf iterator that is exhausted from the array if it is not
-	 * the last level. */
-	if (iter_num_levels > 1 && qfi_arr[iter_cur_level].done()) {
-		if (iter_cur_level < iter_num_levels - 1)
-			memmove(&qfi_arr[iter_cur_level], &qfi_arr[iter_cur_level + 1],
-							(iter_num_levels - iter_cur_level - 1)*sizeof(qfi_arr[0]));
-		iter_num_levels--;
+	// Incrementing the iterator of the level of the current smallest key and if
+	// its not done then insert it in the min heap.
+	++qfi_arr[k.level];
+	uint32_t level = k.level;
+	if (!qfi_arr[level].done()) {
+		key_object k = *qfi_arr[level];
+		k.level = level;
+		min_heap.push(k);
 	}
-
-	/* Find the smallest key across levels and update "iter_cur_level". */
-	//uint64_t key, value, count;
-	uint64_t smallest_key = UINT64_MAX;
-	for (uint32_t i = 0; i < iter_num_levels; i++)
-		if (!qfi_arr[i].done()) {
-			key_object k = *qfi_arr[i];
-			if (k.key < smallest_key)
-				iter_cur_level = i;
-		}
 }
 
 template <class key_object>
 bool CascadeFilter<key_object>::Iterator::done() const {
+	return min_heap.empty();
+
+#if 0
 	assert(iter_cur_level < iter_num_levels);
 	if (iter_num_levels == 1 && qfi_arr[iter_cur_level].done())
 		return true;
 	return false;
+#endif
 }
 
 template <class key_object>
@@ -689,7 +669,8 @@ void CascadeFilter<key_object>::shuffle_merge() {
 			cur_key.value = next_key.value;
 			cur_key.level = next_key.level;
 		} else {
-				insert_element(new_filters, cur_key, nlevels - 1);
+			DEBUG_CF("Inserting key: " << cur_key.key << " count " << cur_key.count);
+			insert_element(new_filters, cur_key, nlevels - 1);
 			/* Update cur_key. */
 			cur_key = next_key;
 		}
@@ -697,6 +678,7 @@ void CascadeFilter<key_object>::shuffle_merge() {
 		++it;
 	}
 
+	DEBUG_CF("Inserting key: " << cur_key.key << " count " << cur_key.count);
 	/* Insert the last key in the cascade filter. */
 	insert_element(new_filters, cur_key, nlevels - 1);
 

@@ -108,6 +108,13 @@ class KeyObject {
 };
 
 template <class key_obj>
+struct compare {
+	bool operator()(const key_obj& lhs, const key_obj& rhs) {
+		return lhs.key > rhs.key;
+	}
+};
+
+template <class key_obj>
 CQF<key_obj>::CQF() {
 	// dumpy filter.
 	qf_init(&cqf, 1ULL << 6, 10, 0, true, "", 23423);
