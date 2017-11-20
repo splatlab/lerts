@@ -676,7 +676,6 @@ void CascadeFilter<key_object>::shuffle_merge() {
 			cur_key.value = next_key.value;
 			cur_key.level = next_key.level;
 		} else {
-			DEBUG_CF("Inserting key: " << cur_key.key << " count " << cur_key.count);
 			insert_element(new_filters, cur_key, nlevels - 1);
 			/* Update cur_key. */
 			cur_key = next_key;
@@ -685,7 +684,6 @@ void CascadeFilter<key_object>::shuffle_merge() {
 		++it;
 	}
 
-	DEBUG_CF("Inserting key: " << cur_key.key << " count " << cur_key.count);
 	/* Insert the last key in the cascade filter. */
 	insert_element(new_filters, cur_key, nlevels - 1);
 
