@@ -810,7 +810,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 	}
 
 	if (is_full(0)) {
-		PRINT_CF("Number of observations seen: " << num_obs_seen);
+		DEBUG_CF("Number of observations seen: " << num_obs_seen);
 		DEBUG_CF("Flushing " << num_flush);
 		shuffle_merge();
 		// Increment the flushing count.
