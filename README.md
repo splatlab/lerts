@@ -4,7 +4,7 @@ To run the program.
 
 ```bash
 $ make popcornfilter
-$ ./popcornfilter 16 4 4 2 4
+$ ./popcornfilter 16 4 4 1 1
 ```
 
 Here is an explanation of the arguments:
