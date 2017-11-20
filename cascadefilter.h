@@ -64,7 +64,7 @@ class CascadeFilter {
 
 		const CQF<key_object>* get_filter(uint32_t level) const;
 
-		void print_anomaly_stats(void) const;
+		void print_anomaly_stats(void);
 		uint64_t get_num_elements(void) const;
 		uint64_t get_num_dist_elements(void) const;
 		uint32_t get_num_hash_bits(void) const;
@@ -140,6 +140,11 @@ class CascadeFilter {
 		 * Update the flush counters.
 		 */
 		void update_flush_counters(uint32_t nlevels);
+
+		/**
+		 * report anomalies currently in the system.
+		 */
+		void find_anomalies(void);
 
 		/** Perform a standard cascade filter merge. It merges "num_levels" levels
 		 * and inserts all the elements into a new level.  Merge will be called
@@ -326,7 +331,9 @@ void CascadeFilter<key_object>::unlock(void)
 }
 
 template <class key_object>
-void CascadeFilter<key_object>::print_anomaly_stats(void) const {
+void CascadeFilter<key_object>::print_anomaly_stats(void) {
+	// find anomalies that are not reported yet.
+	find_anomalies();
 	uint64_t num_shuffle_merge = 0, num_odp = 0;
 	typename CQF<key_object>::Iterator it = anomalies.begin();
 	while (!it.done()) {
@@ -694,6 +701,51 @@ void CascadeFilter<key_object>::shuffle_merge() {
 	for (uint32_t i = 0; i < nlevels; i++) {
 		filters[i].destroy();
 		memcpy(&filters[i], &new_filters[i], sizeof(QF));
+	}
+}
+
+template <class key_object>
+void CascadeFilter<key_object>::find_anomalies(void) {
+	KeyObject cur_key, next_key;
+	CascadeFilter<key_object>::Iterator it = begin(total_num_levels);
+	cur_key = *it;
+	++it;
+
+	uint64_t value;
+	while(!it.done()) {
+		next_key = *it;
+		/* If next_key is same as cur_key then aggregate counts.
+		 * Also, keep the age (i.e., value) from the lowest level containing the
+		 * key.
+		 * Else, smear the count across levels starting from the bottom one.
+		 * */
+		if (cur_key == next_key) {
+			cur_key.count += next_key.count;
+		} else {
+			if (cur_key.count >= THRESHOLD_VALUE) {
+				if (anomalies.query_key(cur_key, &value) == 0) {
+					// count in the index at which the key is reported.
+					// value 0 means that it is reported through shuffle-merge.
+					cur_key.count = num_obs_seen - 1;
+					cur_key.value = 0;
+					anomalies.insert(cur_key, LOCK_AND_SPIN);
+				}
+			}
+			/* Update cur_key. */
+			cur_key = next_key;
+		}
+		/* Increment the iterator. */
+		++it;
+	}
+
+	if (cur_key.count >= THRESHOLD_VALUE) {
+		if (anomalies.query_key(cur_key, &value) == 0) {
+			// count in the index at which the key is reported.
+			// value 0 means that it is reported through shuffle-merge.
+			cur_key.count = num_obs_seen - 1;
+			cur_key.value = 0;
+			anomalies.insert(cur_key, LOCK_AND_SPIN);
+		}
 	}
 }
 
