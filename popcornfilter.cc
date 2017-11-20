@@ -184,6 +184,8 @@ main ( int argc, char *argv[] )
 	print_time_elapsed("", &start, &end);
 	PRINT_CF("Finished lookups.");
 
+	//pf.print_stats();
+
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> keylifetimes =
 		analyze_stream(vals, nvals);
 

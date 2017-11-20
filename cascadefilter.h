@@ -365,6 +365,7 @@ template <class key_object>
 bool CascadeFilter<key_object>::validate_key_lifetimes(
 								std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
 								key_lifetime) {
+	uint32_t failures = 0;
 	if (max_age) {
 		// find anomalies that are not reported yet.
 		find_anomalies();
@@ -375,8 +376,13 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 				key_object k(it.first, 0, 0, 0);
 				uint64_t lifetime = it.second.second - it.second.first;
 				uint64_t reporttime = anomalies.query_key(k, &value) - it.second.first;
-				if (reporttime > lifetime * stretch)
-					return false;
+				if (reporttime > lifetime * stretch) {
+					PRINT_CF("Time-stretch reporting failed Key: " << it.first <<
+									 " Index-0: " << it.second.first << " Index-T " <<
+									 it.second.second << " Reporting index " <<
+									 anomalies.query_key(k, &value));
+					failures++;
+				}
 			}
 		}
 	} else {
@@ -385,13 +391,22 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 				uint64_t value;
 				key_object k(it.first, 0, 0, 0);
 				uint64_t reportindex = anomalies.query_key(k, &value);
-				if (reportindex != it.second.second)
-					return false;
+				if (reportindex != it.second.second) {
+					PRINT_CF("Immediate reporting failed Key: " << it.first <<
+									 " Index-T " << it.second.second << " Reporting index "
+									 << reportindex);
+					failures++;
+				}
 			}
 		}
 	}
 
-	return true;
+	if (!failures)
+		return true;
+	else {
+		PRINT_CF("Failed to report " << failures << " keys on time.");
+		return false;
+	}
 }
 
 template <class key_object>
@@ -597,13 +612,6 @@ void CascadeFilter<key_object>::Iterator::operator++(void) {
 template <class key_object>
 bool CascadeFilter<key_object>::Iterator::done() const {
 	return min_heap.empty();
-
-#if 0
-	assert(iter_cur_level < iter_num_levels);
-	if (iter_num_levels == 1 && qfi_arr[iter_cur_level].done())
-		return true;
-	return false;
-#endif
 }
 
 template <class key_object>
