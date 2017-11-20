@@ -541,11 +541,14 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 			if (cur.level < nlevels && is_aged(cur)) { // flush the key down.
 				assert(cur.level < nlevels);
 				smear_element(qf_arr, cur, cur.level + 1);
+				//PRINT_CF("Aged " << cur.to_string());
 			}
 			// not aged yet. reinsert the key with aggregated count in the lowest
-			// leve (involved in the shuffle-merge) it was present in.
-			else
+			// level (involved in the shuffle-merge) it was present in.
+			else {
 				qf_arr[cur.level].insert(cur, LOCK_AND_SPIN);
+				//PRINT_CF("Not aged " << cur.to_string());
+			}
 		} else
 			smear_element(qf_arr, cur, nlevels);
 	}
