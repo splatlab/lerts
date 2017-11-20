@@ -101,6 +101,12 @@ class KeyObject {
 
 		bool operator==(KeyObject k) { return key == k.key; }
 
+		std::string to_string() {
+			return "Key: " + std::to_string(key) + " Value: " + std::to_string(value)
+				+ " Count: " + std::to_string(count) + " Level: " +
+				std::to_string(level);
+		}
+
 		uint64_t key;
 		uint64_t value;
 		uint64_t count;

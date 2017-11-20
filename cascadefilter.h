@@ -416,7 +416,7 @@ bool CascadeFilter<key_object>::is_full(uint32_t level) {
 		// we increment the age when the number of observations seen is increased
 		// by ram_size/2.
 		double num_obs = get_filter(0)->total_slots()/(double)max_age;
-		int num_obs_frac = get_num_elements()/num_obs;
+		int num_obs_frac = num_obs_seen/num_obs;
 		if (num_obs_frac > last_frac) {
 			DEBUG_CF("Num obs fraction: " << num_obs_frac);
 			// Age is increased for level 0 whenever it is 1/alpha full.
@@ -533,6 +533,7 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 			cur.count = num_obs_seen - 1;
 			cur.value = 0;
 			anomalies.insert(cur, LOCK_AND_SPIN);
+			//PRINT_CF("Reporting " << cur.to_string());
 		}
 	} else {
 		if (max_age) {
@@ -720,6 +721,7 @@ void CascadeFilter<key_object>::shuffle_merge() {
 			cur_key.value = next_key.value;
 			cur_key.level = next_key.level;
 		} else {
+			//PRINT_CF("Inserting " << cur_key.to_string());
 			insert_element(new_filters, cur_key, nlevels - 1);
 			/* Update cur_key. */
 			cur_key = next_key;
@@ -728,6 +730,7 @@ void CascadeFilter<key_object>::shuffle_merge() {
 		++it;
 	}
 
+	//PRINT_CF("Inserting " << cur_key.to_string());
 	/* Insert the last key in the cascade filter. */
 	insert_element(new_filters, cur_key, nlevels - 1);
 
@@ -807,11 +810,11 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 	}
 
 	if (is_full(0)) {
+		PRINT_CF("Number of observations seen: " << num_obs_seen);
 		DEBUG_CF("Flushing " << num_flush);
 		shuffle_merge();
 		// Increment the flushing count.
 		num_flush++;
-		PRINT_CF("Number of observations seen: " << num_obs_seen);
 	}
 
 	key_object dup_k(k);
@@ -836,6 +839,18 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 	 */
 	bool ret = filters[0].insert(dup_k, LOCK_AND_SPIN);
 
+	ram_count += 1;	// update the RAM count after the current insertion.
+
+	// To check if a key has the THRESHOLD value in RAM.
+	if (ram_count >= THRESHOLD_VALUE &&
+			anomalies.query_key(dup_k, &value) == 0) {
+		// count in the index at which the key is reported.
+		// value 1 means that it is reported through odp.
+		dup_k.count = num_obs_seen - 1;
+		dup_k.value = 1;
+		anomalies.insert(dup_k, LOCK_AND_SPIN);
+	}
+
 	// This code is for the immediate reporting case.
 	// If the count of the key is equal to "THRESHOLD_VALUE -
 	// TOTAL_DISK_THRESHOLD" then we will
@@ -843,7 +858,6 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 	//
 	// We will not remove the key if it has been seen THRESHOLD times.
 	// The key will be removed in the next shuffle merge.
-	ram_count += 1;
 	if (max_age == 0 && ram_count >= popcorn_threshold &&
 			anomalies.query_key(dup_k, &value) == 0) {
 		uint64_t aggr_count;
