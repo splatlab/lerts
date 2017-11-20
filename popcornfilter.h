@@ -72,6 +72,8 @@ class PopcornFilter {
 		uint64_t get_total_dist_elements(void) const;
 
 		void print_stats(void) const;
+		bool validate_anomalies(std::unordered_map<uint64_t,
+															 std::pair<uint64_t, uint64_t>> key_lifetime);
 
 	private:
 		uint64_t nfilters;
@@ -204,6 +206,16 @@ void PopcornFilter<key_object>::print_stats(void) const {
 		PRINT_CF("CascadeFilter " << i);
 		cf[i]->print_anomaly_stats();
 	}
+}
+
+template <class key_object>
+bool PopcornFilter<key_object>::validate_anomalies(
+								std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
+								key_lifetime) {
+	for (uint32_t i = 0; i < nfilters; i++)
+		if (!cf[i]->validate_key_lifetimes(key_lifetime))
+			return false;
+	return true;
 }
 
 #endif

@@ -24,6 +24,7 @@
 #include <vector>
 #include <cassert>
 #include <fstream>
+#include <unordered_map>
 
 #ifdef DEBUG
 #define PRINT_DEBUG 1
@@ -43,6 +44,7 @@
 void print_time_elapsed(std::string desc, struct timeval* start, struct
 												timeval* end);
 
-void analyze_stream(uint64_t *vals, uint64_t nvals);
+std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
+analyze_stream(uint64_t *vals, uint64_t nvals);
 
 #endif

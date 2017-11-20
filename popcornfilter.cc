@@ -179,9 +179,16 @@ main ( int argc, char *argv[] )
 	print_time_elapsed("", &start, &end);
 	PRINT_CF("Finished lookups.");
 
-	pf.print_stats();
+	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> keylifetimes =
+		analyze_stream(vals, nvals);
 
-	analyze_stream(vals, nvals);
+	PRINT_CF("Performing validation");
+	if (pf.validate_anomalies(keylifetimes))
+		PRINT_CF("Validation successful!");
+	else
+		PRINT_CF("Validation failed!");
+
+	//pf.print_stats();
 
 	return EXIT_SUCCESS;
 }				/* ----------  end of function main  ---------- */

@@ -22,7 +22,6 @@
 #include <vector>
 #include <set>
 #include <unordered_set>
-#include <unordered_map>
 #include <bitset>
 #include <cassert>
 
@@ -43,21 +42,26 @@ void print_time_elapsed(std::string desc, struct timeval* start, struct
 		"seconds" << std::endl;
 }
 
-void analyze_stream(uint64_t *vals, uint64_t nvals) {
+std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
+analyze_stream(uint64_t *vals, uint64_t nvals) {
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> key_lifetime;
 	std::multiset<uint64_t> key_counts;
 
-	PRINT_CF("Stream stats");
+	PRINT_CF("Analyzing Stream");
 
 	for (uint32_t i = 0; i < nvals; i++) {
 		uint64_t key = vals[i];
-		key_counts.insert(key);
-		if (key_counts.count(key) == 1)
-			key_lifetime[key] = std::pair<uint64_t, uint64_t>(i, i);
+		if (key_counts.count(key) < 24) {
+			key_counts.insert(key);
+			if (key_counts.count(key) == 1)
+				key_lifetime[key] = std::pair<uint64_t, uint64_t>(i, i);
 
-		if (key_counts.count(key) == 24)
-			key_lifetime[key].second = i;
+			if (key_counts.count(key) == 24)
+				key_lifetime[key].second = i;
+		}
 	}
+
+#if 0
 	uint64_t total_anomalies = 0;
 	for (auto it : key_lifetime) {
 		assert (it.second.first <= it.second.second);
@@ -68,4 +72,7 @@ void analyze_stream(uint64_t *vals, uint64_t nvals) {
 	}
 
 	PRINT_CF("Number of keys above threshold: " << total_anomalies);
+#endif
+
+	return key_lifetime;
 }

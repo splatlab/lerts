@@ -88,6 +88,9 @@ class CascadeFilter {
 			 value, into the cascade qf. */
 		uint64_t count_key_value(const key_object& key_val_cnt, enum lock flag);
 
+		bool validate_key_lifetimes(std::unordered_map<uint64_t,
+																std::pair<uint64_t, uint64_t>> key_lifetime);
+
 		class Iterator {
 			public:
 				Iterator(typename CQF<key_object>::Iterator arr[], uint32_t
@@ -356,6 +359,39 @@ void CascadeFilter<key_object>::print_anomaly_stats(void) {
 	PRINT_CF("Number of keys reported through shuffle-merges " <<
 					 num_shuffle_merge);
 	PRINT_CF("Number of keys reported through odp " << num_odp);
+}
+
+template <class key_object>
+bool CascadeFilter<key_object>::validate_key_lifetimes(
+								std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
+								key_lifetime) {
+	if (max_age) {
+		// find anomalies that are not reported yet.
+		find_anomalies();
+		double stretch = 1 + 1 / num_age_bits;
+		for (auto it : key_lifetime) {
+			if (it.second.first < it.second.second) {
+				uint64_t value;
+				key_object k(it.first, 0, 0, 0);
+				uint64_t lifetime = it.second.second - it.second.first;
+				uint64_t reporttime = anomalies.query_key(k, &value) - it.second.first;
+				if (reporttime > lifetime * stretch)
+					return false;
+			}
+		}
+	} else {
+		for (auto it : key_lifetime) {
+			if (it.second.first < it.second.second) {
+				uint64_t value;
+				key_object k(it.first, 0, 0, 0);
+				uint64_t reportindex = anomalies.query_key(k, &value);
+				if (reportindex != it.second.second)
+					return false;
+			}
+		}
+	}
+
+	return true;
 }
 
 template <class key_object>
