@@ -378,7 +378,7 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 				uint64_t reporttime = anomalies.query_key(k, &value) - it.second.first;
 				if (reporttime > lifetime * stretch) {
 					PRINT_CF("Time-stretch reporting failed Key: " << it.first <<
-									 " Index-0: " << it.second.first << " Index-T " <<
+									 " Index-1: " << it.second.first << " Index-T " <<
 									 it.second.second << " Reporting index " <<
 									 anomalies.query_key(k, &value));
 					failures++;
@@ -412,16 +412,13 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 template <class key_object>
 bool CascadeFilter<key_object>::is_full(uint32_t level) {
 	if (max_age) {
-		static int last_frac = 0;
 		// we increment the age when the number of observations seen is increased
 		// by ram_size/2.
-		double num_obs = get_filter(0)->total_slots()/(double)max_age;
-		int num_obs_frac = num_obs_seen/num_obs;
-		if (num_obs_frac > last_frac) {
-			DEBUG_CF("Num obs fraction: " << num_obs_frac);
+		uint64_t num_obs = get_filter(0)->total_slots()/max_age;
+		if (num_obs_seen % num_obs == 0) {
 			// Age is increased for level 0 whenever it is 1/alpha full.
 			ages[0] = (ages[0] + 1) % max_age;
-			last_frac = num_obs_frac;
+			int num_obs_frac = num_obs_seen/num_obs;
 			if (num_obs_frac > 1)
 				return true;
 		}
@@ -463,8 +460,8 @@ uint32_t CascadeFilter<key_object>::find_first_empty_level(void) {
 template <class key_object>
 uint32_t CascadeFilter<key_object>::find_levels_to_flush(void) {
 	uint32_t empty_level;
-	for (empty_level = 1; empty_level < total_num_levels; empty_level++) {
-		if (flushes[empty_level] < gfactor)
+	for (empty_level = 1; empty_level < total_num_levels - 1; empty_level++) {
+		if (flushes[empty_level] < gfactor - 1)
 			break;
 	}
 	if (max_age)
@@ -476,7 +473,7 @@ uint32_t CascadeFilter<key_object>::find_levels_to_flush(void) {
 template <class key_object>
 void CascadeFilter<key_object>::update_flush_counters(uint32_t nlevels) {
 	for (uint32_t i = 1; i < nlevels; i++)
-		flushes[i] = (flushes[i] + 1) % (gfactor + 1);
+		flushes[i] = (flushes[i] + 1) % (gfactor);
 }
 
 // if the age of the level is changed (incremented) during this flush then
@@ -533,7 +530,7 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 			cur.count = num_obs_seen - 1;
 			cur.value = 0;
 			anomalies.insert(cur, LOCK_AND_SPIN);
-			//PRINT_CF("Reporting " << cur.to_string());
+			PRINT_CF("Reporting " << cur.to_string());
 		}
 	} else {
 		if (max_age) {
@@ -541,13 +538,13 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 			if (cur.level < nlevels && is_aged(cur)) { // flush the key down.
 				assert(cur.level < nlevels);
 				smear_element(qf_arr, cur, cur.level + 1);
-				//PRINT_CF("Aged " << cur.to_string());
+				PRINT_CF("Aged " << cur.to_string());
 			}
 			// not aged yet. reinsert the key with aggregated count in the lowest
 			// level (involved in the shuffle-merge) it was present in.
 			else {
 				qf_arr[cur.level].insert(cur, LOCK_AND_SPIN);
-				//PRINT_CF("Not aged " << cur.to_string());
+				PRINT_CF("Live " << cur.to_string());
 			}
 		} else
 			smear_element(qf_arr, cur, nlevels);
@@ -805,19 +802,19 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 
 	num_obs_seen++;
 	uint64_t value;
-	// if the key is already reported then don't insert.
-	if (anomalies.query_key(k, &value)) {
-		if (flag != NO_LOCK)
-			unlock();
-		return true;
-	}
-
 	if (is_full(0)) {
 		DEBUG_CF("Number of observations seen: " << num_obs_seen);
 		DEBUG_CF("Flushing " << num_flush);
 		shuffle_merge();
 		// Increment the flushing count.
 		num_flush++;
+	}
+
+	// if the key is already reported then don't insert.
+	if (anomalies.query_key(k, &value)) {
+		if (flag != NO_LOCK)
+			unlock();
+		return true;
 	}
 
 	key_object dup_k(k);
