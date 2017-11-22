@@ -105,8 +105,6 @@ class ThreadArgs {
 #define NUM_HASH_BITS 32
 /* We use value bits to store the value of the key from FireHose. */
 #define NUM_VALUE_BITS 1
-/* If we need to perform on-demand popcorning. */
-#define ODP 1
 
 template <class key_object>
 PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
