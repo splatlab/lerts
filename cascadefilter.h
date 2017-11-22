@@ -60,7 +60,7 @@ class CascadeFilter {
 	public:
 		CascadeFilter(uint32_t nhashbits, uint32_t nvaluebits, uint32_t
 									nagebits, uint32_t filter_thlds[], uint64_t filter_sizes[],
-									uint32_t num_filters, std::string& prefix);
+									uint32_t num_levels, std::string& prefix);
 
 		const CQF<key_object>* get_filter(uint32_t level) const;
 
@@ -227,13 +227,11 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 																				 nvaluebits, uint32_t nagebits,
 																				 uint32_t filter_thlds[],
 																				 uint64_t filter_sizes[], uint32_t
-																				 num_filters, std::string& prefix) :
-	total_num_levels(num_filters), num_hash_bits(nhashbits), prefix(prefix)
+																				 num_levels, std::string& prefix) :
+	total_num_levels(num_levels), num_hash_bits(nhashbits),
+	num_age_bits(nagebits), prefix(prefix)
 {
-	total_num_levels = num_filters;
-	num_hash_bits = nhashbits;
 	num_value_bits = nvaluebits + nagebits;
-	num_age_bits = nagebits;
 	if (nagebits)
 		max_age = 1 << nagebits;
 	else
@@ -244,10 +242,10 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	num_obs_seen = 0;
 	seed = 2038074761;
 	locked = 0;
-	memcpy(thresholds, filter_thlds, num_filters * sizeof(thresholds[0]));
-	memcpy(sizes, filter_sizes, num_filters * sizeof(sizes[0]));
-	memset(flushes, 0, num_filters *  sizeof(flushes[0]));
-	memset(ages, 0, num_filters *  sizeof(ages[0]));
+	memcpy(thresholds, filter_thlds, num_levels * sizeof(thresholds[0]));
+	memcpy(sizes, filter_sizes, num_levels * sizeof(sizes[0]));
+	memset(flushes, 0, num_levels *  sizeof(flushes[0]));
+	memset(ages, 0, num_levels *  sizeof(ages[0]));
 
 	// creating an exact CQF to store anomalies.
 	// It is half the size of the RAM CQF.

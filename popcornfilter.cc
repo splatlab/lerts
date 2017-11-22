@@ -129,13 +129,20 @@ main ( int argc, char *argv[] )
 	uint32_t gfactor = atoi(argv[3]);
 	uint64_t nfilters = atoi(argv[4]);
 	uint64_t nthreads = atoi(argv[5]);
+	uint32_t nagebits = 0, do_odp = 1;
 
-	if (NUM_AGE_BITS)
+	if (argc == 8) {
+		nagebits = atoi(argv[6]);
+		do_odp = atoi(argv[7]);
+	}
+
+	if (nagebits)
 		PRINT_CF("Creating a popcorn filter with time-stretch");
 	else
 		PRINT_CF("Creating a popcorn filter with immediate reporting.");
 
-	PopcornFilter<KeyObject> pf(nfilters, qbits, nlevels, gfactor);
+	PopcornFilter<KeyObject> pf(nfilters, qbits, nlevels, gfactor, nagebits,
+															do_odp);
 
 	uint64_t nvals = 750 * pf.get_max_size() / 1000;
 
