@@ -141,7 +141,7 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 				<< nlevels << " levels, and " << gfactor << " as growth factor.");
 			std::string prefix = "raw/" + std::to_string(i) + "_";
 			cf[i] = new CascadeFilter<KeyObject>(nhashbits, nvaluebits, nagebits,
-																					 thlds, sizes, nlevels, prefix);
+																					 odp, thlds, sizes, nlevels, prefix);
 		}
 	}
 

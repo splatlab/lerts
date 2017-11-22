@@ -59,8 +59,8 @@ template <class key_object>
 class CascadeFilter {
 	public:
 		CascadeFilter(uint32_t nhashbits, uint32_t nvaluebits, uint32_t
-									nagebits, uint32_t filter_thlds[], uint64_t filter_sizes[],
-									uint32_t num_levels, std::string& prefix);
+									nagebits, bool odp, uint32_t filter_thlds[], uint64_t
+									filter_sizes[], uint32_t num_levels, std::string& prefix);
 
 		const CQF<key_object>* get_filter(uint32_t level) const;
 
@@ -213,6 +213,7 @@ class CascadeFilter {
 		uint32_t num_hash_bits;
 		uint32_t num_value_bits;
 		uint32_t num_age_bits;
+		bool odp;
 		std::string prefix;
 		uint32_t thresholds[NUM_MAX_LEVELS];
 		uint64_t sizes[NUM_MAX_LEVELS];
@@ -233,12 +234,12 @@ bool operator!=(const typename CascadeFilter<key_object>::Iterator& a, const
 
 template <class key_object>
 CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
-																				 nvaluebits, uint32_t nagebits,
-																				 uint32_t filter_thlds[],
+																				 nvaluebits, uint32_t nagebits, bool
+																				 odp, uint32_t filter_thlds[],
 																				 uint64_t filter_sizes[], uint32_t
 																				 num_levels, std::string& prefix) :
 	total_num_levels(num_levels), num_hash_bits(nhashbits),
-	num_age_bits(nagebits), prefix(prefix)
+	num_age_bits(nagebits), odp(odp), prefix(prefix)
 {
 	num_value_bits = nvaluebits + nagebits;
 	if (nagebits)
@@ -874,6 +875,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 	ram_count += 1;	// update the RAM count after the current insertion.
 
 	// To check if a key has the THRESHOLD value in RAM.
+	// This is not on-demand popcorning.
 	if (ram_count >= THRESHOLD_VALUE &&
 			anomalies.query_key(dup_k, &value) == 0) {
 		// count in the index at which the key is reported.
@@ -890,7 +892,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 	//
 	// We will not remove the key if it has been seen THRESHOLD times.
 	// The key will be removed in the next shuffle merge.
-	if (max_age == 0 && ram_count >= popcorn_threshold &&
+	if (odp && ram_count >= popcorn_threshold &&
 			anomalies.query_key(dup_k, &value) == 0) {
 		uint64_t aggr_count;
 		aggr_count = ondisk_count(dup_k) + ram_count;
