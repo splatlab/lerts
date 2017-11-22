@@ -214,6 +214,7 @@ class CascadeFilter {
 		uint32_t num_value_bits;
 		uint32_t num_age_bits;
 		bool odp;
+		bool count_stretch;
 		std::string prefix;
 		uint32_t thresholds[NUM_MAX_LEVELS];
 		uint64_t sizes[NUM_MAX_LEVELS];
@@ -242,10 +243,17 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	num_age_bits(nagebits), odp(odp), prefix(prefix)
 {
 	num_value_bits = nvaluebits + nagebits;
+
 	if (nagebits)
 		max_age = 1 << nagebits;
 	else
 		max_age = 0;
+
+	if (!odp && num_age_bits == 0)
+		count_stretch = true;
+	else
+		count_stretch = false;
+
 	num_flush = 0;
 	gfactor = filter_sizes[1] / filter_sizes[0];
 	popcorn_threshold = 0;
@@ -562,9 +570,12 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 	uint64_t value;
 	if (cur.count >= THRESHOLD_VALUE) {
 		if (anomalies.query_key(cur, &value) == 0) {
-			// count in the index at which the key is reported.
+			// if time stretch or odp then count is the index at which the key is
+			// reported.
+			// if count stretch then count is the current total count of the key.
+			if (odp || max_age)
+				cur.count = num_obs_seen - 1;
 			// value 0 means that it is reported through shuffle-merge.
-			cur.count = num_obs_seen - 1;
 			cur.value = 0;
 			anomalies.insert(cur, LOCK_AND_SPIN);
 			DEBUG_CF("Reporting " << cur.to_string());
