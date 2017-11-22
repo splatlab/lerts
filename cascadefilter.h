@@ -122,22 +122,29 @@ class CascadeFilter {
 		/**
 		 * Check if the filter at "level" has exceeded the threshold load factor.
 		 */
-		bool is_full(uint32_t level);
+		bool is_full(uint32_t level) const;
+
+		/**
+		 * Returns true if we need shuffle merge in the time stretch case.
+		 */
+		bool need_shuffle_merge_time_atretch(void) const;
 
 		/**
 		 * Returns true if the key is aged at the level it is in.
 		 */
 		bool is_aged(const key_object k) const;
 
+		void increment_age(uint32_t level);
+
 		/**
 		 * Returns the index of the first empty level.
 		 */
-		uint32_t find_first_empty_level(void);
+		uint32_t find_first_empty_level(void) const;
 
 		/**
 		 * Return the number of levels to merge into given "num_flush" . 
 		 */
-		uint32_t find_levels_to_flush();
+		uint32_t find_levels_to_flush() const;
 
 		/**
 		 * Update the flush counters.
@@ -148,6 +155,8 @@ class CascadeFilter {
 		 * report anomalies currently in the system.
 		 */
 		void find_anomalies(void);
+
+		void perform_shuffle_merge_if_needed(void);
 
 		/** Perform a standard cascade filter merge. It merges "num_levels" levels
 		 * and inserts all the elements into a new level.  Merge will be called
@@ -408,18 +417,13 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 }
 
 template <class key_object>
-bool CascadeFilter<key_object>::is_full(uint32_t level) {
+bool CascadeFilter<key_object>::is_full(uint32_t level) const {
 	if (max_age) {
-		// we increment the age when the number of observations seen is increased
+		// we do a flush when the number of observations seen is increased
 		// by ram_size/2.
 		uint64_t num_obs = get_filter(0)->total_slots()/max_age;
-		if (num_obs_seen % num_obs == 0) {
-			// Age is increased for level 0 whenever it is 1/alpha full.
-			ages[0] = (ages[0] + 1) % max_age;
-			int num_obs_frac = num_obs_seen/num_obs;
-			if (num_obs_frac > 1)
-				return true;
-		}
+		if (num_obs_seen % num_obs == 0)
+			return true;
 	} else {
 		double load_factor = get_filter(level)->occupied_slots() /
 			(double)get_filter(level)->total_slots();
@@ -432,7 +436,21 @@ bool CascadeFilter<key_object>::is_full(uint32_t level) {
 }
 
 template <class key_object>
-uint32_t CascadeFilter<key_object>::find_first_empty_level(void) {
+bool CascadeFilter<key_object>::need_shuffle_merge_time_atretch(void) const {
+	uint64_t num_obs = get_filter(0)->total_slots()/max_age;
+	int num_obs_frac = num_obs_seen/num_obs;
+	if (num_obs_frac > 1)
+		return true;
+	return false;
+}
+
+template <class key_object>
+void CascadeFilter<key_object>::increment_age(uint32_t level) {
+	ages[level] = (ages[level] + 1) % max_age;
+}
+
+template <class key_object>
+uint32_t CascadeFilter<key_object>::find_first_empty_level(void) const {
 	uint32_t empty_level;
 	uint64_t total_occupied_slots = get_filter(0)->occupied_slots();
 	for (empty_level = 1; empty_level < total_num_levels; empty_level++) {
@@ -456,16 +474,36 @@ uint32_t CascadeFilter<key_object>::find_first_empty_level(void) {
 }
 
 template <class key_object>
-uint32_t CascadeFilter<key_object>::find_levels_to_flush(void) {
+uint32_t CascadeFilter<key_object>::find_levels_to_flush(void) const {
 	uint32_t empty_level;
 	for (empty_level = 1; empty_level < total_num_levels - 1; empty_level++) {
 		if (flushes[empty_level] < gfactor - 1)
 			break;
 	}
-	if (max_age)
-		ages[empty_level] = (ages[empty_level] + 1) % max_age;
 
 	return empty_level;
+}
+
+template <class key_object>
+void CascadeFilter<key_object>::perform_shuffle_merge_if_needed(void) {
+	if (is_full(0)) {
+		if (max_age) {
+			// Age is increased for level 0 whenever it is 1/alpha full.
+			ages[0] = (ages[0] + 1) % max_age;
+			if (need_shuffle_merge_time_atretch()) {
+				DEBUG_CF("Number of observations seen: " << num_obs_seen);
+				DEBUG_CF("Flushing " << num_flush);
+				shuffle_merge();
+				// Increment the flushing count.
+				num_flush++;
+			}
+		} else {
+			DEBUG_CF("Flushing " << num_flush);
+			shuffle_merge();
+			// Increment the flushing count.
+			num_flush++;
+		}
+	}
 }
 
 template <class key_object>
@@ -673,9 +711,11 @@ template <class key_object>
 void CascadeFilter<key_object>::shuffle_merge() {
 	/* The empty level is also involved in the shuffle merge. */
 	uint32_t nlevels = 0;
-	if (max_age)
-		nlevels = find_levels_to_flush() + 1;
-	else
+	if (max_age) {
+		nlevels = find_levels_to_flush();
+		increment_age(nlevels);
+		nlevels += 1;
+	} else
 		nlevels = find_first_empty_level() + 1;
 
 	assert(nlevels <= total_num_levels);
@@ -799,15 +839,9 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 			return false;
 
 	num_obs_seen++;
-	uint64_t value;
-	if (is_full(0)) {
-		DEBUG_CF("Number of observations seen: " << num_obs_seen);
-		DEBUG_CF("Flushing " << num_flush);
-		shuffle_merge();
-		// Increment the flushing count.
-		num_flush++;
-	}
+	perform_shuffle_merge_if_needed();
 
+	uint64_t value;
 	// if the key is already reported then don't insert.
 	if (anomalies.query_key(k, &value)) {
 		if (flag != NO_LOCK)
