@@ -570,11 +570,8 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 	uint64_t value;
 	if (cur.count >= THRESHOLD_VALUE) {
 		if (anomalies.query_key(cur, &value) == 0) {
-			// if time stretch or odp then count is the index at which the key is
-			// reported.
-			// if count stretch then count is the current total count of the key.
-			if (odp || max_age)
-				cur.count = num_obs_seen - 1;
+			// the count is the index at which the key is reported.
+			cur.count = num_obs_seen - 1;
 			// value 0 means that it is reported through shuffle-merge.
 			cur.value = 0;
 			anomalies.insert(cur, LOCK_AND_SPIN);
