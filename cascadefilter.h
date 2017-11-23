@@ -396,7 +396,8 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 					PRINT_CF("Time-stretch reporting failed Key: " << it.first <<
 									 " Index-1: " << it.second.first << " Index-T " <<
 									 it.second.second << " Reporting index " <<
-									 anomalies.query_key(k, &value));
+									 anomalies.query_key(k, &value) << " for stretch " <<
+									 stretch);
 					failures++;
 				}
 			}
