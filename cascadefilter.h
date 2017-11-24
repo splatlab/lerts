@@ -127,7 +127,7 @@ class CascadeFilter {
 		/**
 		 * Returns true if we need shuffle merge in the time stretch case.
 		 */
-		bool need_shuffle_merge_time_atretch(void) const;
+		bool need_shuffle_merge_time_stretch(void) const;
 
 		/**
 		 * Returns true if the key is aged at the level it is in.
@@ -450,7 +450,7 @@ bool CascadeFilter<key_object>::is_full(uint32_t level) const {
 }
 
 template <class key_object>
-bool CascadeFilter<key_object>::need_shuffle_merge_time_atretch(void) const {
+bool CascadeFilter<key_object>::need_shuffle_merge_time_stretch(void) const {
 	uint64_t num_obs = get_filter(0)->total_slots()/max_age;
 	int num_obs_frac = num_obs_seen/num_obs;
 	if (num_obs_frac > 1)
@@ -504,7 +504,7 @@ void CascadeFilter<key_object>::perform_shuffle_merge_if_needed(void) {
 		if (max_age) {
 			// Age is increased for level 0 whenever it is 1/alpha full.
 			ages[0] = (ages[0] + 1) % max_age;
-			if (need_shuffle_merge_time_atretch()) {
+			if (need_shuffle_merge_time_stretch()) {
 				DEBUG_CF("Number of observations seen: " << num_obs_seen);
 				DEBUG_CF("Flushing " << num_flush);
 				shuffle_merge();

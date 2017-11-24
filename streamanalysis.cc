@@ -268,7 +268,7 @@ int main(int argc, char **argv)
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> key_lifetime =
 		analyze_stream(arr, cnt);
 
-	std::string statsfilename("raw/streamstats");
+	std::string statsfilename("raw/streamdump.log");
 	std::cout << "Writing stats to " << statsfilename << std::endl;
 
 	std::ofstream statsfile(statsfilename.c_str());

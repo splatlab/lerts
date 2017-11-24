@@ -147,9 +147,14 @@ main ( int argc, char *argv[] )
 	uint64_t nvals = 750 * pf.get_max_size() / 1000;
 
 	uint64_t *vals;
+	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> keylifetimes;
 	if (argc == 9) {
-		PRINT_CF("Reading input strea from disk");
-		vals = read_from_disk(std::string(argv[8]));
+		PRINT_CF("Reading input stream and logs from disk");
+		std::string streamfile(argv[8]);
+		std::string streamlogfile(streamfile + ".log");
+		vals = read_stream_from_disk(streamfile);
+		nvals = 50000000;
+		keylifetimes = read_stream_log_from_disk(streamlogfile);
 	} else {
 		vals = (uint64_t*)calloc(nvals, sizeof(vals[0]));
 		memset(vals, 0, nvals*sizeof(vals[0]));
@@ -160,6 +165,7 @@ main ( int argc, char *argv[] )
 		for (uint64_t i = 0; i < nvals; i++) {
 			vals[i] = HashUtil::AES_HASH(vals[i]) % pf.get_range();
 		}
+		keylifetimes = analyze_stream(vals, nvals);
 	}
 
 	struct timeval start, end;
@@ -197,9 +203,6 @@ main ( int argc, char *argv[] )
 	PRINT_CF("Finished lookups.");
 
 	//pf.print_stats();
-
-	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> keylifetimes =
-		analyze_stream(vals, nvals);
 
 	PRINT_CF("Performing validation");
 	if (pf.validate_anomalies(keylifetimes))

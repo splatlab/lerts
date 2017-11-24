@@ -94,7 +94,7 @@ analyze_stream(uint64_t *vals, uint64_t nvals) {
 	return key_lifetime;
 }
 
-uint64_t *read_from_disk(std::string file) {
+uint64_t *read_stream_from_disk(std::string file) {
 	struct stat sb;
 	int ret;
 
@@ -121,3 +121,24 @@ uint64_t *read_from_disk(std::string file) {
 
 	return vals;
 }
+
+std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
+read_stream_log_from_disk(std::string file) {
+	uint64_t key, index0, index24;
+	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> key_lifetime;
+
+	std::ifstream statsfile(file.c_str());
+	while (statsfile >> key >> index0 >> index24) {
+		assert (index0 <= index24);
+		if (index0 < index24) {
+			std::pair<uint64_t, uint64_t> val(index0, index24);
+			key_lifetime[key] = val;
+		}
+	}
+	statsfile.close();
+
+	PRINT_CF("Number of keys above threshold: " << key_lifetime.size());
+
+	return key_lifetime;
+}
+
