@@ -25,6 +25,25 @@
 #include <bitset>
 #include <cassert>
 
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
+#include <stdint.h>
+#include <inttypes.h>
+#include <unistd.h>
+
+#include <stdexcept>
+#include <signal.h>
+#include <netinet/in.h>
+#include <sys/errno.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include "util.h"
 
 void print_time_elapsed(std::string desc, struct timeval* start, struct
@@ -61,18 +80,44 @@ analyze_stream(uint64_t *vals, uint64_t nvals) {
 		}
 	}
 
-#if 0
 	uint64_t total_anomalies = 0;
 	for (auto it : key_lifetime) {
 		assert (it.second.first <= it.second.second);
 		if (it.second.first < it.second.second) {
-			PRINT_CF(it.first << " " << it.second.first << " " << it.second.second);
+			//PRINT_CF(it.first << " " << it.second.first << " " << it.second.second);
 			total_anomalies++;
 		}
 	}
 
 	PRINT_CF("Number of keys above threshold: " << total_anomalies);
-#endif
 
 	return key_lifetime;
+}
+
+uint64_t *read_from_disk(std::string file) {
+	struct stat sb;
+	int ret;
+
+	int fd = open(file.c_str(), O_RDWR, S_IRWXU);
+	if (fd < 0) {
+		perror("Couldn't open file:\n");
+		exit(EXIT_FAILURE);
+	}
+
+	ret = fstat (fd, &sb);
+	if ( ret < 0) {
+		perror ("fstat");
+		exit(EXIT_FAILURE);
+	}
+
+	if (!S_ISREG (sb.st_mode)) {
+		fprintf (stderr, "%s is not a file\n", file.c_str());
+		exit(EXIT_FAILURE);
+	}
+
+	uint64_t *vals = (uint64_t *)mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE,
+																		MAP_SHARED, fd, 0);
+	PRINT_CF("Read " << sb.st_size / 8 << " keys from disk");
+
+	return vals;
 }

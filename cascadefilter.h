@@ -385,6 +385,8 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 	if (max_age) {
 		// find anomalies that are not reported yet.
 		find_anomalies();
+		PRINT_CF("Number of keys above threshold: " <<
+						 anomalies.distinct_elements());
 		double stretch = 1 + 1 / num_age_bits;
 		for (auto it : key_lifetime) {
 			if (it.second.first < it.second.second) {
@@ -403,6 +405,8 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 			}
 		}
 	} else {
+		PRINT_CF("Number of keys above threshold: " <<
+						 anomalies.distinct_elements());
 		for (auto it : key_lifetime) {
 			if (it.second.first < it.second.second) {
 				uint64_t value;

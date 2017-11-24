@@ -131,7 +131,7 @@ main ( int argc, char *argv[] )
 	uint64_t nthreads = atoi(argv[5]);
 	uint32_t nagebits = 0, do_odp = 1;
 
-	if (argc == 8) {
+	if (argc >= 8) {
 		nagebits = atoi(argv[6]);
 		do_odp = atoi(argv[7]);
 	}
@@ -147,14 +147,19 @@ main ( int argc, char *argv[] )
 	uint64_t nvals = 750 * pf.get_max_size() / 1000;
 
 	uint64_t *vals;
-	vals = (uint64_t*)calloc(nvals, sizeof(vals[0]));
-	PRINT_CF("Generating " << nvals << " random numbers.");
-	memset(vals, 0, nvals*sizeof(vals[0]));
+	if (argc == 9) {
+		PRINT_CF("Reading input strea from disk");
+		vals = read_from_disk(std::string(argv[8]));
+	} else {
+		vals = (uint64_t*)calloc(nvals, sizeof(vals[0]));
+		memset(vals, 0, nvals*sizeof(vals[0]));
 
-	/* Generate random keys from a Zipfian distribution. */
-	generate_random_keys(vals, nvals, nvals, 1.5);
-	for (uint64_t i = 0; i < nvals; i++) {
-		vals[i] = HashUtil::AES_HASH(vals[i]) % pf.get_range();
+		/* Generate random keys from a Zipfian distribution. */
+		PRINT_CF("Generating " << nvals << " random numbers.");
+		generate_random_keys(vals, nvals, nvals, 1.5);
+		for (uint64_t i = 0; i < nvals; i++) {
+			vals[i] = HashUtil::AES_HASH(vals[i]) % pf.get_range();
+		}
 	}
 
 	struct timeval start, end;

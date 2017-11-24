@@ -38,6 +38,7 @@
 #include <vector>
 #include <time.h>
 
+#include "util.h"
 #include "popcornfilter.h"
 
 // hard-coded settings from generator #1
@@ -166,7 +167,7 @@ int main(int argc, char **argv)
 	uint64_t cnt = 0;
 
 	// create a file and mmap it to log <keys, value> from the stream.
-	uint64_t arr_size = 250000000 * sizeof(*arr);
+	uint64_t arr_size = 50000000 * sizeof(*arr);
 	std::cout << "File size: " << arr_size << std::endl;
 	int fd = open(filename.c_str(), O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
 	if (fd < 0) {
@@ -262,23 +263,10 @@ int main(int argc, char **argv)
 
 	std::cout << "Dumped " << cnt << " keys in " << filename << std::endl;
 
-	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> key_lifetime;
-	std::multiset<uint64_t> key_counts;
-
 	std::cout << "Analyzing the steam dump." << std::endl;
 
-	for (uint32_t i = 0; i < cnt; i++) {
-		uint64_t key = arr[i] >> 1;
-		if (key_counts.count(key) == 0) {
-			key_counts.insert(key);
-			key_lifetime[key] = std::pair<uint64_t, uint64_t>(i, i);
-		} else if (key_counts.count(key) < 23) {
-			key_counts.insert(key);
-		} else if (key_counts.count(key) == 23) {
-			key_counts.insert(key);
-			key_lifetime[key].second = i;
-		}
-	}
+	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> key_lifetime =
+		analyze_stream(arr, cnt);
 
 	std::string statsfilename("raw/streamstats");
 	std::cout << "Writing stats to " << statsfilename << std::endl;
