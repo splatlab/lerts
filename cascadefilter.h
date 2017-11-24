@@ -359,7 +359,10 @@ void CascadeFilter<key_object>::print_anomaly_stats(void) {
 		key_object k = *it;
 		if (k.value == 0) {
 			num_shuffle_merge++;
-			PRINT_CF("Shuffle-merge: " << k.key << " index: " << k.count);
+			if (max_age || odp)
+				PRINT_CF("Shuffle-merge: " << k.key << " index: " << k.count);
+			else
+				PRINT_CF("Shuffle-merge: " << k.key << " count: " << k.count);
 		} else if (k.value == 1) {
 			num_odp++;
 			PRINT_CF("ODP: " << k.key << " index: " << k.count);
@@ -382,11 +385,14 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 								std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
 								key_lifetime) {
 	uint32_t failures = 0;
-	if (max_age) {
-		// find anomalies that are not reported yet.
+
+	// find anomalies that are not reported yet.
+	if (!odp)
 		find_anomalies();
-		PRINT_CF("Number of keys above threshold: " <<
-						 anomalies.distinct_elements());
+
+	PRINT_CF("Number of keys above threshold: " <<
+					 anomalies.distinct_elements());
+	if (max_age) {
 		double stretch = 1 + 1 / num_age_bits;
 		for (auto it : key_lifetime) {
 			if (it.second.first < it.second.second) {
@@ -404,9 +410,7 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 				}
 			}
 		}
-	} else {
-		PRINT_CF("Number of keys above threshold: " <<
-						 anomalies.distinct_elements());
+	} else if (odp) {
 		for (auto it : key_lifetime) {
 			if (it.second.first < it.second.second) {
 				uint64_t value;
@@ -416,6 +420,21 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 					PRINT_CF("Immediate reporting failed Key: " << it.first <<
 									 " Index-T " << it.second.second << " Reporting index "
 									 << reportindex);
+					failures++;
+				}
+			}
+		}
+	} else {
+		// for count stretch the count stored with keys in anomalies is the actual
+		// count at the time of reporting.
+		for (auto it : key_lifetime) {
+			if (it.second.first < it.second.second) {
+				uint64_t value;
+				key_object k(it.first, 0, 0, 0);
+				uint64_t reportcount = anomalies.query_key(k, &value);
+				if (reportcount > THRESHOLD_VALUE * 2) {
+					PRINT_CF("Count stretch reporting failed Key: " << it.first <<
+									 " Reporting count " << reportcount);
 					failures++;
 				}
 			}
@@ -576,7 +595,9 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 	if (cur.count >= THRESHOLD_VALUE) {
 		if (anomalies.query_key(cur, &value) == 0) {
 			// the count is the index at which the key is reported.
-			cur.count = num_obs_seen - 1;
+			// for count-stretch the count is the current count of the key.
+			if (max_age || odp)
+				cur.count = num_obs_seen - 1;
 			// value 0 means that it is reported through shuffle-merge.
 			cur.value = 0;
 			anomalies.insert(cur, LOCK_AND_SPIN);
@@ -821,9 +842,11 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 		} else {
 			if (cur_key.count >= THRESHOLD_VALUE) {
 				if (anomalies.query_key(cur_key, &value) == 0) {
-					// count in the index at which the key is reported.
+					// the count is the index at which the key is reported.
+					// for count-stretch the count is the current count of the key.
+					if (max_age || odp)
+						cur_key.count = num_obs_seen - 1;
 					// value 0 means that it is reported through shuffle-merge.
-					cur_key.count = num_obs_seen - 1;
 					cur_key.value = 0;
 					anomalies.insert(cur_key, LOCK_AND_SPIN);
 				}
@@ -837,9 +860,11 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 
 	if (cur_key.count >= THRESHOLD_VALUE) {
 		if (anomalies.query_key(cur_key, &value) == 0) {
-			// count in the index at which the key is reported.
+			// the count is the index at which the key is reported.
+			// for count-stretch the count is the current count of the key.
+			if (max_age || odp)
+				cur_key.count = num_obs_seen - 1;
 			// value 0 means that it is reported through shuffle-merge.
-			cur_key.count = num_obs_seen - 1;
 			cur_key.value = 0;
 			anomalies.insert(cur_key, LOCK_AND_SPIN);
 		}
@@ -891,10 +916,14 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 	// This is not on-demand popcorning.
 	if (ram_count >= THRESHOLD_VALUE &&
 			anomalies.query_key(dup_k, &value) == 0) {
-		// count in the index at which the key is reported.
+		// the count is the index at which the key is reported.
+		// for count-stretch the count is the current count of the key.
+		if (max_age || odp)
+			dup_k.count = num_obs_seen - 1;
+		else
+			dup_k.count = ram_count;
 		// value 1 means that it is reported through odp.
-		dup_k.count = num_obs_seen - 1;
-		dup_k.value = 1;
+		dup_k.value = 0;
 		anomalies.insert(dup_k, LOCK_AND_SPIN);
 	}
 
