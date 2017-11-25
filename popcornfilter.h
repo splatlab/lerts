@@ -199,19 +199,19 @@ uint64_t PopcornFilter<key_object>::get_total_keys_above_threshold(void) const
 
 template <class key_object>
 bool PopcornFilter<key_object>::insert(const key_object& k, enum lock flag) {
-	if (flag != NO_LOCK)
-		if (!pf_lw_lock.lock(flag))
-			return false;
-
 	bool ret = true;
 	KeyObject dup_k(k);
+
 	uint32_t filter_idx = dup_k.key >> nhashbits;
 	dup_k.key = dup_k.key & BITMASK(nhashbits);
-	num_obs_seen++;
 	ret = cf[filter_idx]->insert(dup_k, num_obs_seen, flag);
 
-	if (flag != NO_LOCK)
+	if (ret) {
+		pf_lw_lock.lock(LOCK_AND_SPIN);
+		num_obs_seen += dup_k.count;
 		pf_lw_lock.unlock();
+
+	}
 
 	return ret;
 }
@@ -219,18 +219,12 @@ bool PopcornFilter<key_object>::insert(const key_object& k, enum lock flag) {
 template <class key_object>
 uint64_t PopcornFilter<key_object>::query(const key_object& k, enum lock flag)
 {
-	if (flag != NO_LOCK)
-		if (!pf_lw_lock.lock(flag))
-			return false;
-
 	uint64_t count = 0;
 	KeyObject dup_k(k);
+
 	uint32_t filter_idx = dup_k.key >> nhashbits;
 	dup_k.key = dup_k.key & BITMASK(nhashbits);
 	count = cf[filter_idx]->count_key_value(dup_k, flag);
-
-	if (flag != NO_LOCK)
-		pf_lw_lock.unlock();
 
 	return count;
 }

@@ -583,7 +583,7 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 			// the count is the index at which the key is reported.
 			// for count-stretch the count is the current count of the key.
 			if (max_age || odp)
-				cur.count = num_obs_seen - 1;
+				cur.count = num_obs_seen;
 			// value 0 means that it is reported through shuffle-merge.
 			cur.value = 0;
 			anomalies.insert(cur, LOCK_AND_SPIN);
@@ -831,7 +831,7 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 					// the count is the index at which the key is reported.
 					// for count-stretch the count is the current count of the key.
 					if (max_age || odp)
-						cur_key.count = num_obs_seen - 1;
+						cur_key.count = num_obs_seen;
 					// value 0 means that it is reported through shuffle-merge.
 					cur_key.value = 0;
 					anomalies.insert(cur_key, LOCK_AND_SPIN);
@@ -849,7 +849,7 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 			// the count is the index at which the key is reported.
 			// for count-stretch the count is the current count of the key.
 			if (max_age || odp)
-				cur_key.count = num_obs_seen - 1;
+				cur_key.count = num_obs_seen;
 			// value 0 means that it is reported through shuffle-merge.
 			cur_key.value = 0;
 			anomalies.insert(cur_key, LOCK_AND_SPIN);
@@ -906,7 +906,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 		// the count is the index at which the key is reported.
 		// for count-stretch the count is the current count of the key.
 		if (max_age || odp)
-			dup_k.count = num_obs_seen - 1;
+			dup_k.count = num_obs_seen;
 		else
 			dup_k.count = ram_count;
 		// value 1 means that it is reported through odp.
@@ -928,7 +928,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 		if (aggr_count == THRESHOLD_VALUE) {
 			// count in the index at which the key is reported.
 			// value 1 means that it is reported through odp.
-			dup_k.count = num_obs_seen - 1;
+			dup_k.count = num_obs_seen;
 			dup_k.value = 1;
 			anomalies.insert(dup_k, LOCK_AND_SPIN);
 		}

@@ -41,11 +41,14 @@
 
 #include "popcornfilter.h"
 
+#define BUFFER_SIZE (1ULL << 16)
+
 void *thread_insert(void *a) {
 	ThreadArgs<KeyObject> *args = (ThreadArgs<KeyObject>*)a;
 
-	CQF<KeyObject> buffer(16, args->pf->get_num_hash_bits(), 0, /*mem*/ true,
-					"", args->pf->get_seed());
+	uint32_t hash_bits = log2(args->pf->get_range());
+	CQF<KeyObject> buffer(BUFFER_SIZE, hash_bits, 0, /*mem*/ true, "",
+												args->pf->get_seed());
 
 	/* First try and insert the key-value pair in the cascade filter. If the
 	 * insert fails then insert in the buffer. Later dump the buffer in the
@@ -57,6 +60,7 @@ void *thread_insert(void *a) {
 			double load_factor = buffer.occupied_slots() /
 				(double)buffer.total_slots();
 			if (load_factor > 0.75) {
+				PRINT_CF("Dumping buffer.");
 				typename CQF<KeyObject>::Iterator it = buffer.begin();
 				do {
 					KeyObject key = *it;
@@ -73,6 +77,7 @@ void *thread_insert(void *a) {
 	}
 	/* Finally dump the anything left in the buffer. */
 	if (buffer.total_elements() > 0) {
+		PRINT_CF("Dumping buffer final time.");
 		typename CQF<KeyObject>::Iterator it = buffer.begin();
 		do {
 			KeyObject key = *it;
@@ -202,11 +207,13 @@ main ( int argc, char *argv[] )
 
 	//pf.print_stats();
 
-	PRINT_CF("Performing validation");
-	if (pf.validate_anomalies(keylifetimes))
-		PRINT_CF("Validation successful!");
-	else
-		PRINT_CF("Validation failed!");
+	if (nthreads == 1) {
+		PRINT_CF("Performing validation");
+		if (pf.validate_anomalies(keylifetimes))
+			PRINT_CF("Validation successful!");
+		else
+			PRINT_CF("Validation failed!");
+	}
 
 	PRINT_CF("Total number of keys above thrshold: " <<
 					 pf.get_total_keys_above_threshold());
