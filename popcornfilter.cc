@@ -60,7 +60,7 @@ void *thread_insert(void *a) {
 			double load_factor = buffer.occupied_slots() /
 				(double)buffer.total_slots();
 			if (load_factor > 0.75) {
-				PRINT_CF("Dumping buffer.");
+				DEBUG_CF("Dumping buffer.");
 				typename CQF<KeyObject>::Iterator it = buffer.begin();
 				do {
 					KeyObject key = *it;
@@ -77,7 +77,7 @@ void *thread_insert(void *a) {
 	}
 	/* Finally dump the anything left in the buffer. */
 	if (buffer.total_elements() > 0) {
-		PRINT_CF("Dumping buffer final time.");
+		DEBUG_CF("Dumping buffer final time.");
 		typename CQF<KeyObject>::Iterator it = buffer.begin();
 		do {
 			KeyObject key = *it;
