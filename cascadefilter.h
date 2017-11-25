@@ -584,7 +584,7 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 		if (anomalies.query_key(cur, &value) == 0) {
 			// the count is the index at which the key is reported.
 			// for count-stretch the count is the current count of the key.
-			if (max_age || odp)
+			if (!count_stretch)
 				cur.count = num_obs_seen;
 			// value 0 means that it is reported through shuffle-merge.
 			cur.value = 0;
@@ -832,7 +832,7 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 				if (anomalies.query_key(cur_key, &value) == 0) {
 					// the count is the index at which the key is reported.
 					// for count-stretch the count is the current count of the key.
-					if (max_age || odp)
+					if (!count_stretch)
 						cur_key.count = num_obs_seen;
 					// value 0 means that it is reported through shuffle-merge.
 					cur_key.value = 0;
@@ -850,7 +850,7 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 		if (anomalies.query_key(cur_key, &value) == 0) {
 			// the count is the index at which the key is reported.
 			// for count-stretch the count is the current count of the key.
-			if (max_age || odp)
+			if (!count_stretch)
 				cur_key.count = num_obs_seen;
 			// value 0 means that it is reported through shuffle-merge.
 			cur_key.value = 0;
@@ -907,7 +907,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 			anomalies.query_key(dup_k, &value) == 0) {
 		// the count is the index at which the key is reported.
 		// for count-stretch the count is the current count of the key.
-		if (max_age || odp)
+		if (!count_stretch)
 			dup_k.count = num_obs_seen;
 		else
 			dup_k.count = ram_count;
