@@ -332,10 +332,10 @@ void CascadeFilter<key_object>::print_anomaly_stats(void) {
 		key_object k = *it;
 		if (k.value == 0) {
 			num_shuffle_merge++;
-			if (max_age || odp)
-				PRINT_CF("Shuffle-merge: " << k.key << " index: " << k.count);
-			else
+			if (count_stretch)
 				PRINT_CF("Shuffle-merge: " << k.key << " count: " << k.count);
+			else
+				PRINT_CF("Shuffle-merge: " << k.key << " index: " << k.count);
 		} else if (k.value == 1) {
 			num_odp++;
 			PRINT_CF("ODP: " << k.key << " index: " << k.count);
@@ -409,7 +409,7 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 				}
 			}
 		}
-	} else {
+	} else if (count_stretch) {
 		// for count stretch the count stored with keys in anomalies is the actual
 		// count at the time of reporting.
 		for (auto it : key_lifetime) {
@@ -424,6 +424,8 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 				}
 			}
 		}
+	} else {
+		abort();
 	}
 
 	if (!failures)

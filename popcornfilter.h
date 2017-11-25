@@ -210,7 +210,6 @@ bool PopcornFilter<key_object>::insert(const key_object& k, enum lock flag) {
 		pf_lw_lock.lock(LOCK_AND_SPIN);
 		num_obs_seen += dup_k.count;
 		pf_lw_lock.unlock();
-
 	}
 
 	return ret;
