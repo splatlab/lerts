@@ -63,8 +63,9 @@ class PopcornFilter {
 
 		bool insert(const key_object& k, enum lock flag);
 
-		uint64_t query(const key_object& k, enum lock flag) const;
+		uint64_t query(const key_object& k, enum lock flag);
 
+		uint64_t get_total_keys_above_threshold(void) const;
 		uint32_t get_num_hash_bits(void) const;
 		uint32_t get_seed(void) const;
 		uint64_t get_range(void) const;
@@ -86,6 +87,8 @@ class PopcornFilter {
 		uint32_t fbits;
 		uint32_t nhashbits;
 		uint32_t nvaluebits;
+		uint64_t num_obs_seen;
+		LightweightLock pf_lw_lock;
 		CascadeFilter<key_object> *cf[NUM_MAX_FILTERS];
 };
 
@@ -115,6 +118,7 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 		fbits = log2(nfilters); 	// assuming nfilters is a power of 2.
 		nhashbits = NUM_HASH_BITS;
 		nvaluebits = NUM_VALUE_BITS;
+		num_obs_seen = 0;
 		uint64_t sizes[nlevels];
 		uint32_t thlds[nlevels];
 
@@ -185,20 +189,50 @@ uint64_t PopcornFilter<key_object>::get_total_dist_elements(void) const {
 }
 
 template <class key_object>
+uint64_t PopcornFilter<key_object>::get_total_keys_above_threshold(void) const
+{
+	uint64_t total = 0;
+	for (uint32_t i = 0; i < nfilters; i++)
+		total += cf[i]->get_num_keys_above_threshold();
+	return total;
+}
+
+template <class key_object>
 bool PopcornFilter<key_object>::insert(const key_object& k, enum lock flag) {
+	if (flag != NO_LOCK)
+		if (!pf_lw_lock.lock(flag))
+			return false;
+
+	bool ret = true;
 	KeyObject dup_k(k);
 	uint32_t filter_idx = dup_k.key >> nhashbits;
 	dup_k.key = dup_k.key & BITMASK(nhashbits);
-	return cf[filter_idx]->insert(dup_k, flag);
+	num_obs_seen++;
+	ret = cf[filter_idx]->insert(dup_k, num_obs_seen, flag);
+
+	if (flag != NO_LOCK)
+		pf_lw_lock.unlock();
+
+	return ret;
 }
 
 template <class key_object>
 uint64_t PopcornFilter<key_object>::query(const key_object& k, enum lock flag)
-	const {
+{
+	if (flag != NO_LOCK)
+		if (!pf_lw_lock.lock(flag))
+			return false;
+
+	uint64_t count = 0;
 	KeyObject dup_k(k);
 	uint32_t filter_idx = dup_k.key >> nhashbits;
 	dup_k.key = dup_k.key & BITMASK(nhashbits);
-	return cf[filter_idx]->count_key_value(dup_k, flag);
+	count = cf[filter_idx]->count_key_value(dup_k, flag);
+
+	if (flag != NO_LOCK)
+		pf_lw_lock.unlock();
+
+	return count;
 }
 
 template <class key_object>
@@ -213,8 +247,17 @@ template <class key_object>
 bool PopcornFilter<key_object>::validate_anomalies(
 								std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
 								key_lifetime) {
+	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
+		per_filter[nfilters];
+	for (auto it : key_lifetime) {
+		if (it.second.first < it.second.second) {
+			uint32_t filter_idx = it.first >> nhashbits;
+			uint64_t key = it.first & BITMASK(nhashbits);
+			per_filter[filter_idx][key] = it.second;
+		}
+	}
 	for (uint32_t i = 0; i < nfilters; i++)
-		if (!cf[i]->validate_key_lifetimes(key_lifetime))
+		if (!cf[i]->validate_key_lifetimes(per_filter[i]))
 			return false;
 	return true;
 }

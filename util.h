@@ -26,6 +26,8 @@
 #include <fstream>
 #include <unordered_map>
 
+#include "cqf/gqf.h"
+
 #ifdef DEBUG
 #define PRINT_DEBUG 1
 #else
@@ -33,12 +35,43 @@
 #endif
 
 #define DEBUG_CF(x) do { \
-	  if (PRINT_DEBUG) { std::cerr << x << std::endl; } \
+	if (PRINT_DEBUG) { std::cerr << x << std::endl; } \
 } while (0)
 
 #define PRINT_CF(x) do { \
-	  { std::cout << x << std::endl; } \
+	{ std::cout << x << std::endl; } \
 } while (0)
+
+class LightweightLock {
+	public:
+		LightweightLock() { locked = 0; }
+
+		/**
+		 * Try to acquire a lock once and return even if the lock is busy.
+		 * If spin flag is set, then spin until the lock is available.
+		 */
+		bool lock(enum lock flag)
+		{
+			if (flag != LOCK_AND_SPIN) {
+				return !__sync_lock_test_and_set(&locked, 1);
+			} else {
+				while (__sync_lock_test_and_set(&locked, 1))
+					while (locked);
+				return true;
+			}
+
+			return false;
+		}
+
+		void unlock(void)
+		{
+			__sync_lock_release(&locked);
+			return;
+		}
+
+	private:
+		volatile int locked;
+};
 
 /* Print elapsed time using the start and end timeval */
 void print_time_elapsed(std::string desc, struct timeval* start, struct

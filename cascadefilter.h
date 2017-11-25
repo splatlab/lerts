@@ -65,6 +65,7 @@ class CascadeFilter {
 		const CQF<key_object>* get_filter(uint32_t level) const;
 
 		void print_anomaly_stats(void);
+		uint64_t get_num_keys_above_threshold(void) const;
 		uint64_t get_num_elements(void) const;
 		uint64_t get_num_dist_elements(void) const;
 		uint32_t get_num_hash_bits(void) const;
@@ -72,7 +73,8 @@ class CascadeFilter {
 		uint64_t get_max_size(void) const;
 
 		/* Increment the counter for this key/value pair by count. */
-		bool insert(const key_object& key_val_cnt, enum lock flag);
+		bool insert(const key_object& key_val_cnt, uint64_t obs_cnt,
+								enum lock flag);
 
 		/* Remove count instances of this key/value combination. */
 		bool remove(const key_object& key_val_cnt, enum lock flag);
@@ -199,13 +201,6 @@ class CascadeFilter {
 
 		uint64_t ondisk_count(key_object k) const;
 
-		/**
-		 * Try to acquire a lock once and return even if the lock is busy.
-		 * If spin flag is set, then spin until the lock is available.
-		 */
-		bool lock(enum lock flag);
-
-		void unlock(void);
 
 		CQF<key_object> *filters;
 		CQF<key_object> anomalies;
@@ -226,7 +221,7 @@ class CascadeFilter {
 		uint32_t max_age;
 		uint32_t num_obs_seen;
 		uint32_t seed;
-		volatile int locked;
+		LightweightLock cf_lw_lock;
 };
 
 template <class key_object = KeyObject>
@@ -259,7 +254,6 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	popcorn_threshold = 0;
 	num_obs_seen = 0;
 	seed = 2038074761;
-	locked = 0;
 	memcpy(thresholds, filter_thlds, num_levels * sizeof(thresholds[0]));
 	memcpy(sizes, filter_sizes, num_levels * sizeof(sizes[0]));
 	memset(flushes, 0, num_levels *  sizeof(flushes[0]));
@@ -329,27 +323,6 @@ uint64_t CascadeFilter<key_object>::get_num_dist_elements(void) const {
 }
 
 template <class key_object>
-bool CascadeFilter<key_object>::lock(enum lock flag)
-{
-	if (flag != LOCK_AND_SPIN) {
-		return !__sync_lock_test_and_set(&locked, 1);
-	} else {
-		while (__sync_lock_test_and_set(&locked, 1))
-			while (locked);
-		return true;
-	}
-
-	return false;
-}
-
-template <class key_object>
-void CascadeFilter<key_object>::unlock(void)
-{
-	__sync_lock_release(&locked);
-	return;
-}
-
-template <class key_object>
 void CascadeFilter<key_object>::print_anomaly_stats(void) {
 	// find anomalies that are not reported yet.
 	find_anomalies();
@@ -381,18 +354,28 @@ void CascadeFilter<key_object>::print_anomaly_stats(void) {
 }
 
 template <class key_object>
+uint64_t CascadeFilter<key_object>::get_num_keys_above_threshold(void) const {
+	return anomalies.distinct_elements();
+}
+
+template <class key_object>
 bool CascadeFilter<key_object>::validate_key_lifetimes(
 								std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
 								key_lifetime) {
 	uint32_t failures = 0;
+	//std::ofstream result;
 
 	// find anomalies that are not reported yet.
 	if (!odp)
 		find_anomalies();
 
-	PRINT_CF("Number of keys above threshold: " <<
-					 anomalies.distinct_elements());
+	//PRINT_CF("Number of keys above threshold: " <<
+					 //get_num_keys_above_threshold());
+	//uint64_t idx = 0;
 	if (max_age) {
+		//result.open("raw/time-stretch.data");
+		//result << "x_0" << " " << "y_0" << " " << "y_1" << " " << "y_2"
+			//<< std::endl;
 		double stretch = 1 + 1 / num_age_bits;
 		for (auto it : key_lifetime) {
 			if (it.second.first < it.second.second) {
@@ -408,6 +391,8 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 									 stretch);
 					failures++;
 				}
+				//result << idx++ << " " << lifetime << " " << reporttime << " " <<
+					//lifetime * stretch << std::endl;
 			}
 		}
 	} else if (odp) {
@@ -447,6 +432,7 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 		PRINT_CF("Failed to report " << failures << " keys on time.");
 		return false;
 	}
+	//result.close();
 }
 
 template <class key_object>
@@ -872,19 +858,20 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 }
 
 template <class key_object>
-bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
+bool CascadeFilter<key_object>::insert(const key_object& k,
+																			 uint64_t obs_cnt, enum lock flag) {
 	if (flag != NO_LOCK)
-		if (!lock(flag))
+		if (!cf_lw_lock.lock(flag))
 			return false;
 
-	num_obs_seen++;
+	num_obs_seen = obs_cnt;
 	perform_shuffle_merge_if_needed();
 
 	uint64_t value;
 	// if the key is already reported then don't insert.
 	if (anomalies.query_key(k, &value)) {
 		if (flag != NO_LOCK)
-			unlock();
+			cf_lw_lock.unlock();
 		return true;
 	}
 
@@ -948,7 +935,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 	}
 
 	if (flag != NO_LOCK)
-		unlock();
+		cf_lw_lock.unlock();
 
 	return ret;
 }
@@ -956,14 +943,14 @@ bool CascadeFilter<key_object>::insert(const key_object& k, enum lock flag) {
 template <class key_object>
 bool CascadeFilter<key_object>::remove(const key_object& k, enum lock flag) {
 	if (flag != NO_LOCK)
-		if (!lock(flag))
+		if (!cf_lw_lock.lock(flag))
 			return false;
 
 	for (uint32_t i = 0; i < total_num_levels; i++)
 		filters[i].remove(k, LOCK_AND_SPIN);
 
 	if (flag != NO_LOCK)
-		unlock();
+		cf_lw_lock.unlock();
 
 	return true;
 }
@@ -982,7 +969,7 @@ template <class key_object>
 uint64_t CascadeFilter<key_object>::count_key_value(const key_object& k, enum
 																										lock flag) {
 	if (flag != NO_LOCK)
-		if (!lock(flag))
+		if (!cf_lw_lock.lock(flag))
 			return false;
 
 	uint64_t value;
@@ -994,7 +981,7 @@ uint64_t CascadeFilter<key_object>::count_key_value(const key_object& k, enum
 	}
 
 	if (flag != NO_LOCK)
-		unlock();
+		cf_lw_lock.unlock();
 	return count;
 }
 

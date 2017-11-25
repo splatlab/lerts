@@ -42,11 +42,9 @@
 #include "popcornfilter.h"
 
 void *thread_insert(void *a) {
-	QF buffer;
-	QFi it_buffer;
 	ThreadArgs<KeyObject> *args = (ThreadArgs<KeyObject>*)a;
 
-	qf_init(&buffer, 16, args->pf->get_num_hash_bits(), 0, /*mem*/ true,
+	CQF<KeyObject> buffer(16, args->pf->get_num_hash_bits(), 0, /*mem*/ true,
 					"", args->pf->get_seed());
 
 	/* First try and insert the key-value pair in the cascade filter. If the
@@ -55,37 +53,35 @@ void *thread_insert(void *a) {
 	 */
 	for (uint64_t i = args->start; i < args->end; i++) {
 		if (!args->pf->insert(KeyObject(args->vals[i], 0, 1, 0), LOCK_NO_SPIN)) {
-			qf_insert(&buffer, args->vals[i], 0, 1, NO_LOCK);
-			double load_factor = buffer.metadata->noccupied_slots /
-				(double)buffer.metadata->nslots;
+			buffer.insert(KeyObject(args->vals[i], 0, 1, 0), NO_LOCK);
+			double load_factor = buffer.occupied_slots() /
+				(double)buffer.total_slots();
 			if (load_factor > 0.75) {
-				qf_iterator(&buffer, &it_buffer, 0);
+				typename CQF<KeyObject>::Iterator it = buffer.begin();
 				do {
-					uint64_t key, value, count;
-					qfi_get(&it_buffer, &key, &value, &count);
-					if (!args->pf->insert(KeyObject(key, value, count, 0),
-																LOCK_AND_SPIN)) {
-						std::cerr << "Failed insertion for " << (uint64_t)key << std::endl;
+					KeyObject key = *it;
+					if (!args->pf->insert(key, LOCK_AND_SPIN)) {
+						std::cerr << "Failed insertion for " << (uint64_t)key.key <<
+							std::endl;
 						abort();
 					}
-					qfi_next(&it_buffer);
-				} while(!qfi_end(&it_buffer));
-				qf_reset(&buffer);
+					++it;
+				} while(!it.done());
+				buffer.reset();
 			}
 		}
 	}
 	/* Finally dump the anything left in the buffer. */
-	if (buffer.metadata->nelts > 0) {
-		qf_iterator(&buffer, &it_buffer, 0);
+	if (buffer.total_elements() > 0) {
+		typename CQF<KeyObject>::Iterator it = buffer.begin();
 		do {
-			uint64_t key, value, count;
-			qfi_get(&it_buffer, &key, &value, &count);
-			if (!args->pf->insert(KeyObject(key, value, count, 0), LOCK_AND_SPIN)) {
-				std::cerr << "Failed insertion for " << (uint64_t)key << std::endl;
+			KeyObject key = *it;
+			if (!args->pf->insert(key, LOCK_AND_SPIN)) {
+				std::cerr << "Failed insertion for " << (uint64_t)key.key << std::endl;
 				abort();
 			}
-			qfi_next(&it_buffer);
-		} while(!qfi_end(&it_buffer));
+			++it;
+		} while(!it.done());
 	}
 
 	return NULL;
@@ -211,6 +207,9 @@ main ( int argc, char *argv[] )
 		PRINT_CF("Validation successful!");
 	else
 		PRINT_CF("Validation failed!");
+
+	PRINT_CF("Total number of keys above thrshold: " <<
+					 pf.get_total_keys_above_threshold());
 
 	//pf.print_stats();
 

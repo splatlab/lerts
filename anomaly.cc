@@ -162,7 +162,7 @@ int main(int argc, char **argv)
 
 	read_cmd_options(argc,argv);
 
-	PopcornFilter<KeyObject> pf(4, 20, 4, 4);
+	PopcornFilter<KeyObject> pf(1, 20, 4, 4);
 
 	// sender stats and stop flags
 
