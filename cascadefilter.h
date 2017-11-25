@@ -899,7 +899,8 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 	 */
 	bool ret = filters[0].insert(dup_k, LOCK_AND_SPIN);
 
-	ram_count += 1;	// update the RAM count after the current insertion.
+	// update the RAM count after the current insertion.
+	ram_count += dup_k.count;
 
 	// To check if a key has the THRESHOLD value in RAM.
 	// This is not on-demand popcorning.
