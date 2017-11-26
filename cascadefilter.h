@@ -363,7 +363,7 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 								std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
 								key_lifetime) {
 	uint32_t failures = 0;
-	//std::ofstream result;
+	std::ofstream result;
 
 	// find anomalies that are not reported yet.
 	if (!odp)
@@ -371,11 +371,10 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 
 	//PRINT_CF("Number of keys above threshold: " <<
 					 //get_num_keys_above_threshold());
-	//uint64_t idx = 0;
+	uint64_t idx = 0;
 	if (max_age) {
-		//result.open("raw/time-stretch.data");
-		//result << "x_0" << " " << "y_0" << " " << "y_1" << " " << "y_2"
-			//<< std::endl;
+		result.open("raw/time-stretch.data");
+		result << "x_0 y_0 y_1 y_2" << std::endl;
 		double stretch = 1 + 1 / num_age_bits;
 		for (auto it : key_lifetime) {
 			if (it.second.first < it.second.second) {
@@ -391,11 +390,13 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 									 stretch);
 					failures++;
 				}
-				//result << idx++ << " " << lifetime << " " << reporttime << " " <<
-					//lifetime * stretch << std::endl;
+				result << idx++ << " " << lifetime << " " << reporttime << " " <<
+					lifetime * stretch << std::endl;
 			}
 		}
 	} else if (odp) {
+		result.open("raw/immediate-reporting.data");
+		result << "x_0 y_0 y_1" << std::endl;
 		for (auto it : key_lifetime) {
 			if (it.second.first < it.second.second) {
 				uint64_t value;
@@ -407,9 +408,13 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 									 << reportindex);
 					failures++;
 				}
+				result << idx++ << " " << it.second.second << " " << reportindex <<
+					std::endl;
 			}
 		}
 	} else if (count_stretch) {
+		result.open("raw/count-stretch.data");
+		result << "x_0 y_0 y_1 y_2" << std::endl;
 		// for count stretch the count stored with keys in anomalies is the actual
 		// count at the time of reporting.
 		for (auto it : key_lifetime) {
@@ -422,6 +427,8 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 									 " Reporting count " << reportcount);
 					failures++;
 				}
+				result << idx++ << " " << THRESHOLD_VALUE << " " << reportcount << " "
+					<< THRESHOLD_VALUE * 2 << std::endl;
 			}
 		}
 	} else {
