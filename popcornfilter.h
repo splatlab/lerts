@@ -122,7 +122,14 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 		uint64_t sizes[nlevels];
 		uint32_t thlds[nlevels];
 
+		if (nagebits)
+			PRINT_CF("Creating a popcorn filter with time-stretch");
+		else if (odp)
+			PRINT_CF("Creating a popcorn filter with immediate reporting.");
+		else
+			PRINT_CF("Creating a popcorn filter with count stretch.");
 		/* level sizes grow by a factor "r". */
+
 		sizes[0] = (1ULL << qbits);
 		for (uint32_t i = 1; i < nlevels; i++)
 			sizes[i] = pow(gfactor, i) * sizes[0];

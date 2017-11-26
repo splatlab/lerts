@@ -46,6 +46,8 @@ int mthresh = 4;
 int nsenders = 1;
 int countflag = 0;
 uint32_t nthreads = 1;
+uint32_t nagebits = 0;
+uint32_t odp = 1;
 
 // packet stats
 
@@ -70,12 +72,14 @@ int ntrue = 0;
 //   -p = # of generators sending to me, used to pre-allocate hash table
 //   -c = 1 to print stats on packets received from each sender
 //   -n = number of threads
+//   -a = number of age bits
+//   -o = odp
 
 void read_cmd_options(int argc, char **argv)
 {
 	int op;
 
-	while ( (op = getopt(argc, argv, "s:b:t:m:p:c:n:")) != EOF) {
+	while ( (op = getopt(argc, argv, "s:b:t:m:p:c:n:a:o:")) != EOF) {
 		switch (op) {
 			case 's':
 				size = atoi(optarg);
@@ -97,6 +101,12 @@ void read_cmd_options(int argc, char **argv)
 				break;
 			case 'n':
 				nthreads = atoi(optarg);
+				break;
+			case 'a':
+				nagebits = atoi(optarg);
+				break;
+			case 'o':
+				odp = atoi(optarg);
 				break;
 		}
 	}
@@ -280,10 +290,9 @@ int main(int argc, char **argv)
 {
 	read_cmd_options(argc,argv);
 
-	PopcornFilter<KeyObject> pf(1, 20, 4, 4);
+	PopcornFilter<KeyObject> pf(1, 24, 4, 4, nagebits, odp);
 
 	// sender stats and stop flags
-
 	count = new uint64_t[nsenders];
 	shut = new int[nsenders];
 	for (int i = 0; i < nsenders; i++) count[i] = shut[i] = 0;

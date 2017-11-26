@@ -137,13 +137,6 @@ main ( int argc, char *argv[] )
 		do_odp = atoi(argv[7]);
 	}
 
-	if (nagebits)
-		PRINT_CF("Creating a popcorn filter with time-stretch");
-	else if (do_odp)
-		PRINT_CF("Creating a popcorn filter with immediate reporting.");
-	else
-		PRINT_CF("Creating a popcorn filter with count stretch.");
-
 	PopcornFilter<KeyObject> pf(nfilters, qbits, nlevels, gfactor, nagebits,
 															do_odp);
 
