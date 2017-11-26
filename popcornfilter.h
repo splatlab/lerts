@@ -105,7 +105,7 @@ class ThreadArgs {
 							 uint64_t end) : pf(pf), vals(vals), start(start), end(end) {};
 };
 
-#define NUM_HASH_BITS 32
+#define NUM_HASH_BITS 38
 /* We use value bits to store the value of the key from FireHose. */
 #define NUM_VALUE_BITS 1
 

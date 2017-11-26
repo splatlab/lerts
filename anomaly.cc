@@ -45,9 +45,14 @@ int nthresh = 24;
 int mthresh = 4;
 int nsenders = 1;
 int countflag = 0;
+
+// popcorn filter parameters
 uint32_t nthreads = 1;
 uint32_t nagebits = 0;
 uint32_t odp = 1;
+uint32_t qbits = 24;
+uint32_t nlevels = 4;
+uint32_t gfactor = 4;
 
 // packet stats
 
@@ -74,12 +79,15 @@ int ntrue = 0;
 //   -n = number of threads
 //   -a = number of age bits
 //   -o = odp
+//   -q = number of quotient bits
+//   -l = number of levels
+//   -g = growth factor
 
 void read_cmd_options(int argc, char **argv)
 {
 	int op;
 
-	while ( (op = getopt(argc, argv, "s:b:t:m:p:c:n:a:o:")) != EOF) {
+	while ( (op = getopt(argc, argv, "s:b:t:m:p:c:n:a:o:q:l:g:")) != EOF) {
 		switch (op) {
 			case 's':
 				size = atoi(optarg);
@@ -107,6 +115,15 @@ void read_cmd_options(int argc, char **argv)
 				break;
 			case 'o':
 				odp = atoi(optarg);
+				break;
+			case 'q':
+				qbits = atoi(optarg);
+				break;
+			case 'l':
+				nlevels = atoi(optarg);
+				break;
+			case 'g':
+				gfactor = atoi(optarg);
 				break;
 		}
 	}
@@ -290,7 +307,7 @@ int main(int argc, char **argv)
 {
 	read_cmd_options(argc,argv);
 
-	PopcornFilter<KeyObject> pf(1, 24, 4, 4, nagebits, odp);
+	PopcornFilter<KeyObject> pf(1, qbits, nlevels, gfactor, nagebits, odp);
 
 	// sender stats and stop flags
 	count = new uint64_t[nsenders];
