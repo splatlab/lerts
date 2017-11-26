@@ -45,6 +45,7 @@ int nthresh = 24;
 int mthresh = 4;
 int nsenders = 1;
 int countflag = 0;
+uint32_t nthreads = 1;
 
 // packet stats
 
@@ -68,12 +69,13 @@ int ntrue = 0;
 //   -m = key is anomalous if value=1 <= this many times
 //   -p = # of generators sending to me, used to pre-allocate hash table
 //   -c = 1 to print stats on packets received from each sender
+//   -n = number of threads
 
 void read_cmd_options(int argc, char **argv)
 {
 	int op;
 
-	while ( (op = getopt(argc, argv, "s:b:t:m:p:c:")) != EOF) {
+	while ( (op = getopt(argc, argv, "s:b:t:m:p:c:n:")) != EOF) {
 		switch (op) {
 			case 's':
 				size = atoi(optarg);
@@ -92,6 +94,9 @@ void read_cmd_options(int argc, char **argv)
 				break;
 			case 'c':
 				countflag = 1;
+				break;
+			case 'n':
+				nthreads = atoi(optarg);
 				break;
 		}
 	}
@@ -148,18 +153,131 @@ void stats()
 	printf("true negatives = %d\n",ntrue);
 }
 
+class Args {
+	public:
+		PopcornFilter<KeyObject> *pf;
+		int socket;
+
+		Args() : pf(NULL), socket(0) {};
+		Args(PopcornFilter<KeyObject> *pf, int socket) : pf(pf), socket(socket)
+	{};
+};
+
+#define BUFFER_SIZE (1ULL << 16)
+
+void *thread_recv(void *a) {
+	Args *args = (Args*)a;
+
+	uint32_t seed = args->pf->get_seed();
+	uint32_t hash_bits = log2(args->pf->get_range());
+	CQF<KeyObject> buffer(BUFFER_SIZE, hash_bits, 0, /*mem*/ true, "",
+												args->pf->get_seed());
+
+	// packet buffer length of 64 bytes per datum is ample
+	int maxbuf = 64*perpacket;
+	std::vector<char> socket_buffer(maxbuf);
+	int ipacket;
+
+	// loop on reading packets
+	while (true) {
+		// read a packet with Nbytes
+		const int nbytes = ::recv(args->socket, &socket_buffer[0],
+															socket_buffer.size() - 1, 0);
+		socket_buffer[nbytes] = '\0';
+
+		// check if STOP packet
+		// exit if have received STOP packet from every sender
+		if (nbytes < 8) {
+			if (shutdown(&socket_buffer[0])) break;
+			continue;
+		}
+
+		// tally stats on packets from each sender
+		if (countflag) {
+			sscanf(&socket_buffer[0], "packet %d", &ipacket);
+			count[ipacket % nsenders]++;
+		}
+
+		// scan past header line
+		strtok(&socket_buffer[0], "\n");
+
+		// process perpacket datums in packet
+		for (int i = 0; i < perpacket; i++) {
+			uint64_t key = strtoul(strtok(NULL, ",\n"), NULL, 0);
+			uint32_t value = strtoul(strtok(NULL, ",\n"), NULL, 0);
+			uint32_t truth = strtoul(strtok(NULL, ",\n"), NULL, 0);
+
+			key = HashUtil::MurmurHash64A( ((void*)&key), sizeof(key), seed);
+			key = key % args->pf->get_range();
+			//key = ((key << 1) | value) % pf.get_range();
+
+			KeyObject k(key, 0, 1, 0);
+
+			/* First try and insert the key-value pair in the cascade filter. If the
+			 * insert fails then insert in the buffer. Later dump the buffer in the
+			 * cascade filter.
+			 */
+			if (!args->pf->insert(k, LOCK_NO_SPIN)) {
+				buffer.insert(k, NO_LOCK);
+				double load_factor = buffer.occupied_slots() /
+					(double)buffer.total_slots();
+				if (load_factor > 0.75) {
+					DEBUG_CF("Dumping buffer.");
+					typename CQF<KeyObject>::Iterator it = buffer.begin();
+					do {
+						KeyObject key = *it;
+						if (!args->pf->insert(key, LOCK_AND_SPIN)) {
+							std::cerr << "Failed insertion for " << (uint64_t)key.key <<
+								std::endl;
+							abort();
+						}
+						++it;
+					} while(!it.done());
+					buffer.reset();
+				}
+			}
+		}
+	}
+
+	/* Finally dump the anything left in the buffer. */
+	if (buffer.total_elements() > 0) {
+		DEBUG_CF("Dumping buffer final time.");
+		typename CQF<KeyObject>::Iterator it = buffer.begin();
+		do {
+			KeyObject key = *it;
+			if (!args->pf->insert(key, LOCK_AND_SPIN)) {
+				std::cerr << "Failed insertion for " << (uint64_t)key.key << std::endl;
+				abort();
+			}
+			++it;
+		} while(!it.done());
+	}
+
+	return NULL;
+}
+
+void perform_insertion(Args args[], uint32_t nthreads) {
+	pthread_t threads[nthreads];
+
+	for (uint32_t i = 0; i < nthreads; i++) {
+		PRINT_CF("Starting thread " << i);
+		if (pthread_create(&threads[i], NULL, &thread_recv, &args[i])) {
+			std::cerr << "Error creating thread " << i << std::endl;
+			abort();
+		}
+	}
+
+	for (uint32_t i = 0; i < nthreads; i++)
+		if (pthread_join(threads[i], NULL)) {
+			std::cerr << "Error joining thread " << i << std::endl;
+			abort();
+		}
+}
+
 // main program
 
 int main(int argc, char **argv)
 {
-	uint32_t seed = time(NULL);
-
-	FILE *fp_tmp_itr = fopen("tmp_itr.txt", "w");
-	if (fp_tmp_itr == NULL) {
-		printf("Can't open the data file");
-		exit(1);
-	}
-
 	read_cmd_options(argc,argv);
 
 	PopcornFilter<KeyObject> pf(1, 20, 4, 4);
@@ -185,101 +303,14 @@ int main(int argc, char **argv)
 									 sizeof(address)))
 		throw std::runtime_error(std::string("bind(): ") + ::strerror(errno));
 
-	// packet buffer length of 64 bytes per datum is ample
+	Args args[NUM_MAX_THREADS];
 
-	int maxbuf = 64*perpacket;
-	std::vector<char> buffer(maxbuf);
-	int ipacket;
-
-	// loop on reading packets
-
-	while (true) {
-
-		// read a packet with Nbytes
-
-		const int nbytes = ::recv(socket,&buffer[0],buffer.size()-1,0);
-		buffer[nbytes] = '\0';
-
-		// check if STOP packet
-		// exit if have received STOP packet from every sender
-
-		if (nbytes < 8) {
-			if (shutdown(&buffer[0])) break;
-			continue;
-		}
-
-		nrecv++;
-
-		// tally stats on packets from each sender
-
-		if (countflag) {
-			sscanf(&buffer[0],"packet %d",&ipacket);
-			count[ipacket % nsenders]++;
-		}
-
-		// scan past header line
-
-		strtok(&buffer[0],"\n");
-
-		// process perpacket datums in packet
-
-		for (int i = 0; i < perpacket; i++) {
-			uint64_t key = strtoul(strtok(NULL,",\n"),NULL,0);
-			uint32_t value = strtoul(strtok(NULL,",\n"),NULL,0);
-			uint32_t truth = strtoul(strtok(NULL,",\n"),NULL,0);
-
-			// Insert the concatenation of key and value in the QF
-			// then query the count of <key+0> and <key+1>
-			// If the sum of these two counts exceeds the nthreash
-			// then check for the anomaly threshhold against the count <key+1>
-
-			key = HashUtil::MurmurHash64A( ((void*)&key), sizeof(key), seed);
-			key = key % pf.get_range();
-			//key = ((key << 1) | value) % pf.get_range();
-
-			pf.insert(KeyObject(key, 0, 1, 0), LOCK_AND_SPIN);
-
-#if 0
-			int cnt0, cnt1;
-			cnt0 = qf_count_key_value(&cf, key0, 0);
-			cnt1 = qf_count_key_value(&cf, key1, 0);
-
-			if (value) {
-				cnt1++;
-			} else {
-				cnt0++;
-			}
-
-			if (cnt0 + cnt1 == nthresh) {
-				if (cnt1 > mthresh) {
-					if (truth) {
-						nfalse++;
-						//	printf("false negative = %" PRIu64 "\n",(uint64_t)key);
-					} else ntrue++;
-				} else {
-					if (truth) {
-						ptrue++;
-						//	printf("true anomaly = %" PRIu64 "\n",(uint64_t)key);
-					} else {
-						pfalse++;
-						//	printf("false positive = %" PRIu64 "\n",(uint64_t)key);
-					}
-				}
-				if (value) {
-					qf_insert(&cf, key1, 0, 1);
-				} else {
-					qf_insert(&cf, key0, 0, 1);
-				}
-			} else if(cnt0 + cnt1 < nthresh) {
-				if (value) {
-					qf_insert(&cf, key1, 0, 1);
-				} else {
-					qf_insert(&cf, key0, 0, 1);
-				}
-			}
-#endif
-		}
+	for (uint64_t i = 0; i < nthreads; i++) {
+		args[i].pf = &pf;
+		args[i].socket = socket;
 	}
+
+	perform_insertion(args, nthreads);
 
 	PRINT_CF("Total elements inserted: " << pf.get_total_elements());
 	PRINT_CF("Total distinct elements inserted: " <<
