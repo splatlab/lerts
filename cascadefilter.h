@@ -369,8 +369,8 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 
 	// find anomalies that are not reported yet.
 	if (!odp)
-		shuffle_merge();
-		//find_anomalies();
+		//shuffle_merge();
+		find_anomalies();
 
 	DEBUG_CF("Anomaly CQF ");
 	anomalies.dump_metadata();
