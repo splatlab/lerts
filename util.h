@@ -78,7 +78,7 @@ void print_time_elapsed(std::string desc, struct timeval* start, struct
 												timeval* end);
 
 std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
-analyze_stream(uint64_t *vals, uint64_t nvals);
+analyze_stream(uint64_t *vals, uint64_t nvals, uint32_t threshold);
 
 uint64_t *read_stream_from_disk(std::string file);
 

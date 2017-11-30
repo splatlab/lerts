@@ -55,6 +55,9 @@ void *thread_insert(void *a) {
 	 * cascade filter.
 	 */
 	for (uint64_t i = args->start; i < args->end; i++) {
+		if (args->vals[i] >= args->pf->get_range()) {
+			PRINT_CF("Index: " << i << " val: " << args->vals[i]);
+		}
 		if (!args->pf->insert(KeyObject(args->vals[i], 0, 1, 0), LOCK_NO_SPIN)) {
 			buffer.insert(KeyObject(args->vals[i], 0, 1, 0), NO_LOCK);
 			double load_factor = buffer.occupied_slots() /
@@ -141,6 +144,7 @@ main ( int argc, char *argv[] )
 															do_odp);
 
 	uint64_t nvals = 750 * pf.get_max_size() / 1000;
+	nvals *= 2;
 
 	uint64_t *vals;
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> keylifetimes;
@@ -153,15 +157,26 @@ main ( int argc, char *argv[] )
 		keylifetimes = read_stream_log_from_disk(streamlogfile);
 	} else {
 		vals = (uint64_t*)calloc(nvals, sizeof(vals[0]));
-		memset(vals, 0, nvals*sizeof(vals[0]));
+		memset(vals, 0, nvals * sizeof(vals[0]));
+		uint64_t quarter = nvals / 4;
+		uint64_t half = nvals / 2;
 
 		/* Generate random keys from a Zipfian distribution. */
 		PRINT_CF("Generating " << nvals << " random numbers.");
-		generate_random_keys(vals, nvals, nvals, 1.5);
-		for (uint64_t i = 0; i < nvals; i++) {
-			vals[i] = HashUtil::AES_HASH(vals[i]) % pf.get_range();
+		RAND_pseudo_bytes((unsigned char *)vals, sizeof(*vals) * (quarter));
+		for (uint64_t i = 0; i < quarter; i++) {
+			vals[i] = vals[i] % pf.get_range();
+			vals[i + quarter] = vals[i] % pf.get_range();
 		}
-		keylifetimes = analyze_stream(vals, nvals);
+		RAND_pseudo_bytes((unsigned char *)(vals + half), sizeof(*vals) * (half));
+		for (uint64_t i = half; i < nvals; i++)
+			vals[i] = vals[i] % pf.get_range();
+
+		//generate_random_keys(vals, nvals, nvals, 1.5);
+		//for (uint64_t i = 0; i < nvals; i++) {
+			//vals[i] = HashUtil::AES_HASH(vals[i]) % pf.get_range();
+		//}
+		keylifetimes = analyze_stream(vals, nvals, THRESHOLD_VALUE);
 	}
 
 	struct timeval start, end;

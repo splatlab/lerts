@@ -62,7 +62,9 @@ class CQF {
 		uint64_t occupied_slots(void) const {
 			return cqf.metadata->noccupied_slots;
 		}
-		
+
+		bool if_full(void) const;
+
 		//uint64_t set_size(void) const { return set.size(); }
 		void reset(void) { qf_reset(&cqf); }
 
@@ -143,6 +145,17 @@ CQF<key_obj>::CQF(std::string& filename, bool flag) {
 template <class key_obj>
 CQF<key_obj>::CQF(const CQF<key_obj>& copy_cqf) {
 	memcpy(cqf, copy_cqf.get_cqf(), sizeof(QF));
+}
+
+template <class key_obj>
+bool CQF<key_obj>::if_full(void) const {
+	double load_factor = cqf.metadata->noccupied_slots /
+		(double)cqf.metadata->nslots;
+	if (load_factor > 0.90) {
+		DEBUG_CF("Load factor: " << load_factor);
+		return true;
+	}
+	return false;
 }
 
 template <class key_obj>

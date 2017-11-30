@@ -105,7 +105,7 @@ class ThreadArgs {
 							 uint64_t end) : pf(pf), vals(vals), start(start), end(end) {};
 };
 
-#define NUM_HASH_BITS 38
+#define NUM_HASH_BITS 32
 /* We use value bits to store the value of the key from FireHose. */
 #define NUM_VALUE_BITS 1
 
@@ -123,11 +123,11 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 		uint32_t thlds[nlevels];
 
 		if (nagebits)
-			PRINT_CF("Creating a popcorn filter with time-stretch");
+			PRINT_CF("Creating a time-stretch filter.");
 		else if (odp)
-			PRINT_CF("Creating a popcorn filter with immediate reporting.");
+			PRINT_CF("Creating a popcorn filter.");
 		else
-			PRINT_CF("Creating a popcorn filter with count stretch.");
+			PRINT_CF("Creating a count-stretch filter.");
 		/* level sizes grow by a factor "r". */
 
 		sizes[0] = (1ULL << qbits);

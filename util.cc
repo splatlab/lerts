@@ -62,7 +62,7 @@ void print_time_elapsed(std::string desc, struct timeval* start, struct
 }
 
 std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
-analyze_stream(uint64_t *vals, uint64_t nvals) {
+analyze_stream(uint64_t *vals, uint64_t nvals, uint32_t threshold) {
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> key_lifetime;
 	std::multiset<uint64_t> key_counts;
 
@@ -70,12 +70,12 @@ analyze_stream(uint64_t *vals, uint64_t nvals) {
 
 	for (uint32_t i = 0; i < nvals; i++) {
 		uint64_t key = vals[i];
-		if (key_counts.count(key) < 24) {
+		if (key_counts.count(key) < threshold) {
 			key_counts.insert(key);
 			if (key_counts.count(key) == 1)
 				key_lifetime[key] = std::pair<uint64_t, uint64_t>(i, i);
 
-			if (key_counts.count(key) == 24)
+			if (key_counts.count(key) == threshold)
 				key_lifetime[key].second = i;
 		}
 	}
