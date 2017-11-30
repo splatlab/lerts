@@ -143,8 +143,11 @@ main ( int argc, char *argv[] )
 	PopcornFilter<KeyObject> pf(nfilters, qbits, nlevels, gfactor, nagebits,
 															do_odp);
 
-	uint64_t nvals = 750 * pf.get_max_size() / 1000;
-	nvals *= 2;
+	uint64_t nvals = 1000 * pf.get_max_size() / 1000;
+	uint64_t quarter = nvals;
+	uint64_t half = 2*quarter;
+	nvals = nvals + nvals + 7 * (nvals/4);
+	uint64_t rest = nvals - half;
 
 	uint64_t *vals;
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> keylifetimes;
@@ -158,8 +161,6 @@ main ( int argc, char *argv[] )
 	} else {
 		vals = (uint64_t*)calloc(nvals, sizeof(vals[0]));
 		memset(vals, 0, nvals * sizeof(vals[0]));
-		uint64_t quarter = nvals / 4;
-		uint64_t half = nvals / 2;
 
 		/* Generate random keys from a Zipfian distribution. */
 		PRINT_CF("Generating " << nvals << " random numbers.");
@@ -168,7 +169,7 @@ main ( int argc, char *argv[] )
 			vals[i] = vals[i] % pf.get_range();
 			vals[i + quarter] = vals[i] % pf.get_range();
 		}
-		RAND_pseudo_bytes((unsigned char *)(vals + half), sizeof(*vals) * (half));
+		RAND_pseudo_bytes((unsigned char *)(vals + half), sizeof(*vals) * (rest));
 		for (uint64_t i = half; i < nvals; i++)
 			vals[i] = vals[i] % pf.get_range();
 
