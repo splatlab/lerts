@@ -144,6 +144,8 @@ main ( int argc, char *argv[] )
 															do_odp);
 
 	uint64_t nvals = 1000 * pf.get_max_size() / 1000;
+	//uint64_t quarter = 0, half = 0, rest = 0;
+	//nvals = 7 * (nvals/4);
 	uint64_t quarter = nvals;
 	uint64_t half = 2*quarter;
 	nvals = nvals + nvals + 7 * (nvals/4);
@@ -164,6 +166,8 @@ main ( int argc, char *argv[] )
 
 		/* Generate random keys from a Zipfian distribution. */
 		PRINT_CF("Generating " << nvals << " random numbers.");
+
+#if 1
 		RAND_pseudo_bytes((unsigned char *)vals, sizeof(*vals) * (quarter));
 		for (uint64_t i = 0; i < quarter; i++) {
 			vals[i] = vals[i] % pf.get_range();
@@ -172,11 +176,17 @@ main ( int argc, char *argv[] )
 		RAND_pseudo_bytes((unsigned char *)(vals + half), sizeof(*vals) * (rest));
 		for (uint64_t i = half; i < nvals; i++)
 			vals[i] = vals[i] % pf.get_range();
+		
+		//RAND_pseudo_bytes((unsigned char *)vals, sizeof(*vals) * (nvals));
+		//for (uint64_t i = 0; i < nvals; i++)
+			//vals[i] = vals[i] % pf.get_range();
+#else
 
-		//generate_random_keys(vals, nvals, nvals, 1.5);
-		//for (uint64_t i = 0; i < nvals; i++) {
-			//vals[i] = HashUtil::AES_HASH(vals[i]) % pf.get_range();
-		//}
+		generate_random_keys(vals, nvals, nvals, 1.5);
+		for (uint64_t i = 0; i < nvals; i++) {
+			vals[i] = HashUtil::AES_HASH(vals[i]) % pf.get_range();
+		}
+#endif
 		keylifetimes = analyze_stream(vals, nvals, THRESHOLD_VALUE);
 	}
 

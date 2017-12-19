@@ -369,8 +369,8 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 
 	// find anomalies that are not reported yet.
 	if (!odp)
-		//shuffle_merge();
-		find_anomalies();
+		shuffle_merge();
+		//find_anomalies();
 
 	DEBUG_CF("Anomaly CQF ");
 	anomalies.dump_metadata();
@@ -380,7 +380,8 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 	uint64_t idx = 0;
 	if (max_age) {
 		result.open("raw/time-stretch.data");
-		result << "x_0 y_0 y_1 y_2" << std::endl;
+		//result << "x_0 y_0 y_1 y_2" << std::endl;
+		result << "Key Inex-0 Index-2 ReportIndex Stretch" << std::endl;
 		double stretch = 1 + 1 / num_age_bits;
 		for (auto it : key_lifetime) {
 			if (it.second.first < it.second.second) {
@@ -396,8 +397,11 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 									 stretch);
 					failures++;
 				}
-				result << idx++ << " " << lifetime << " " << reporttime << " " <<
-					lifetime * stretch << std::endl;
+				//result << idx++ << " " << lifetime << " " << reporttime << " " <<
+					//lifetime * stretch << std::endl;
+				result << it.first << " " << it.second.first << " " << it.second.second
+					<< " " << anomalies.query_key(k, &value) << " " <<
+					reporttime/(double)lifetime << std::endl;
 			}
 		}
 	} else if (odp) {
