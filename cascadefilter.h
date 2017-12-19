@@ -461,7 +461,7 @@ bool CascadeFilter<key_object>::is_full(uint32_t level) const {
 
 	if (max_age) {
 		// we do a flush when the number of observations seen is increased
-		// by ram_size/2.
+		// by ram_size/max_age.
 		uint64_t num_obs = get_filter(0)->total_slots()/max_age;
 		if (num_obs_seen % num_obs == 0)
 			return true;
