@@ -480,7 +480,7 @@ template <class key_object>
 bool CascadeFilter<key_object>::need_shuffle_merge_time_stretch(void) const {
 	uint64_t num_obs = get_filter(0)->total_slots()/max_age;
 	int num_obs_frac = num_obs_seen/num_obs;
-	if (num_obs_frac > 1)
+	if (num_obs_frac > 0)
 		return true;
 	return false;
 }
