@@ -29,8 +29,7 @@ CFLAGS += -Wall $(DEBUG) $(PROFILE) $(OPT) $(ARCH) -m64 -I. \
 -Wno-unused-result -Wno-strict-aliasing -Wno-unused-function -Wno-sign-compare \
 -Wno-implicit-function-declaration
 
-LDFLAGS += $(DEBUG) $(PROFILE) $(OPT) -lpthread -lssl -lcrypto -lboost_system \
--lboost_thread -lm -lbz2 -lz
+LDFLAGS += $(DEBUG) $(PROFILE) $(OPT) -lpthread -lssl -lcrypto -lm
 
 #
 # declaration of dependencies
