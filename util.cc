@@ -65,8 +65,28 @@ std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
 analyze_stream(uint64_t *vals, uint64_t nvals, uint32_t threshold) {
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> key_lifetime;
 	std::multiset<uint64_t> key_counts;
+	std::vector<uint64_t> freq_dist;
+	freq_dist.resize(30);
 
 	PRINT_CF("Analyzing Stream");
+
+#if 0
+	for (uint32_t i = 0; i < nvals; i++) {
+		uint64_t key = vals[i];
+		key_counts.insert(key);
+	}
+
+	for (auto key : key_counts) {
+		int count = key_counts.count(key);
+		if (count <= 25)
+			freq_dist[count]++;
+	}
+
+	uint32_t i = 0;
+	for (auto count : freq_dist) {
+		std::cout << i++ << " " << count << std::endl;
+	}
+#endif
 
 	for (uint32_t i = 0; i < nvals; i++) {
 		uint64_t key = vals[i];
