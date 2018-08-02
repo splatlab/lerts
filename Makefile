@@ -1,4 +1,4 @@
-TARGETS=main popcornfilter anomaly streamanalysis
+TARGETS=popcornfilter
 
 ifdef D
 	DEBUG=-g -DDEBUG
@@ -22,12 +22,13 @@ CXX = g++ -std=c++11
 CC = gcc -std=gnu11
 LD= g++ -std=c++11
 
-CXXFLAGS += -Wall $(DEBUG) $(PROFILE) $(OPT) $(ARCH) -m64 -I. \
--Wno-unused-result -Wno-strict-aliasing -Wno-unused-function -Wno-sign-compare
+LOC_INCLUDE=include
+LOC_SRC=src
+OBJDIR=obj
 
-CFLAGS += -Wall $(DEBUG) $(PROFILE) $(OPT) $(ARCH) -m64 -I. \
--Wno-unused-result -Wno-strict-aliasing -Wno-unused-function -Wno-sign-compare \
--Wno-implicit-function-declaration
+CXXFLAGS += -Wall $(DEBUG) $(PROFILE) $(OPT) $(ARCH) -m64 -I. -I$(LOC_INCLUDE)
+
+CFLAGS += -Wall $(DEBUG) $(PROFILE) $(OPT) $(ARCH) -m64 -I. -I$(LOC_INCLUDE)
 
 LDFLAGS += $(DEBUG) $(PROFILE) $(OPT) -lpthread -lssl -lcrypto -lm
 
@@ -39,25 +40,49 @@ all: $(TARGETS)
 
 # dependencies between programs and .o files
 
-main:                   main.o cascadefilter.o  zipf.o cqf/gqf.o util.o hashutil.o
-cascadefilter:         				 cascadefilter.o  zipf.o cqf/gqf.o util.o hashutil.o
-popcornfilter: popcornfilter.o cascadefilter.o  zipf.o cqf/gqf.o util.o hashutil.o
-anomaly:       anomaly.o                               cqf/gqf.o util.o hashutil.o
-streamanalysis: streamanalysis.o                       cqf/gqf.o util.o hashutil.o
+main:						$(OBJDIR)/main.o $(OBJDIR)/cascadefilter.o $(OBJDIR)/zipf.o \
+								$(OBJDIR)/gqf.o $(OBJDIR)/util.o $(OBJDIR)/hashutil.o
+cascadefilter:	$(OBJDIR)/cascadefilter.o $(OBJDIR)/zipf.o $(OBJDIR)/gqf.o \
+								$(OBJDIR)/util.o $(OBJDIR)/hashutil.o
+popcornfilter:	$(OBJDIR)/popcornfilter.o $(OBJDIR)/cascadefilter.o \
+								$(OBJDIR)/zipf.o $(OBJDIR)/gqf.o $(OBJDIR)/util.o \
+								$(OBJDIR)/hashutil.o
+anomaly:				$(OBJDIR)/anomaly.o  $(OBJDIR)/gqf.o $(OBJDIR)/util.o \
+								$(OBJDIR)/hashutil.o
+streamanalysis:	$(OBJDIR)/streamanalysis.o $(OBJDIR)/gqf.o $(OBJDIR)/util.o \
+								$(OBJDIR)/hashutil.o
 
 # dependencies between .o files and .h files
 
-main.o: 								         cascadefilter.h	cqf/gqf.h hashutil.h util.h zipf.h
-cascadefilter.o: 				         cascadefilter.h	cqf/gqf.h hashutil.h util.h zipf.h
-popcornfilter.o: popcornfilter.h cascadefilter.h	cqf/gqf.h hashutil.h util.h zipf.h
-hashutil.o: 																								hashutil.h
-anomaly.o: 								 									        cqf/gqf.h hashutil.h util.h
-streamanalysis.o: 								 							    cqf/gqf.h hashutil.h util.h
+$(OBJDIR)/main.o: 						$(LOC_INCLUDE)/cascadefilter.h \
+															$(LOC_INCLUDE)/gqf_cpp.h \
+ 															$(LOC_INCLUDE)/util.h \
+ 															$(LOC_INCLUDE)/lock.h \
+ 															$(LOC_INCLUDE)/zipf.h
+$(OBJDIR)/cascadefilter.o: 		$(LOC_INCLUDE)/cascadefilter.h \
+															$(LOC_INCLUDE)/gqf_cpp.h \
+ 															$(LOC_INCLUDE)/util.h \
+ 															$(LOC_INCLUDE)/lock.h \
+ 															$(LOC_INCLUDE)/zipf.h
+$(OBJDIR)/popcornfilter.o: 		$(LOC_INCLUDE)/popcornfilter.h \
+ 															$(LOC_INCLUDE)/cascadefilter.h \
+															$(LOC_INCLUDE)/gqf_cpp.h \
+ 															$(LOC_INCLUDE)/util.h \
+ 															$(LOC_INCLUDE)/lock.h \
+ 															$(LOC_INCLUDE)/zipf.h
+$(OBJDIR)/anomaly.o: 					$(LOC_INCLUDE)/gqf_cpp.h \
+ 															$(LOC_INCLUDE)/util.h
+ 															$(LOC_INCLUDE)/lock.h \
+$(OBJDIR)/streamanalysis.o: 	$(LOC_INCLUDE)/gqf_cpp.h \
+ 															$(LOC_INCLUDE)/util.h \
+ 															$(LOC_INCLUDE)/lock.h
 
 # dependencies between .o files and .cc (or .c) files
 
-cqf/gqf.o: cqf/gqf.c cqf/gqf.h
-zipf.o: zipf.c zipf.h
+$(OBJDIR)gqf.o: $(LOC_SRC)/gqf/gqf.c $(LOC_INCLUDE)/gqf/gqf.h
+$(OBJDIR)/gqf_file.o: 	$(LOC_SRC)/gqf/gqf_file.c $(LOC_INCLUDE)/gqf/gqf_file.h
+$(OBJDIR)/hashutil.o: 	$(LOC_INCLUDE)/gqf/hashutil.h
+$(OBJDIR)zipf.o: $(LOC_SRC)/zipf.c $(LOC_INCLUDE)/zipf.h
 
 #
 # generic build rules
@@ -66,11 +91,17 @@ zipf.o: zipf.c zipf.h
 $(TARGETS):
 	$(LD) $^ $(LDFLAGS) -o $@
 
-%.o: %.cc
-	$(CXX) $(CXXFLAGS) $(INCLUDE) $< -c -o $@
+$(OBJDIR)/%.o: $(LOC_SRC)/%.cc | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c -o $@ $<
 
-%.o: %.c
-	$(CC) $(CFLAGS) $(INCLUDE) $< -c -o $@
+$(OBJDIR)/%.o: $(LOC_SRC)/%.c | $(OBJDIR)
+	$(CXX) $(CFLAGS) $(INCLUDE) -c -o $@ $<
+
+$(OBJDIR)/%.o: $(LOC_SRC)/gqf/%.c | $(OBJDIR)
+	$(CXX) $(CFLAGS) $(INCLUDE) -c -o $@ $<
+
+$(OBJDIR):
+	@mkdir -p $(OBJDIR)
 
 clean:
-	rm -f *.o core cqf/gqf.o $(TARGETS)
+	rm -rf $(OBJDIR) core $(TARGETS)
