@@ -1,15 +1,6 @@
 /*
  * =============================================================================
  *
- *       Filename:  popcornfilter.h
- *
- *    Description:  
- *
- *        Version:  1.0
- *        Created:  2017-10-19 10:19:18 AM
- *       Revision:  none
- *       Compiler:  gcc
- *
  *         Author:  Prashant Pandey (), ppandey@cs.stonybrook.edu
  *   Organization:  Stony Brook University
  *

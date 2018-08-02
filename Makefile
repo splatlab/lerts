@@ -1,4 +1,4 @@
-TARGETS=popcornfilter
+TARGETS=main
 
 ifdef D
 	DEBUG=-g -DDEBUG
@@ -40,7 +40,8 @@ all: $(TARGETS)
 
 # dependencies between programs and .o files
 
-main:						$(OBJDIR)/main.o $(OBJDIR)/cascadefilter.o $(OBJDIR)/zipf.o \
+main:						$(OBJDIR)/main.o $(OBJDIR)/popcornfilter.o \
+								$(OBJDIR)/cascadefilter.o $(OBJDIR)/zipf.o \
 								$(OBJDIR)/gqf.o $(OBJDIR)/util.o $(OBJDIR)/hashutil.o
 cascadefilter:	$(OBJDIR)/cascadefilter.o $(OBJDIR)/zipf.o $(OBJDIR)/gqf.o \
 								$(OBJDIR)/util.o $(OBJDIR)/hashutil.o

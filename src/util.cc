@@ -1,15 +1,6 @@
 /*
  * ============================================================================
  *
- *       Filename:  util.cc
- *
- *    Description:  
- *
- *        Version:  1.0
- *        Created:  2017-09-21 01:01:53 PM
- *       Revision:  none
- *       Compiler:  gcc
- *
  *         Author:  Prashant Pandey (), ppandey@cs.stonybrook.edu
  *   Organization:  Stony Brook University
  *

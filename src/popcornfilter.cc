@@ -30,6 +30,8 @@
 #include <sys/mman.h>
 #include <openssl/rand.h>
 
+#include "clipp.h"
+#include "ProgOpts.h"
 #include "popcornfilter.h"
 
 #define BUFFER_SIZE (1ULL << 16)
@@ -112,25 +114,15 @@ void perform_insertion(ThreadArgs<KeyObject> args[], uint32_t nthreads) {
  *  Description:  
  * ===========================================================================
  */
-	int
-main ( int argc, char *argv[] )
+int popcornfilter_main (PopcornFilterOpts opts)
 {
-	if (argc < 6) {
-		PRINT("Not suffcient args.");
-		abort();
-	}
-
-	uint64_t qbits = atoi(argv[1]);
-	uint32_t nlevels = atoi(argv[2]);
-	uint32_t gfactor = atoi(argv[3]);
-	uint64_t nfilters = atoi(argv[4]);
-	uint64_t nthreads = atoi(argv[5]);
-	uint32_t nagebits = 0, do_odp = 1;
-
-	if (argc >= 8) {
-		nagebits = atoi(argv[6]);
-		do_odp = atoi(argv[7]);
-	}
+	uint64_t qbits = opts.qbits;
+	uint32_t nlevels = opts.nlevels;
+	uint32_t gfactor = opts.gfactor;
+	uint64_t nfilters = opts.nfilters;
+	uint64_t nthreads = opts.nthreads;
+	uint32_t nagebits = opts.nagebits;
+	uint32_t do_odp = opts.do_odp;
 
 	PopcornFilter<KeyObject> pf(nfilters, qbits, nlevels, gfactor, nagebits,
 															do_odp);
@@ -145,11 +137,10 @@ main ( int argc, char *argv[] )
 
 	uint64_t *vals;
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> keylifetimes;
-	if (argc == 9) {
+	if (opts.ip_file.size() > 1) {
 		PRINT("Reading input stream and logs from disk");
-		std::string streamfile(argv[8]);
-		std::string streamlogfile(streamfile + ".log");
-		vals = read_stream_from_disk(streamfile);
+		std::string streamlogfile(opts.ip_file + ".log");
+		vals = read_stream_from_disk(opts.ip_file);
 		nvals = 50000000;
 		keylifetimes = read_stream_log_from_disk(streamlogfile);
 	} else {
