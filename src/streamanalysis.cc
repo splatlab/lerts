@@ -267,7 +267,7 @@ int main(int argc, char **argv)
 	std::cout << "Analyzing the steam dump." << std::endl;
 
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> key_lifetime =
-		analyze_stream(arr, cnt, THRESHOLD_VALUE);
+		popcornfilter::analyze_stream(arr, cnt, THRESHOLD_VALUE);
 
 	std::string statsfilename("raw/streamdump.log");
 	std::cout << "Writing stats to " << statsfilename << std::endl;

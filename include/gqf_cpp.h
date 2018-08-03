@@ -35,7 +35,7 @@ template <class key_obj>
 class CQF {
 	public:
 		CQF();
-		CQF(uint64_t q_bits, uint64_t key_bits, uint64_t value_bits, enum
+		CQF(uint64_t nslots, uint64_t key_bits, uint64_t value_bits, enum
 				qf_hashmode hash, uint32_t seed);
 		CQF(std::string& filename, enum readmode flag);
 		CQF(const CQF<key_obj>& copy_cqf);
@@ -143,9 +143,9 @@ CQF<key_obj>::CQF() {
 }
 
 template <class key_obj>
-CQF<key_obj>::CQF(uint64_t q_bits, uint64_t key_bits, uint64_t value_bits,
+CQF<key_obj>::CQF(uint64_t nslots, uint64_t key_bits, uint64_t value_bits,
 									enum qf_hashmode hash, uint32_t seed) {
-	if (!qf_malloc(&cqf, 1ULL << q_bits, key_bits, value_bits, hash, GQF_SEED)) {
+	if (!qf_malloc(&cqf, nslots, key_bits, value_bits, hash, GQF_SEED)) {
 		ERROR("Can't allocate the CQF.");
 		exit(EXIT_FAILURE);
 	}

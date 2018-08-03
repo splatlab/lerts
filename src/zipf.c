@@ -59,7 +59,7 @@ static void zprint (ZIPFIAN z) {
 ZIPFIAN create_zipfian (double s, long N, long int (*randomfun)(void)) {
     assert(s > 0);
     assert(0 < N);
-    struct zipfian *z = (struct zipfian*)malloc(sizeof(*z));
+    struct zipfian *z = (struct zipfian *)malloc(sizeof(*z));
     assert(z);
     z->s = s;
     z->N = N;
@@ -75,9 +75,15 @@ ZIPFIAN create_zipfian (double s, long N, long int (*randomfun)(void)) {
     // For the first half of the pairs do things exactly
     double cumulative = 0;
     for (i=0; i<NPAIRS/2; i++) {
-			struct zpair pair = { 1, i, cumulative };
+			struct zpair pair;
+			pair.cumulative = cumulative;
+			pair.low = i;
+			pair.num = 1;
 			z->pairs[i] = pair;
-			cumulative += pow(i+1, -s);
+	/*z->pairs[i] = (struct zpair){.cumulative = cumulative,*/
+						 /*.low        = i,*/
+						 /*.num        = 1};*/
+	cumulative += pow(i+1, -s);
     }
     // For the second half divide up the remaining part of N evenly by the probability.
     
@@ -93,8 +99,14 @@ ZIPFIAN create_zipfian (double s, long N, long int (*randomfun)(void)) {
 	    next_cumulative += pow(next_n+1, -s);
 	    next_n++;
 	}
-			struct zpair pair = {next_n - last_n,  last_n, cumulative };
+			struct zpair pair;
+			pair.cumulative = cumulative;
+			pair.low = last_n;
+			pair.num = next_n - last_n;
 			z->pairs[i] = pair;
+	/*z->pairs[i] = (struct zpair){.cumulative = cumulative,*/
+						 /*.low        = last_n,*/
+						 /*.num        = next_n - last_n};*/
 	last_n = next_n;
 	cumulative = next_cumulative;
     }

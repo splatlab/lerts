@@ -44,7 +44,7 @@
 #include "gqf_cpp.h"
 
 #define NUM_MAX_LEVELS 10
-#define THRESHOLD_VALUE 2
+#define THRESHOLD_VALUE 24
 
 #define MAX_VALUE(nbits) ((1ULL << (nbits)) - 1)
 #define BITMASK(nbits)                                    \
@@ -565,7 +565,7 @@ void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 	for (int32_t i = nlevels; i > 0; i--) {
 		if (k.count > thresholds[i]) {
 			key_object cur(k.key, k.value, thresholds[i], 0);
-			qf_arr[i].insert(cur, PF_WAIT_FOR_LOCK);
+			qf_arr[i].insert(cur, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 			k.count -= thresholds[i];
 		} else {
 			if (max_age) {
@@ -580,14 +580,14 @@ void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 					k.value = k.value | ages[i];
 				}
 			}
-			qf_arr[i].insert(k, PF_WAIT_FOR_LOCK);
+			qf_arr[i].insert(k, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 			k.count = 0;
 			break;
 		}
 	}
 	/* If some observations are left then insert them in the first level. */
 	if (k.count > 0)
-		qf_arr[0].insert(k, PF_WAIT_FOR_LOCK);
+		qf_arr[0].insert(k, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 }
 
 template <class key_object>
@@ -605,7 +605,7 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 			cur.value = 0;
 			if (anomalies.if_full())
 				abort();
-			anomalies.insert(cur, PF_WAIT_FOR_LOCK);
+			anomalies.insert(cur, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 			DEBUG("Reporting " << cur.to_string());
 		}
 	} else {
@@ -619,7 +619,7 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 			// not aged yet. reinsert the key with aggregated count in the lowest
 			// level (involved in the shuffle-merge) it was present in.
 			else {
-				qf_arr[cur.level].insert(cur, PF_WAIT_FOR_LOCK);
+				qf_arr[cur.level].insert(cur, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 				//DEBUG("Live " << cur.to_string());
 			}
 		} else
@@ -634,7 +634,7 @@ CascadeFilter<key_object>::Iterator::Iterator(typename
 	qfi_arr(arr), iter_num_levels(num_levels) {
 		for (uint32_t i = 0; i < iter_num_levels; i++) {
 			if (!qfi_arr[i].done()) {
-				key_object k = *qfi_arr[i];
+				key_object k = qfi_arr[i].get_cur_hash();
 				k.level = i;
 				min_heap.push(k);
 			}
@@ -680,7 +680,7 @@ void CascadeFilter<key_object>::Iterator::operator++(void) {
 	++qfi_arr[k.level];
 	uint32_t level = k.level;
 	if (!qfi_arr[level].done()) {
-		key_object k = *qfi_arr[level];
+		key_object k = qfi_arr[level].get_cur_hash();
 		k.level = level;
 		min_heap.push(k);
 	}
@@ -724,7 +724,7 @@ void CascadeFilter<key_object>::merge() {
 		if (cur_key == next_key)
 			cur_key.count += next_key.count;
 		else {
-			filters[nlevels].insert(cur_key, PF_WAIT_FOR_LOCK);
+			filters[nlevels].insert(cur_key, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 			/* Update cur_key. */
 			cur_key = next_key;
 		}
@@ -733,7 +733,7 @@ void CascadeFilter<key_object>::merge() {
 	} while(!it.done());
 
 	/* Insert the last key in the cascade filter. */
-	filters[nlevels].insert(cur_key, PF_WAIT_FOR_LOCK);
+	filters[nlevels].insert(cur_key, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 
 	/* Reset filters that were merged except the last in which the flush
 	 * happened. */
@@ -921,7 +921,12 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 	 * still have the flag "PF_WAIT_FOR_LOCK" here just to be extra sure that we
 	 * will not corrupt the data structure.
 	 */
-	bool ret = filters[0].insert(dup_k, PF_WAIT_FOR_LOCK);
+	int cqf_ret = filters[0].insert(dup_k, PF_WAIT_FOR_LOCK);
+	bool ret;
+	if (cqf_ret < 0)
+		ret = false;
+	else
+		ret = true;
 
 	// update the RAM count after the current insertion.
 	ram_count += dup_k.count;

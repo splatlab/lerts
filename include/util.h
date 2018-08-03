@@ -35,16 +35,18 @@
 	{ std::cout << x << std::endl; } \
 } while (0)
 
-/* Print elapsed time using the start and end timeval */
-void print_time_elapsed(std::string desc, struct timeval* start, struct
-												timeval* end);
+namespace popcornfilter {
+	/* Print elapsed time using the start and end timeval */
+	void print_time_elapsed(std::string desc, struct timeval* start, struct
+													timeval* end);
 
-std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
-analyze_stream(uint64_t *vals, uint64_t nvals, uint32_t threshold);
+	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
+		analyze_stream(uint64_t *vals, uint64_t nvals, uint32_t threshold);
 
-uint64_t *read_stream_from_disk(std::string file);
+	uint64_t *read_stream_from_disk(std::string file);
+	uint64_t get_number_keys(std::string file);
 
-std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
-read_stream_log_from_disk(std::string file);
-
+	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
+		read_stream_log_from_disk(std::string file);
+}
 #endif

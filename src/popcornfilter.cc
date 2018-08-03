@@ -127,30 +127,30 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	PopcornFilter<KeyObject> pf(nfilters, qbits, nlevels, gfactor, nagebits,
 															do_odp);
 
-	uint64_t nvals = 1000 * pf.get_max_size() / 1000;
-	//uint64_t quarter = 0, half = 0, rest = 0;
-	//nvals = 7 * (nvals/4);
-	uint64_t quarter = nvals;
-	uint64_t half = 2*quarter;
-	nvals = nvals + nvals + 7 * (nvals/4);
-	uint64_t rest = nvals - half;
+	uint64_t nvals = pf.get_max_size();
 
 	uint64_t *vals;
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> keylifetimes;
 	if (opts.ip_file.size() > 1) {
 		PRINT("Reading input stream and logs from disk");
 		std::string streamlogfile(opts.ip_file + ".log");
-		vals = read_stream_from_disk(opts.ip_file);
-		nvals = 50000000;
-		keylifetimes = read_stream_log_from_disk(streamlogfile);
+		vals = popcornfilter::read_stream_from_disk(opts.ip_file);
+		nvals = popcornfilter::get_number_keys(opts.ip_file);
+		keylifetimes = popcornfilter::read_stream_log_from_disk(streamlogfile);
 	} else {
+
+#if 0
+		//uint64_t quarter = 0, half = 0, rest = 0;
+		//nvals = 7 * (nvals/4);
+		uint64_t quarter = nvals;
+		uint64_t half = 2*quarter;
+		nvals = nvals + nvals + 7 * (nvals/4);
+		uint64_t rest = nvals - half;
 		vals = (uint64_t*)calloc(nvals, sizeof(vals[0]));
 		memset(vals, 0, nvals * sizeof(vals[0]));
-
 		/* Generate random keys from a Zipfian distribution. */
 		PRINT("Generating " << nvals << " random numbers.");
 
-#if 1
 		RAND_bytes((unsigned char *)vals, sizeof(*vals) * (quarter));
 		for (uint64_t i = 0; i < quarter; i++) {
 			vals[i] = vals[i] % pf.get_range();
@@ -159,18 +159,18 @@ int popcornfilter_main (PopcornFilterOpts opts)
 		RAND_bytes((unsigned char *)(vals + half), sizeof(*vals) * (rest));
 		for (uint64_t i = half; i < nvals; i++)
 			vals[i] = vals[i] % pf.get_range();
-		
+
 		//RAND_pseudo_bytes((unsigned char *)vals, sizeof(*vals) * (nvals));
 		//for (uint64_t i = 0; i < nvals; i++)
-			//vals[i] = vals[i] % pf.get_range();
+		//vals[i] = vals[i] % pf.get_range();
 #else
-
+		vals = (uint64_t*)calloc(nvals, sizeof(vals[0]));
+		memset(vals, 0, nvals * sizeof(vals[0]));
+		/* Generate random keys from a Zipfian distribution. */
+		PRINT("Generating " << nvals << " random numbers.");
 		generate_random_keys(vals, nvals, nvals, 1.5);
-		for (uint64_t i = 0; i < nvals; i++) {
-			vals[i] = HashUtil::AES_HASH(vals[i]) % pf.get_range();
-		}
 #endif
-		keylifetimes = analyze_stream(vals, nvals, THRESHOLD_VALUE);
+		keylifetimes = popcornfilter::analyze_stream(vals, nvals, THRESHOLD_VALUE);
 	}
 
 	struct timeval start, end;
@@ -188,12 +188,12 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	gettimeofday(&start, &tzp);
 	perform_insertion(args, nthreads);
 	gettimeofday(&end, &tzp);
-	print_time_elapsed("", &start, &end);
+	popcornfilter::print_time_elapsed("", &start, &end);
 	PRINT("Finished insertions.");
 
 	PRINT("Total elements inserted: " << pf.get_total_elements());
 	PRINT("Total distinct elements inserted: " <<
-					 pf.get_total_dist_elements());
+				pf.get_total_dist_elements());
 
 	PRINT("Querying elements.");
 	gettimeofday(&start, &tzp);
@@ -204,7 +204,7 @@ int popcornfilter_main (PopcornFilterOpts opts)
 			abort();
 		}
 	gettimeofday(&end, &tzp);
-	print_time_elapsed("", &start, &end);
+	popcornfilter::print_time_elapsed("", &start, &end);
 	PRINT("Finished lookups.");
 
 	//pf.print_stats();
@@ -218,7 +218,7 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	}
 
 	PRINT("Total number of keys above thrshold: " <<
-					 pf.get_total_keys_above_threshold());
+				pf.get_total_keys_above_threshold());
 
 	//pf.print_stats();
 

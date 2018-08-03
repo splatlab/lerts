@@ -85,7 +85,7 @@ main ( int argc, char *argv[] )
 		auto e = res.end();
 		if (std::distance(b,e) > 0) {
 			if (b->arg() == "popcornfilter") {
-				std::cout << make_man_page(bm_pf_mode, "PopcornFilter");
+				std::cout << make_man_page(bm_pf_mode, "");
 			} else {
 				std::cout << "There is no command \"" << b->arg() << "\"\n";
 				std::cout << usage_lines(cli, "main") << '\n';
