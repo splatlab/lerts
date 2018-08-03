@@ -1,10 +1,10 @@
 /*
- * =============================================================================
+ * ============================================================================
  *
  *         Author:  Prashant Pandey (), ppandey@cs.stonybrook.edu
  *   Organization:  Stony Brook University
  *
- * =============================================================================
+ * ============================================================================
  */
 
 #include <stdlib.h>
@@ -89,7 +89,8 @@ void *thread_insert(void *a) {
 	return NULL;
 }
 
-void perform_insertion(ThreadArgs<KeyObject> args[], uint32_t nthreads) {
+void perform_insertion(std::vector<ThreadArgs<KeyObject>> args, uint32_t
+											 nthreads) {
 	pthread_t threads[nthreads];
 
 	for (uint32_t i = 0; i < nthreads; i++) {
@@ -123,9 +124,10 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	uint64_t nthreads = opts.nthreads;
 	uint32_t nagebits = opts.nagebits;
 	uint32_t do_odp = opts.do_odp;
+	uint32_t threshold_value = opts.threshold_value;
 
 	PopcornFilter<KeyObject> pf(nfilters, qbits, nlevels, gfactor, nagebits,
-															do_odp);
+															do_odp, threshold_value);
 
 	uint64_t nvals = pf.get_max_size();
 
@@ -140,8 +142,7 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	} else {
 
 #if 0
-		//uint64_t quarter = 0, half = 0, rest = 0;
-		//nvals = 7 * (nvals/4);
+		// This is a specific generator to produce Jon's use-case.
 		uint64_t quarter = nvals;
 		uint64_t half = 2*quarter;
 		nvals = nvals + nvals + 7 * (nvals/4);
@@ -170,18 +171,21 @@ int popcornfilter_main (PopcornFilterOpts opts)
 		PRINT("Generating " << nvals << " random numbers.");
 		generate_random_keys(vals, nvals, nvals, 1.5);
 #endif
-		keylifetimes = popcornfilter::analyze_stream(vals, nvals, THRESHOLD_VALUE);
+		keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
 	}
 
 	struct timeval start, end;
 	struct timezone tzp;
-	ThreadArgs<KeyObject> args[NUM_MAX_THREADS];
+	std::vector<ThreadArgs<KeyObject>> args;
+	args.reserve(nthreads);
 
 	for (uint64_t i = 0; i < nthreads; i++) {
-		args[i].pf = &pf;
-		args[i].vals = vals;
-		args[i].start = i * (nvals / nthreads);
-		args[i].end = (i + 1) * (nvals / nthreads);
+		ThreadArgs<KeyObject> obj;
+		obj.pf = &pf;
+		obj.vals = vals;
+		obj.start = i * (nvals / nthreads);
+		obj.end = (i + 1) * (nvals / nthreads);
+		args.emplace_back(obj);
 	}
 
 	PRINT("Inserting elements.");

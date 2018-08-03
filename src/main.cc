@@ -53,6 +53,8 @@ main ( int argc, char *argv[] )
 									"number of aging bits. (default is 0)",
 									option("-o", "--no-odp").set(pfopt.do_odp, 0) %
 										"do not perform on-demand popcorning. (default is true.)",
+									option("-v", "--threshold_value") & value("threshold_value", pfopt.threshold_value) %
+									"threshold_value  to report. (default is 24)",
 									option("-i", "--input-file") & value("input_file", pfopt.ip_file) %
 									"input file containing keys and values. (default is generate keys from a Zipfian distribution.)"
 									//option("-h", "--help")      % "show help"

@@ -43,9 +43,6 @@
 
 #include "gqf_cpp.h"
 
-#define NUM_MAX_LEVELS 10
-#define THRESHOLD_VALUE 24
-
 #define MAX_VALUE(nbits) ((1ULL << (nbits)) - 1)
 #define BITMASK(nbits)                                    \
   ((nbits) == 64 ? 0xffffffffffffffff : MAX_VALUE(nbits))
@@ -54,8 +51,9 @@ template <class key_object>
 class CascadeFilter {
 	public:
 		CascadeFilter(uint32_t nkeybits, uint32_t nvaluebits, uint32_t
-									nagebits, bool odp, uint32_t filter_thlds[], uint64_t
-									filter_sizes[], uint32_t num_levels, std::string& prefix);
+									nagebits, bool odp, uint32_t threshold_value, uint32_t
+									filter_thlds[], uint64_t filter_sizes[], uint32_t
+									num_levels, std::string& prefix);
 
 		const CQF<key_object>* get_filter(uint32_t level) const;
 
@@ -196,13 +194,14 @@ class CascadeFilter {
 		uint32_t num_key_bits;
 		uint32_t num_value_bits;
 		uint32_t num_age_bits;
+		uint32_t threshold_value;
 		bool odp;
 		bool count_stretch;
 		std::string prefix;
-		uint32_t thresholds[NUM_MAX_LEVELS];
-		uint64_t sizes[NUM_MAX_LEVELS];
-		uint16_t flushes[NUM_MAX_LEVELS];
-		uint8_t ages[NUM_MAX_LEVELS];
+		std::vector<uint32_t> thresholds;
+		std::vector<uint64_t> sizes;
+		uint32_t *flushes;
+		uint32_t *ages;
 		uint32_t num_flush;
 		uint32_t gfactor;
 		uint32_t popcorn_threshold;
@@ -219,11 +218,13 @@ bool operator!=(const typename CascadeFilter<key_object>::Iterator& a, const
 template <class key_object>
 CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 																				 nvaluebits, uint32_t nagebits, bool
-																				 odp, uint32_t filter_thlds[],
+																				 odp, uint32_t threshold_value,
+																				 uint32_t filter_thlds[],
 																				 uint64_t filter_sizes[], uint32_t
 																				 num_levels, std::string& prefix) :
 	total_num_levels(num_levels), num_key_bits(nhashbits),
-	num_value_bits(nvaluebits + nagebits), num_age_bits(nagebits), odp(odp),
+	num_value_bits(nvaluebits + nagebits), num_age_bits(nagebits),
+	threshold_value(threshold_value), odp(odp),
 	prefix(prefix)
 {
 	if (nagebits)
@@ -241,25 +242,29 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	popcorn_threshold = 0;
 	num_obs_seen = 0;
 	seed = GQF_SEED;
-	memcpy(thresholds, filter_thlds, num_levels * sizeof(thresholds[0]));
-	memcpy(sizes, filter_sizes, num_levels * sizeof(sizes[0]));
-	memset(flushes, 0, num_levels *  sizeof(flushes[0]));
-	memset(ages, 0, num_levels *  sizeof(ages[0]));
+	thresholds.reserve(num_levels);
+	sizes.reserve(num_levels);
+	for (uint32_t i = 0; i < num_levels; i++) {
+		thresholds.emplace_back(filter_thlds[i]);
+		sizes.emplace_back(filter_sizes[i]);
+	}
+	flushes = (uint32_t*)calloc(num_levels, sizeof(*flushes));
+	ages = (uint32_t*)calloc(num_levels, sizeof(*ages));
 
 	// creating an exact CQF to store anomalies.
 	uint64_t anomaly_filter_size = sizes[0] * 16;
 	DEBUG("Creating anomaly filter of " << anomaly_filter_size <<
-					 " slots and THRESHOLD " << THRESHOLD_VALUE);
+					 " slots and THRESHOLD " << threshold_value);
 	anomalies = CQF<key_object>(anomaly_filter_size, num_key_bits,
 															num_value_bits, QF_HASH_DEFAULT, seed);
 
-	filters = (CQF<key_object>*)calloc(NUM_MAX_LEVELS, sizeof(CQF<key_object>));
+	filters = (CQF<key_object>*)calloc(num_levels, sizeof(CQF<key_object>));
 
 	if (max_age == 0) {
 		uint32_t sum_disk_threshold = 0;
 		for (uint32_t i = 1; i < total_num_levels; i++)
 			sum_disk_threshold += thresholds[i];
-		popcorn_threshold = THRESHOLD_VALUE - sum_disk_threshold;
+		popcorn_threshold = threshold_value - sum_disk_threshold;
 	}
 
 	/* Initialize all the filters. */
@@ -425,13 +430,13 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 				uint64_t value;
 				key_object k(it.first, 0, 0, 0);
 				uint64_t reportcount = anomalies.query_key(k, &value, 0);
-				if (reportcount > THRESHOLD_VALUE * 2) {
+				if (reportcount > threshold_value * 2) {
 					PRINT("Count stretch reporting failed Key: " << it.first <<
 									 " Reporting count " << reportcount);
 					failures++;
 				}
-				result << idx++ << " " << THRESHOLD_VALUE << " " << reportcount << " "
-					<< THRESHOLD_VALUE * 2 << std::endl;
+				result << idx++ << " " << threshold_value << " " << reportcount << " "
+					<< threshold_value * 2 << std::endl;
 			}
 		}
 	} else {
@@ -595,7 +600,7 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 																							key_object cur, uint32_t
 																							nlevels) {
 	uint64_t value;
-	if (cur.count >= THRESHOLD_VALUE) {
+	if (cur.count >= threshold_value) {
 		if (anomalies.query_key(cur, &value, QF_KEY_IS_HASH) == 0) {
 			// the count is the index at which the key is reported.
 			// for count-stretch the count is the current count of the key.
@@ -645,7 +650,7 @@ template <class key_object>
 typename CascadeFilter<key_object>::Iterator
 CascadeFilter<key_object>::begin(uint32_t num_levels) const {
 	typename CQF<key_object>::Iterator *qfi_arr =
-		(typename CQF<key_object>::Iterator*)calloc(NUM_MAX_LEVELS,
+		(typename CQF<key_object>::Iterator*)calloc(num_levels,
 																								sizeof(typename
 																											 CQF<key_object>::Iterator));
 
@@ -848,7 +853,7 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 		if (cur_key == next_key) {
 			cur_key.count += next_key.count;
 		} else {
-			if (cur_key.count >= THRESHOLD_VALUE) {
+			if (cur_key.count >= threshold_value) {
 				if (anomalies.query_key(cur_key, &value, QF_KEY_IS_HASH) == 0) {
 					// the count is the index at which the key is reported.
 					// for count-stretch the count is the current count of the key.
@@ -868,7 +873,7 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 		++it;
 	}
 
-	if (cur_key.count >= THRESHOLD_VALUE) {
+	if (cur_key.count >= threshold_value) {
 		if (anomalies.query_key(cur_key, &value, QF_KEY_IS_HASH) == 0) {
 			// the count is the index at which the key is reported.
 			// for count-stretch the count is the current count of the key.
@@ -933,7 +938,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 
 	// To check if a key has the THRESHOLD value in RAM.
 	// This is not on-demand popcorning.
-	if (ram_count >= THRESHOLD_VALUE &&
+	if (ram_count >= threshold_value &&
 			anomalies.query_key(dup_k, &value, 0) == 0) {
 		// the count is the index at which the key is reported.
 		// for count-stretch the count is the current count of the key.
@@ -949,7 +954,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 	}
 
 	// This code is for the immediate reporting case.
-	// If the count of the key is equal to "THRESHOLD_VALUE -
+	// If the count of the key is equal to "threshold_value -
 	// TOTAL_DISK_THRESHOLD" then we will
 	// have to perform an on-demand poprorn.
 	//
@@ -959,7 +964,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 			anomalies.query_key(dup_k, &value, 0) == 0) {
 		uint64_t aggr_count;
 		aggr_count = ondisk_count(dup_k) + ram_count;
-		if (aggr_count == THRESHOLD_VALUE) {
+		if (aggr_count == threshold_value) {
 			// count in the index at which the key is reported.
 			// value 1 means that it is reported through odp.
 			dup_k.count = num_obs_seen;

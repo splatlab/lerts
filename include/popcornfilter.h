@@ -1,10 +1,10 @@
 /*
- * =============================================================================
+ * ============================================================================
  *
  *         Author:  Prashant Pandey (), ppandey@cs.stonybrook.edu
  *   Organization:  Stony Brook University
  *
- * =============================================================================
+ * ============================================================================
  */
 
 
@@ -41,15 +41,12 @@
 
 #include "cascadefilter.h"
 
-#define NUM_MAX_FILTERS 10
-#define NUM_MAX_THREADS 20
-
 template <class key_object>
 class PopcornFilter {
 	public:
 		PopcornFilter(uint64_t nfilters, uint32_t qbits, uint32_t
-									nlevels, uint32_t gfactor, uint32_t nagebits = 0, bool
-									do_odp = true);
+									nlevels, uint32_t gfactor, uint32_t nagebits, bool do_odp,
+									uint32_t threshold_value);
 
 		bool insert(const key_object& k, uint8_t flag);
 
@@ -75,12 +72,13 @@ class PopcornFilter {
 		uint32_t gfactor;
 		uint32_t nagebits;
 		bool odp;
+		uint32_t threshold_value;
 		uint32_t fbits;
 		uint32_t nkeybits;
 		uint32_t nvaluebits;
 		uint64_t num_obs_seen;
 		LightweightLock pf_lw_lock;
-		CascadeFilter<key_object> *cf[NUM_MAX_FILTERS];
+		std::vector<CascadeFilter<key_object>*> cf;
 };
 
 template <class key_object>
@@ -96,18 +94,21 @@ class ThreadArgs {
 							 uint64_t end) : pf(pf), vals(vals), start(start), end(end) {};
 };
 
-#define NUM_HASH_BITS 32
-/* We use value bits to store the value of the key from FireHose. */
-#define NUM_VALUE_BITS 1
+#define NUM_KEY_BITS 32
+/* We use value bits to store the value of the key from FireHose.
+ * Not using this value for now. */
+#define NUM_VALUE_BITS 0
 
 template <class key_object>
 PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 																				 uint32_t nlevels, uint32_t gfactor,
-																				 uint32_t nagebits, bool do_odp) :
+																				 uint32_t nagebits, bool do_odp,
+																				 uint32_t threshold_value) :
 	nfilters(nfilters), qbits(qbits), nlevels(nlevels),
-	gfactor(gfactor), nagebits(nagebits), odp(do_odp) {
+	gfactor(gfactor), nagebits(nagebits), odp(do_odp),
+	threshold_value(threshold_value) {
 		fbits = log2(nfilters); // assuming nfilters is a power of 2.
-		nkeybits = NUM_HASH_BITS;
+		nkeybits = NUM_KEY_BITS;
 		nvaluebits = NUM_VALUE_BITS;
 		num_obs_seen = 0;
 		uint64_t sizes[nlevels];
@@ -143,8 +144,10 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 							 "-bit hashes, " << nlevels << " levels, and " << gfactor <<
 							 " as growth factor.");
 			std::string prefix = "raw/" + std::to_string(i) + "_";
-			cf[i] = new CascadeFilter<KeyObject>(nkeybits, nvaluebits, nagebits,
-																					 odp, thlds, sizes, nlevels, prefix);
+			cf.emplace_back(new CascadeFilter<KeyObject>(nkeybits, nvaluebits,
+																									 nagebits, odp,
+																									 threshold_value, thlds,
+																									 sizes, nlevels, prefix));
 		}
 	}
 

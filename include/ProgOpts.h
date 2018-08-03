@@ -13,6 +13,7 @@ class PopcornFilterOpts {
 		int nthreads{1};
 		int nagebits{0};
 		int do_odp = {1};
+		int threshold_value{24};
 		std::string ip_file;
 		std::shared_ptr<spdlog::logger> console{nullptr};
 };
