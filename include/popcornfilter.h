@@ -37,9 +37,6 @@
 #include <openssl/rand.h>
 
 #include "cascadefilter.h"
-#include "zipf.h"
-
-#include "cascadefilter.h"
 
 template <class key_object>
 class PopcornFilter {

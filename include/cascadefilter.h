@@ -36,11 +36,9 @@
 #include <sys/mman.h>
 #include <openssl/rand.h>
 
-#include "cascadefilter.h"
 #include "zipf.h"
 #include "util.h"
 #include "lock.h"
-
 #include "gqf_cpp.h"
 
 #define MAX_VALUE(nbits) ((1ULL << (nbits)) - 1)
@@ -372,14 +370,14 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 	DEBUG("Anomaly CQF ");
 	anomalies.dump_metadata();
 
-	//PRINT("Number of keys above threshold: " <<
-	//get_num_keys_above_threshold());
+	//PRINT("Number of keys above threshold: " << get_num_keys_above_threshold());
 	uint64_t idx = 0;
 	if (max_age) {
 		result.open("raw/time-stretch.data");
 		//result << "x_0 y_0 y_1 y_2" << std::endl;
+		double stretch = 1 + 1 / (float)num_age_bits;
+		result << "Maximum allowed stretch: " << stretch << std::endl;
 		result << "Key Inex-0 Index-2 ReportIndex Stretch" << std::endl;
-		double stretch = 1 + 1 / num_age_bits;
 		for (auto it : key_lifetime) {
 			if (it.second.first < it.second.second) {
 				uint64_t value;

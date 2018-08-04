@@ -43,30 +43,13 @@ all: $(TARGETS)
 main:						$(OBJDIR)/main.o $(OBJDIR)/popcornfilter.o \
 								$(OBJDIR)/cascadefilter.o $(OBJDIR)/zipf.o \
 								$(OBJDIR)/gqf.o $(OBJDIR)/util.o $(OBJDIR)/hashutil.o
-cascadefilter:	$(OBJDIR)/cascadefilter.o $(OBJDIR)/zipf.o $(OBJDIR)/gqf.o \
-								$(OBJDIR)/util.o $(OBJDIR)/hashutil.o
-popcornfilter:	$(OBJDIR)/popcornfilter.o $(OBJDIR)/cascadefilter.o \
-								$(OBJDIR)/zipf.o $(OBJDIR)/gqf.o $(OBJDIR)/util.o \
-								$(OBJDIR)/hashutil.o
-anomaly:				$(OBJDIR)/anomaly.o  $(OBJDIR)/gqf.o $(OBJDIR)/util.o \
-								$(OBJDIR)/hashutil.o
-streamanalysis:	$(OBJDIR)/streamanalysis.o $(OBJDIR)/gqf.o $(OBJDIR)/util.o \
-								$(OBJDIR)/hashutil.o
 
 # dependencies between .o files and .h files
 
-$(OBJDIR)/main.o: 						$(LOC_INCLUDE)/cascadefilter.h \
-															$(LOC_INCLUDE)/gqf_cpp.h \
- 															$(LOC_INCLUDE)/util.h \
- 															$(LOC_INCLUDE)/lock.h \
- 															$(LOC_INCLUDE)/zipf.h
-$(OBJDIR)/cascadefilter.o: 		$(LOC_INCLUDE)/cascadefilter.h \
-															$(LOC_INCLUDE)/gqf_cpp.h \
- 															$(LOC_INCLUDE)/util.h \
- 															$(LOC_INCLUDE)/lock.h \
- 															$(LOC_INCLUDE)/zipf.h
+$(OBJDIR)/main.o: 						$(LOC_INCLUDE)/popcornfilter.h
 $(OBJDIR)/popcornfilter.o: 		$(LOC_INCLUDE)/popcornfilter.h \
- 															$(LOC_INCLUDE)/cascadefilter.h \
+ 															$(LOC_INCLUDE)/cascadefilter.h
+$(OBJDIR)/cascadefilter.o: 		$(LOC_INCLUDE)/cascadefilter.h \
 															$(LOC_INCLUDE)/gqf_cpp.h \
  															$(LOC_INCLUDE)/util.h \
  															$(LOC_INCLUDE)/lock.h \
