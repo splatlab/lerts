@@ -53,6 +53,17 @@ namespace popcornfilter {
 			"seconds" << std::endl;
 	}
 
+	void induce_special_case(std::unordered_map<uint64_t, std::pair<uint64_t,
+													 uint64_t>> keylifetimes, uint64_t *vals) {
+		for (auto it : keylifetimes) {
+			uint64_t lifespan = it.second.second - it.second.first;
+			if (lifespan > 40000 && lifespan < 43000 && it.second.first > 32000) {
+				std::swap(vals[it.second.first], vals[29000]);
+				break;
+			}
+		}
+	}
+
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
 		analyze_stream(uint64_t *vals, uint64_t nvals, uint32_t threshold) {
 			std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> key_lifetime;
@@ -87,31 +98,15 @@ namespace popcornfilter {
 		}
 
 	uint64_t *read_stream_from_disk(std::string file) {
-		struct stat sb;
-		int ret;
-
-		int fd = open(file.c_str(), O_RDWR, S_IRWXU);
-		if (fd < 0) {
-			perror("Couldn't open file:\n");
-			exit(EXIT_FAILURE);
+		uint64_t *arr = (uint64_t *)malloc(get_number_keys(file) * sizeof(*arr));
+		if (arr == NULL) {
+			std::cout << "Can't allocate memory" << std::endl;
+			exit(1);
 		}
-
-		ret = fstat (fd, &sb);
-		if ( ret < 0) {
-			perror ("fstat");
-			exit(EXIT_FAILURE);
-		}
-
-		if (!S_ISREG (sb.st_mode)) {
-			fprintf (stderr, "%s is not a file\n", file.c_str());
-			exit(EXIT_FAILURE);
-		}
-
-		uint64_t *vals = (uint64_t *)mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE,
-																			MAP_SHARED, fd, 0);
-		PRINT("Read " << sb.st_size / 8 << " keys from disk");
-
-		return vals;
+		std::ifstream dumpfile(file.c_str());
+		uint64_t i = 0;
+		while (dumpfile >> arr[i++]) {}
+		return arr;
 	}
 
 	uint64_t get_number_keys(std::string file) {

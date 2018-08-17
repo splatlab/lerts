@@ -109,6 +109,9 @@ void perform_insertion(std::vector<ThreadArgs<KeyObject>> args, uint32_t
 		}
 }
 
+// random generator function:
+uint64_t myrandom (uint64_t i) { return std::rand()%i;}
+
 /* 
  * ===  FUNCTION  =============================================================
  *         Name:  main
@@ -138,7 +141,7 @@ int popcornfilter_main (PopcornFilterOpts opts)
 		std::string streamlogfile(opts.ip_file + ".log");
 		vals = popcornfilter::read_stream_from_disk(opts.ip_file);
 		nvals = popcornfilter::get_number_keys(opts.ip_file);
-		keylifetimes = popcornfilter::read_stream_log_from_disk(streamlogfile);
+		keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
 	} else {
 
 #if 0
@@ -170,7 +173,10 @@ int popcornfilter_main (PopcornFilterOpts opts)
 		/* Generate random keys from a Zipfian distribution. */
 		PRINT("Generating " << nvals << " random numbers.");
 		generate_random_keys(vals, nvals, nvals, 1.5);
+		//std::random_shuffle(&vals[0], &vals[nvals-1], myrandom);
 #endif
+		keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
+		popcornfilter::induce_special_case(keylifetimes, vals);
 		keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
 	}
 

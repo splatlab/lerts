@@ -377,7 +377,7 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 		//result << "x_0 y_0 y_1 y_2" << std::endl;
 		double stretch = 1 + 1 / (float)num_age_bits;
 		result << "Maximum allowed stretch: " << stretch << std::endl;
-		result << "Key Inex-0 Index-2 ReportIndex Stretch" << std::endl;
+		result << "Key Inex-0 Index-2 Lifetime ReportIndex Stretch" << std::endl;
 		for (auto it : key_lifetime) {
 			if (it.second.first < it.second.second) {
 				uint64_t value;
@@ -396,7 +396,8 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 				//result << idx++ << " " << lifetime << " " << reporttime << " " <<
 					//lifetime * stretch << std::endl;
 				result << it.first << " " << it.second.first << " " << it.second.second
-					<< " " << anomalies.query_key(k, &value, 0) << " " <<
+					<< " " << (it.second.second - it.second.first) << " " <<
+					anomalies.query_key(k, &value, 0) << " " <<
 					reporttime/(double)lifetime << std::endl;
 			}
 		}

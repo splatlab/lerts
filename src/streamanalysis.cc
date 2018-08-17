@@ -164,27 +164,14 @@ int main(int argc, char **argv)
 {
 	uint32_t seed = 2038074761;
 	uint64_t *arr;
-	std::string filename("raw/streamdump");
 	uint64_t cnt = 0;
 
 	// create a file and mmap it to log <keys, value> from the stream.
 	uint64_t arr_size = 50000000 * sizeof(*arr);
-	std::cout << "File size: " << arr_size << std::endl;
-	int fd = open(filename.c_str(), O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
-	if (fd < 0) {
-		perror("Couldn't open file");
-		exit(EXIT_FAILURE);
-	}
-	int ret = fallocate(fd, 0, 0, arr_size);
-	if (ret < 0) {
-		perror("Couldn't fallocate file");
-		exit(EXIT_FAILURE);
-	}
-	arr = (uint64_t *)mmap(NULL, arr_size, PROT_READ |
-												 PROT_WRITE, MAP_SHARED, fd, 0);
-	if (ret < 0) {
-		perror("Couldn't mmap file");
-		exit(EXIT_FAILURE);
+	arr = (uint64_t *)malloc(arr_size);
+	if (arr == NULL) {
+		std::cout << "Can't allocate memory" << std::endl;
+		exit(1);
 	}
 
 	read_cmd_options(argc,argv);
@@ -261,32 +248,16 @@ int main(int argc, char **argv)
 			//std::cout << arr[cnt - 1] << std::endl;
 		}
 	}
+	std::string filename("raw/streamdump");
+	std::ofstream file(filename.c_str());
+	for (int i = 0; i < cnt; i++)
+		file << arr[i] << std::endl;
+	file.close();
 
 	std::cout << "Dumped " << cnt << " keys in " << filename << std::endl;
 
-	std::cout << "Analyzing the steam dump." << std::endl;
-
-	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> key_lifetime =
-		popcornfilter::analyze_stream(arr, cnt, THRESHOLD_VALUE);
-
-	std::string statsfilename("raw/streamdump.log");
-	std::cout << "Writing stats to " << statsfilename << std::endl;
-
-	std::ofstream statsfile(statsfilename.c_str());
-	statsfile << "Key Birthday_index T_index" << std::endl;
-	for (auto it : key_lifetime) {
-		assert (it.second.first <= it.second.second);
-		if (it.second.first < it.second.second)
-			statsfile << it.first << " " << it.second.first << " " <<
-				it.second.second << std::endl;
-	}
-	statsfile.close();
-
 	// unmap
 	munmap(arr, arr_size);
-
-	// close the file.
-	close(fd);
 
 	// close UDP port and print stats
 	::close(socket);
