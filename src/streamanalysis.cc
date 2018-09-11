@@ -250,7 +250,7 @@ int main(int argc, char **argv)
 	}
 	std::string filename("raw/streamdump");
 	std::ofstream file(filename.c_str());
-	for (int i = 0; i < cnt; i++)
+	for (uint32_t i = 0; i < cnt; i++)
 		file << arr[i] << std::endl;
 	file.close();
 

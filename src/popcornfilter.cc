@@ -175,8 +175,8 @@ int popcornfilter_main (PopcornFilterOpts opts)
 		generate_random_keys(vals, nvals, nvals, 1.5);
 		//std::random_shuffle(&vals[0], &vals[nvals-1], myrandom);
 #endif
-		keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
-		popcornfilter::induce_special_case(keylifetimes, vals);
+		//keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
+		//popcornfilter::induce_special_case(vals, threshold_value, 29000, 40000, 5);
 		keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
 	}
 

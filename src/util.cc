@@ -53,14 +53,17 @@ namespace popcornfilter {
 			"seconds" << std::endl;
 	}
 
-	void induce_special_case(std::unordered_map<uint64_t, std::pair<uint64_t,
-													 uint64_t>> keylifetimes, uint64_t *vals) {
-		for (auto it : keylifetimes) {
-			uint64_t lifespan = it.second.second - it.second.first;
-			if (lifespan > 40000 && lifespan < 43000 && it.second.first > 32000) {
-				std::swap(vals[it.second.first], vals[29000]);
-				break;
+	void induce_special_case(uint64_t *vals, uint32_t threshold, uint64_t
+													 start_idx, uint64_t lifetime, uint32_t num) {
+		for (uint32_t j = 0; j < num; j++) {
+			j *= 1000;
+			uint64_t key = rand();
+			vals[start_idx + j] = key;
+			for (uint32_t i = 0; i < threshold - 2; i++) {
+				uint64_t rand_idx = rand() % (lifetime  + 1) + start_idx + j;
+				vals[rand_idx] = key;
 			}
+			vals[start_idx + lifetime + j] = key;
 		}
 	}
 

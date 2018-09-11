@@ -421,21 +421,27 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 		}
 	} else if (count_stretch) {
 		result.open("raw/count-stretch.data");
-		result << "x_0 y_0 y_1 y_2" << std::endl;
+		//result << "x_0 y_0 y_1 y_2" << std::endl;
+		result << "Key Inex-0 Index-2 Lifetime ReportCount Stretch" << std::endl;
 		// for count stretch the count stored with keys in anomalies is the actual
 		// count at the time of reporting.
 		for (auto it : key_lifetime) {
 			if (it.second.first < it.second.second) {
 				uint64_t value;
 				key_object k(it.first, 0, 0, 0);
+				uint64_t lifetime = it.second.second - it.second.first;
 				uint64_t reportcount = anomalies.query_key(k, &value, 0);
 				if (reportcount > threshold_value * 2) {
 					PRINT("Count stretch reporting failed Key: " << it.first <<
 									 " Reporting count " << reportcount);
 					failures++;
 				}
-				result << idx++ << " " << threshold_value << " " << reportcount << " "
-					<< threshold_value * 2 << std::endl;
+				//result << idx++ << " " << threshold_value << " " << reportcount << " "
+					//<< threshold_value * 2 << std::endl;
+				result << it.first << " " << it.second.first << " " << it.second.second
+					<< " " << (it.second.second - it.second.first) << " " <<
+					reportcount << " " <<
+					reportcount/(double)threshold_value << std::endl;
 			}
 		}
 	} else {
@@ -463,12 +469,19 @@ bool CascadeFilter<key_object>::is_full(uint32_t level) const {
 		if (num_obs_seen % num_obs == 0)
 			return true;
 	} else {
+#ifdef GREEDY
 		double load_factor = get_filter(level)->occupied_slots() /
 			(double)get_filter(level)->total_slots();
 		if (load_factor > 0.90) {
 			DEBUG("Load factor: " << load_factor);
 			return true;
 		}
+#else
+		uint64_t num_obs = get_filter(0)->total_slots();
+		if (num_obs_seen % num_obs == 0) {
+			return true;
+		}
+#endif
 	}
 	return false;
 }
@@ -530,13 +543,13 @@ void CascadeFilter<key_object>::perform_shuffle_merge_if_needed(void) {
 			ages[0] = (ages[0] + 1) % max_age;
 			if (need_shuffle_merge_time_stretch()) {
 				DEBUG("Number of observations seen: " << num_obs_seen);
-				DEBUG("Flushing " << num_flush);
+				PRINT("Flushing " << num_flush);
 				shuffle_merge();
 				// Increment the flushing count.
 				num_flush++;
 			}
 		} else {
-			DEBUG("Flushing " << num_flush);
+			PRINT("Flushing " << num_flush);
 			shuffle_merge();
 			// Increment the flushing count.
 			num_flush++;

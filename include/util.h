@@ -43,8 +43,8 @@ namespace popcornfilter {
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
 		analyze_stream(uint64_t *vals, uint64_t nvals, uint32_t threshold);
 
-	void induce_special_case(std::unordered_map<uint64_t, std::pair<uint64_t,
-													 uint64_t>> keylifetimes, uint64_t *vals);
+	void induce_special_case(uint64_t *vals, uint32_t threshold, uint64_t
+													 start_idx, uint64_t lifetime, uint32_t num);
 	uint64_t *read_stream_from_disk(std::string file);
 	uint64_t get_number_keys(std::string file);
 

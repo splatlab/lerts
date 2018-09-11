@@ -14,6 +14,12 @@ else
 	ARCH=-msse4.2 -D__SSE4_2_
 endif
 
+ifdef G
+	GREEDY=-DGREEDY
+else
+	GREEDY=
+endif
+
 ifdef P
 	PROFILE=-pg -no-pie # for bug in gprof.
 endif
@@ -26,9 +32,11 @@ LOC_INCLUDE=include
 LOC_SRC=src
 OBJDIR=obj
 
-CXXFLAGS += -Wall $(DEBUG) $(PROFILE) $(OPT) $(ARCH) -m64 -I. -I$(LOC_INCLUDE)
+CXXFLAGS += -Wall $(DEBUG) $(PROFILE) $(OPT) $(ARCH) $(GREEDY) -m64 -I. \
+						-I$(LOC_INCLUDE)
 
-CFLAGS += -Wall $(DEBUG) $(PROFILE) $(OPT) $(ARCH) -m64 -I. -I$(LOC_INCLUDE)
+CFLAGS += -Wall $(DEBUG) $(PROFILE) $(OPT) $(ARCH) $(GREEDY) -m64 -I. \
+					-I$(LOC_INCLUDE)
 
 LDFLAGS += $(DEBUG) $(PROFILE) $(OPT) -lpthread -lssl -lcrypto -lm
 
