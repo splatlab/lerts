@@ -108,7 +108,7 @@ class CascadeFilter {
 		/**
 		 * Check if the filter at "level" has exceeded the threshold load factor.
 		 */
-		bool is_full(uint32_t level) const;
+		bool is_ram_full() const;
 
 		/**
 		 * Returns true if we need shuffle merge in the time stretch case.
@@ -458,7 +458,7 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 }
 
 template <class key_object>
-bool CascadeFilter<key_object>::is_full(uint32_t level) const {
+bool CascadeFilter<key_object>::is_ram_full() const {
 	if (num_obs_seen == 0)
 		return false;
 
@@ -470,9 +470,9 @@ bool CascadeFilter<key_object>::is_full(uint32_t level) const {
 			return true;
 	} else {
 #ifdef GREEDY
-		double load_factor = get_filter(level)->occupied_slots() /
-			(double)get_filter(level)->total_slots();
-		if (load_factor > 0.90) {
+		if (get_filter(0)->is_full()) {
+			double load_factor = get_filter(0)->occupied_slots() /
+				(double)get_filter(0)->total_slots();
 			DEBUG("Load factor: " << load_factor);
 			return true;
 		}
@@ -505,13 +505,14 @@ uint32_t CascadeFilter<key_object>::find_first_empty_level(void) const {
 	uint32_t empty_level;
 	uint64_t total_occupied_slots = get_filter(0)->occupied_slots();
 	for (empty_level = 1; empty_level < total_num_levels; empty_level++) {
-		/* (prashant): This is a upper-bound on the number of slots that are
+		/* (prashant): This is an upper-bound on the number of slots that are
 		 * needed in the empty level for the shuffle-merge to finish successfully.
 		 * We can probably give a little slack in the constraints here.
 		 */
 		uint64_t available_slots = 	get_filter(empty_level)->total_slots() -
 			get_filter(empty_level)->occupied_slots();
-		if (!is_full(empty_level) && total_occupied_slots <= available_slots)
+		if (!get_filter(empty_level)->is_full() && total_occupied_slots <=
+				available_slots)
 			break;
 		total_occupied_slots += get_filter(empty_level)->occupied_slots();
 	}
@@ -520,6 +521,8 @@ uint32_t CascadeFilter<key_object>::find_first_empty_level(void) const {
 	uint32_t nlevels = 0;
 	if (empty_level < total_num_levels)
 		nlevels = empty_level;
+
+	// TODO: Create a new empty level if the data structure is full.
 
 	return nlevels;
 }
@@ -532,12 +535,13 @@ uint32_t CascadeFilter<key_object>::find_levels_to_flush(void) const {
 			break;
 	}
 
+	// TODO: Create a new empty level if the data structure is full.
 	return empty_level;
 }
 
 template <class key_object>
 void CascadeFilter<key_object>::perform_shuffle_merge_if_needed(void) {
-	if (is_full(0)) {
+	if (is_ram_full()) {
 		if (max_age) {
 			// Age is increased for level 0 whenever it is 1/alpha full.
 			ages[0] = (ages[0] + 1) % max_age;
@@ -620,7 +624,7 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 				cur.count = num_obs_seen;
 			// value 0 means that it is reported through shuffle-merge.
 			cur.value = 0;
-			if (anomalies.if_full())
+			if (anomalies.is_full())
 				abort();
 			anomalies.insert(cur, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 			DEBUG("Reporting " << cur.to_string());
@@ -873,7 +877,7 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 						cur_key.count = num_obs_seen;
 					// value 0 means that it is reported through shuffle-merge.
 					cur_key.value = 0;
-					if (anomalies.if_full())
+					if (anomalies.is_full())
 						abort();
 					anomalies.insert(cur_key, PF_WAIT_FOR_LOCK);
 				}
@@ -893,7 +897,7 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 				cur_key.count = num_obs_seen;
 			// value 0 means that it is reported through shuffle-merge.
 			cur_key.value = 0;
-			if (anomalies.if_full())
+			if (anomalies.is_full())
 				abort();
 			anomalies.insert(cur_key, PF_WAIT_FOR_LOCK);
 		}
@@ -960,7 +964,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 			dup_k.count = ram_count;
 		// value 1 means that it is reported through odp.
 		dup_k.value = 0;
-		if (anomalies.if_full())
+		if (anomalies.is_full())
 			abort();
 		anomalies.insert(dup_k, PF_WAIT_FOR_LOCK);
 	}
@@ -981,7 +985,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 			// value 1 means that it is reported through odp.
 			dup_k.count = num_obs_seen;
 			dup_k.value = 1;
-			if (anomalies.if_full())
+			if (anomalies.is_full())
 				abort();
 			anomalies.insert(dup_k, PF_WAIT_FOR_LOCK);
 		}

@@ -207,12 +207,13 @@ int popcornfilter_main (PopcornFilterOpts opts)
 
 	PRINT("Querying elements.");
 	gettimeofday(&start, &tzp);
-	for (uint64_t k = 0; k < nvals; k++)
+	for (uint64_t k = 0; k < nvals; k++) {
 		if (pf.query(KeyObject(vals[k], 0, 0, 0), PF_WAIT_FOR_LOCK) < 1) {
 			std::cerr << "Failed lookup for " <<
 				(uint64_t)vals[k] << " " << k << " " << nvals << std::endl;
 			abort();
 		}
+	}
 	gettimeofday(&end, &tzp);
 	popcornfilter::print_time_elapsed("", &start, &end);
 	PRINT("Finished lookups.");

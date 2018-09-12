@@ -132,8 +132,16 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 			uint32_t j = 1;
 			/* taus grow with r^0.5. */
 			uint32_t tau_ratio = sqrt(gfactor);
-			for (int32_t i = nlevels - 2; i >= 0; i--, j++)
+			uint32_t total_ondisk_tau = 1;
+			for (int32_t i = nlevels - 2; i > 0; i--, j++) {
 				thlds[i] = pow(tau_ratio, j) * thlds[nlevels - 1];
+				total_ondisk_tau += thlds[i];
+				if (total_ondisk_tau >= threshold_value) {
+					ERROR("Total on-disk threshold is greater than threshold value.");
+					abort();
+				}
+			}
+			thlds[0] = threshold_value - total_ondisk_tau;
 		}
 		/* Create a cascade filter. */
 		for (uint32_t i = 0; i < nfilters; i++) {
