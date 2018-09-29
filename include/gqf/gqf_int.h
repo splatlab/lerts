@@ -56,9 +56,6 @@ extern "C" {
 #endif
 	} qfblock;
 
-	//struct __attribute__ ((__packed__)) qfblock;
-	//typedef struct qfblock qfblock;
-
   typedef struct file_info {
 		int fd;
 		char *filepath;
@@ -75,6 +72,7 @@ extern "C" {
 
 	typedef struct quotient_filter_runtime_data {
 		file_info f_info;
+		int64_t (*container_resize)(QF *qf, uint64_t nslots);
 		uint64_t num_locks;
 		volatile int metadata_lock;
 		volatile int *locks;

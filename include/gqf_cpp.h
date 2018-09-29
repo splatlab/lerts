@@ -76,7 +76,10 @@ class CQF {
 		//uint64_t set_size(void) const { return set.size(); }
 		void reset(void) { qf_reset(&cqf); }
 
-		void dump_metadata(void) const { qf_dump_metadata(&cqf); }
+		void dump_metadata(void) const {
+			if (PRINT_DEBUG)
+				qf_dump_metadata(&cqf);
+		}
 		bool is_full(void) const;
 
 		void drop_pages(uint64_t cur);
@@ -155,7 +158,7 @@ template <class key_obj>
 CQF<key_obj>::CQF(std::string& filename, enum readmode flag) {
 	uint64_t size = 0;
 	if (flag == MMAP)
-	 size = qf_usefile(&cqf, filename.c_str());
+	 size = qf_usefile(&cqf, filename.c_str(), QF_USEFILE_READ_ONLY);
 	else
 		size = qf_deserialize(&cqf, filename.c_str());
 

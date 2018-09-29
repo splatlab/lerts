@@ -248,6 +248,8 @@ int main(int argc, char **argv)
 			//std::cout << arr[cnt - 1] << std::endl;
 		}
 	}
+	std::cout << "Dumping stream" << std::endl;
+
 	std::string filename("raw/streamdump");
 	std::ofstream file(filename.c_str());
 	for (uint32_t i = 0; i < cnt; i++)
