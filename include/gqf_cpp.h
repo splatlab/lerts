@@ -139,7 +139,7 @@ struct compare {
 
 template <class key_obj>
 CQF<key_obj>::CQF() {
-	if (!qf_malloc(&cqf, 1ULL << 6, 14, 0, QF_HASH_DEFAULT, GQF_SEED)) {
+	if (!qf_malloc(&cqf, 1ULL << 6, 14, 0, QF_HASH_INVERTIBLE, GQF_SEED)) {
 		ERROR("Can't allocate the CQF.");
 		exit(EXIT_FAILURE);
 	}
