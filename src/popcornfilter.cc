@@ -177,7 +177,7 @@ int popcornfilter_main (PopcornFilterOpts opts)
 #endif
 		//keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
 		//popcornfilter::induce_special_case(vals, threshold_value, 29000, 40000, 5);
-		keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
+		//keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
 	}
 
 	struct timeval start, end;

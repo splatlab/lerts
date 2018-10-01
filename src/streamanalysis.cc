@@ -167,7 +167,7 @@ int main(int argc, char **argv)
 	uint64_t cnt = 0;
 
 	// create a file and mmap it to log <keys, value> from the stream.
-	uint64_t arr_size = 250000000* sizeof(*arr);
+	uint64_t arr_size = 500000000* sizeof(*arr);
 	arr = (uint64_t *)malloc(arr_size);
 	if (arr == NULL) {
 		std::cout << "Can't allocate memory" << std::endl;

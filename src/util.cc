@@ -85,6 +85,8 @@ namespace popcornfilter {
 						key_lifetime[key].second = i;
 				}
 			}
+			PRINT("Clearing the multimap.");
+			key_counts.clear();
 
 			uint64_t total_anomalies = 0;
 			for (auto it : key_lifetime) {
