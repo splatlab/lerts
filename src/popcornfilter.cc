@@ -143,7 +143,6 @@ int popcornfilter_main (PopcornFilterOpts opts)
 		nvals = popcornfilter::get_number_keys(opts.ip_file);
 		keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
 	} else {
-
 #if 0
 		// This is a specific generator to produce Jon's use-case.
 		uint64_t quarter = nvals;
@@ -175,7 +174,7 @@ int popcornfilter_main (PopcornFilterOpts opts)
 		generate_random_keys(vals, nvals, nvals, 1.5);
 		//std::random_shuffle(&vals[0], &vals[nvals-1], myrandom);
 #endif
-		//keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
+		keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
 		//popcornfilter::induce_special_case(vals, threshold_value, 29000, 40000, 5);
 		//keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
 	}
@@ -222,7 +221,7 @@ int popcornfilter_main (PopcornFilterOpts opts)
 
 	if (nthreads == 1) {
 		PRINT("Performing validation");
-		if (pf.validate_anomalies(keylifetimes))
+		if (pf.validate_anomalies(keylifetimes, vals))
 			PRINT("Validation successful!");
 		else
 			PRINT("Validation failed!");

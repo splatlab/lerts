@@ -60,7 +60,8 @@ class PopcornFilter {
 
 		void print_stats(void) const;
 		bool validate_anomalies(std::unordered_map<uint64_t,
-															 std::pair<uint64_t, uint64_t>> key_lifetime);
+															 std::pair<uint64_t, uint64_t>> key_lifetime,
+															 uint64_t *vals);
 
 	private:
 		uint64_t nfilters;
@@ -250,7 +251,7 @@ void PopcornFilter<key_object>::print_stats(void) const {
 template <class key_object>
 bool PopcornFilter<key_object>::validate_anomalies(
 								std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
-								key_lifetime) {
+								key_lifetime, uint64_t *vals) {
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
 		per_filter[nfilters];
 	for (auto it : key_lifetime) {
@@ -261,7 +262,7 @@ bool PopcornFilter<key_object>::validate_anomalies(
 		}
 	}
 	for (uint32_t i = 0; i < nfilters; i++)
-		if (!cf[i]->validate_key_lifetimes(per_filter[i]))
+		if (!cf[i]->validate_key_lifetimes(per_filter[i], vals))
 			return false;
 	return true;
 }

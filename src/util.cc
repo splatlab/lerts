@@ -102,6 +102,17 @@ namespace popcornfilter {
 			return key_lifetime;
 		}
 
+	uint64_t actual_count_at_index(uint64_t *vals, uint64_t key, uint64_t index)
+	{
+		uint64_t count = 0;
+		for (uint64_t i = 0; i <= index; i++) {
+			if (vals[i] == key)
+				count++;
+		}
+
+		return count;
+	}
+
 	uint64_t *read_stream_from_disk(std::string file) {
 		uint64_t *arr = (uint64_t *)malloc(get_number_keys(file) * sizeof(*arr));
 		if (arr == NULL) {

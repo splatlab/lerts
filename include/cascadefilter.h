@@ -75,7 +75,8 @@ class CascadeFilter {
 		uint64_t count_key_value(const key_object& key_val_cnt, uint8_t flag);
 
 		bool validate_key_lifetimes(std::unordered_map<uint64_t,
-																std::pair<uint64_t, uint64_t>> key_lifetime);
+																std::pair<uint64_t, uint64_t>> key_lifetime,
+																uint64_t *vals);
 
 		class Iterator {
 			public:
@@ -358,7 +359,7 @@ uint64_t CascadeFilter<key_object>::get_num_keys_above_threshold(void) const {
 template <class key_object>
 bool CascadeFilter<key_object>::validate_key_lifetimes(
 								std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
-								key_lifetime) {
+								key_lifetime, uint64_t *vals) {
 	uint32_t failures = 0;
 	std::ofstream result;
 
@@ -430,7 +431,10 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 				uint64_t value;
 				key_object k(it.first, 0, 0, 0);
 				uint64_t lifetime = it.second.second - it.second.first;
-				uint64_t reportcount = anomalies.query_key(k, &value, 0);
+				uint64_t reporttime = anomalies.query_key(k, &value, 0);
+				uint64_t reportcount = popcornfilter::actual_count_at_index(vals,
+																																		it.first,
+																																		reporttime);
 				if (reportcount > threshold_value * 2) {
 					PRINT("Count stretch reporting failed Key: " << it.first <<
 									 " Reporting count " << reportcount);
@@ -584,7 +588,7 @@ template <class key_object>
 void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 																							key_object k, uint32_t nlevels) {
 	for (int32_t i = nlevels; i > 0; i--) {
-		if (k.count > thresholds[i]) {
+		if (k.count >= thresholds[i]) {
 			key_object cur(k.key, k.value, thresholds[i], 0);
 			qf_arr[i].insert(cur, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 			k.count -= thresholds[i];
@@ -619,9 +623,7 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 	if (cur.count >= threshold_value) {
 		if (anomalies.query_key(cur, &value, QF_KEY_IS_HASH) == 0) {
 			// the count is the index at which the key is reported.
-			// for count-stretch the count is the current count of the key.
-			if (!count_stretch)
-				cur.count = num_obs_seen;
+			cur.count = num_obs_seen;
 			// value 0 means that it is reported through shuffle-merge.
 			cur.value = 0;
 			if (anomalies.is_full())
@@ -778,8 +780,13 @@ void CascadeFilter<key_object>::shuffle_merge() {
 		for (uint32_t i = 1; i < nlevels; i++)
 			increment_age(i);
 		nlevels += 1;
-	} else
+	} else {
+#ifdef GREEDY
 		nlevels = find_first_empty_level() + 1;
+#else
+		nlevels = find_levels_to_flush() + 1;
+#endif
+	}
 
 	assert(nlevels <= total_num_levels);
 	DEBUG("Shuffle merging CQFs 0 to " << nlevels - 1);
@@ -872,14 +879,12 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 			if (cur_key.count >= threshold_value) {
 				if (anomalies.query_key(cur_key, &value, QF_KEY_IS_HASH) == 0) {
 					// the count is the index at which the key is reported.
-					// for count-stretch the count is the current count of the key.
-					if (!count_stretch)
-						cur_key.count = num_obs_seen;
+					cur_key.count = num_obs_seen;
 					// value 0 means that it is reported through shuffle-merge.
 					cur_key.value = 0;
 					if (anomalies.is_full())
 						abort();
-					anomalies.insert(cur_key, PF_WAIT_FOR_LOCK);
+					anomalies.insert(cur_key, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 				}
 			}
 			/* Update cur_key. */
@@ -892,14 +897,12 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 	if (cur_key.count >= threshold_value) {
 		if (anomalies.query_key(cur_key, &value, QF_KEY_IS_HASH) == 0) {
 			// the count is the index at which the key is reported.
-			// for count-stretch the count is the current count of the key.
-			if (!count_stretch)
-				cur_key.count = num_obs_seen;
+			cur_key.count = num_obs_seen;
 			// value 0 means that it is reported through shuffle-merge.
 			cur_key.value = 0;
 			if (anomalies.is_full())
 				abort();
-			anomalies.insert(cur_key, PF_WAIT_FOR_LOCK);
+			anomalies.insert(cur_key, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 		}
 	}
 }
@@ -957,11 +960,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 	if (ram_count >= threshold_value &&
 			anomalies.query_key(dup_k, &value, 0) == 0) {
 		// the count is the index at which the key is reported.
-		// for count-stretch the count is the current count of the key.
-		if (!count_stretch)
-			dup_k.count = num_obs_seen;
-		else
-			dup_k.count = ram_count;
+		dup_k.count = num_obs_seen;
 		// value 1 means that it is reported through odp.
 		dup_k.value = 0;
 		if (anomalies.is_full())
