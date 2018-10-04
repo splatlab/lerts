@@ -240,7 +240,7 @@ int main(int argc, char **argv)
 		for (int i = 0; i < perpacket; i++) {
 			uint64_t key = strtoul(strtok(NULL,",\n"),NULL,0);
 			uint32_t value = strtoul(strtok(NULL,",\n"),NULL,0);
-			uint32_t truth = strtoul(strtok(NULL,",\n"),NULL,0);
+			//uint32_t truth = strtoul(strtok(NULL,",\n"),NULL,0);
 
 			key = MurmurHash64A( ((void*)&key), sizeof(key), seed);
 			key = (key << 1) | value;

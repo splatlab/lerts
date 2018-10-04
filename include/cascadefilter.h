@@ -429,7 +429,6 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 			if (it.second.first < it.second.second) {
 				uint64_t value;
 				key_object k(it.first, 0, 0, 0);
-				uint64_t lifetime = it.second.second - it.second.first;
 				uint64_t reporttime = anomalies.query_key(k, &value, 0);
 				uint64_t reportcount = popcornfilter::actual_count_at_index(vals,
 																																		it.first,

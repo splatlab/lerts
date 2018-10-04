@@ -149,7 +149,7 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 			PRINT("Creating a cascade filter with " << nkeybits <<
 							 "-bit hashes, " << nlevels << " levels, and " << gfactor <<
 							 " as growth factor.");
-			std::string prefix = "raw/" + std::to_string(i) + "_";
+			std::string prefix = "logs/" + std::to_string(i) + "_";
 			cf.emplace_back(new CascadeFilter<KeyObject>(nkeybits, nvaluebits,
 																									 nagebits, odp,
 																									 threshold_value, thlds,
