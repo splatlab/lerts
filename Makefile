@@ -50,7 +50,8 @@ all: $(TARGETS)
 
 main:						$(OBJDIR)/main.o $(OBJDIR)/popcornfilter.o \
 								$(OBJDIR)/cascadefilter.o $(OBJDIR)/zipf.o \
-								$(OBJDIR)/gqf.o $(OBJDIR)/util.o $(OBJDIR)/hashutil.o
+								$(OBJDIR)/gqf.o $(OBJDIR)/gqf_file.o $(OBJDIR)/util.o \
+								$(OBJDIR)/hashutil.o
 
 streamanalysis: $(OBJDIR)/streamanalysis.o $(OBJDIR)/gqf.o $(OBJDIR)/util.o \
 								$(OBJDIR)/hashutil.o

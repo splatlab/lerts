@@ -274,7 +274,7 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 		std::string file_ext("_cqf.ser");
 		std::string file = prefix + std::to_string(i) + file_ext;
 		filters[i] = CQF<key_object>(sizes[i], num_key_bits, num_value_bits,
-																 QF_HASH_INVERTIBLE, seed);
+																 QF_HASH_INVERTIBLE, seed, file);
 	}
 }
 
@@ -801,7 +801,7 @@ void CascadeFilter<key_object>::shuffle_merge() {
 			std::to_string(i) + file_ext;
 		DEBUG("Creating new level " << file);
 		new_filters[i] = CQF<key_object>(sizes[i], num_key_bits, num_value_bits,
-																		 QF_HASH_INVERTIBLE, seed);
+																		 QF_HASH_INVERTIBLE, seed, file);
 	}
 
 	DEBUG("Old CQFs");

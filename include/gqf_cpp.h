@@ -37,6 +37,8 @@ class CQF {
 		CQF();
 		CQF(uint64_t nslots, uint64_t key_bits, uint64_t value_bits, enum
 				qf_hashmode hash, uint32_t seed);
+		CQF(uint64_t nslots, uint64_t key_bits, uint64_t value_bits, enum
+				qf_hashmode hash, uint32_t seed, std::string filename);
 		CQF(std::string& filename, enum readmode flag);
 		CQF(const CQF<key_obj>& copy_cqf);
 
@@ -155,6 +157,16 @@ CQF<key_obj>::CQF(uint64_t nslots, uint64_t key_bits, uint64_t value_bits,
 }
 
 template <class key_obj>
+CQF<key_obj>::CQF(uint64_t nslots, uint64_t key_bits, uint64_t value_bits,
+									enum qf_hashmode hash, uint32_t seed, std::string filename) {
+	if (!qf_initfile(&cqf, nslots, key_bits, value_bits, hash, GQF_SEED,
+									 filename.c_str())) {
+		ERROR("Can't allocate the CQF.");
+		exit(EXIT_FAILURE);
+	}
+}
+
+template <class key_obj>
 CQF<key_obj>::CQF(std::string& filename, enum readmode flag) {
 	uint64_t size = 0;
 	if (flag == MMAP)
@@ -221,7 +233,7 @@ bool CQF<key_obj>::is_exact(void) {
 
 template <class key_obj>
 void CQF<key_obj>::destroy() {
-	qf_destroy(&cqf);
+	qf_deletefile(&cqf);
 }
 
 template <class key_obj>
