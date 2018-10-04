@@ -1,0 +1,15 @@
+./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 1 -o -v 24 -i raw/streamdump_active50M
+./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 2 -o -v 24 -i raw/streamdump_active50M
+./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 4 -o -v 24 -i raw/streamdump_active50M
+./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 1 -o -v 24 -i raw/streamdump_powerlaw50M
+./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 2 -o -v 24 -i raw/streamdump_powerlaw50M
+./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 4 -o -v 24 -i raw/streamdump_powerlaw50M
+./main popcornfilter -f 1 -q 21 -l 3 -g 4 -t 1 -a 1 -o -v 24 -i raw/streamdump_active50M
+./main popcornfilter -f 1 -q 21 -l 3 -g 4 -t 1 -a 2 -o -v 24 -i raw/streamdump_active50M
+./main popcornfilter -f 1 -q 21 -l 3 -g 4 -t 1 -a 4 -o -v 24 -i raw/streamdump_active50M
+
+./main popcornfilter -f 1 -q 20 -l 3 -g 4 -t 1 -o -v 24 -i raw/streamdump_active50M
+./main popcornfilter -f 1 -q 20 -l 3 -g 4 -t 1 -o -v 24 -i raw/streamdump_powerlaw50M
+
+cat raw/count-stretch.data | awk '{print $4","$6}' | tail -n +2 > raw/stretch
+cat raw/time-stretch.data | awk '{print $4","$6}' | tail -n +3 > raw/stretch
