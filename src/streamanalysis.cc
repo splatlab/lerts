@@ -170,7 +170,7 @@ void stats()
 int main(int argc, char **argv)
 {
 	uint32_t seed = 2038074761;
-	__uint128_t range = 1ULL << 32;
+	__uint128_t range = 1ULL << 48;
 	uint64_t total = 0;
 	uint64_t cnt = 0;
 

@@ -154,7 +154,7 @@ void destroy_zipfian (ZIPFIAN z) {
 }
 
 void generate_random_keys (uint64_t *elems, long N, long gencount, double s) {
-	__uint128_t range = 1ULL << 32;
+	__uint128_t range = 1ULL << 48;
 	uint32_t seed = 2038074761;
 	int i;
 	uint32_t *counts;
