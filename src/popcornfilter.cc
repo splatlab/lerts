@@ -141,7 +141,9 @@ int popcornfilter_main (PopcornFilterOpts opts)
 		std::string streamlogfile(opts.ip_file + ".log");
 		vals = popcornfilter::read_stream_from_disk(opts.ip_file);
 		nvals = popcornfilter::get_number_keys(opts.ip_file);
+#ifdef VALIDATE
 		keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
+#endif
 	} else {
 #if 0
 		// This is a specific generator to produce Jon's use-case.
@@ -166,17 +168,18 @@ int popcornfilter_main (PopcornFilterOpts opts)
 		//RAND_pseudo_bytes((unsigned char *)vals, sizeof(*vals) * (nvals));
 		//for (uint64_t i = 0; i < nvals; i++)
 		//vals[i] = vals[i] % pf.get_range();
-#else
+#endif
 		vals = (uint64_t*)calloc(nvals, sizeof(vals[0]));
 		memset(vals, 0, nvals * sizeof(vals[0]));
 		/* Generate random keys from a Zipfian distribution. */
 		PRINT("Generating " << nvals << " random numbers.");
 		generate_random_keys(vals, nvals, nvals, 1.5);
 		//std::random_shuffle(&vals[0], &vals[nvals-1], myrandom);
-#endif
+#ifdef VALIDATE
 		keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
 		//popcornfilter::induce_special_case(vals, threshold_value, 29000, 40000, 5);
 		//keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
+#endif
 	}
 
 	struct timeval start, end;
@@ -200,10 +203,11 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	popcornfilter::print_time_elapsed("", &start, &end);
 	PRINT("Finished insertions.");
 
-	PRINT("Total elements inserted: " << pf.get_total_elements());
-	PRINT("Total distinct elements inserted: " <<
-				pf.get_total_dist_elements());
+	//PRINT("Total elements inserted: " << pf.get_total_elements());
+	//PRINT("Total distinct elements inserted: " <<
+				//pf.get_total_dist_elements());
 
+#ifdef VALIDATE
 	PRINT("Querying elements.");
 	gettimeofday(&start, &tzp);
 	for (uint64_t k = 0; k < nvals; k++) {
@@ -216,6 +220,7 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	gettimeofday(&end, &tzp);
 	popcornfilter::print_time_elapsed("", &start, &end);
 	PRINT("Finished lookups.");
+#endif
 
 #ifdef VALIDATE
 	if (nthreads == 1) {

@@ -139,7 +139,8 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 				thlds[i] = pow(tau_ratio, j) * thlds[nlevels - 1];
 				total_ondisk_tau += thlds[i];
 				if (total_ondisk_tau >= threshold_value) {
-					ERROR("Total on-disk threshold is greater than threshold value.");
+					ERROR("Total on-disk threshold is greater than threshold value. " <<
+								total_ondisk_tau << " " << threshold_value);
 					abort();
 				}
 			}
