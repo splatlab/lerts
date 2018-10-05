@@ -49,7 +49,6 @@ void *thread_insert(void *a) {
 	 */
 	for (uint64_t i = args->start; i < args->end; i++) {
 		uint64_t key = args->vals[i];
-		key = key % args->pf->get_range();
 		if (!args->pf->insert(KeyObject(key, 0, 1, 0),
 													PF_TRY_ONCE_LOCK)) {
 			buffer.insert(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
@@ -211,7 +210,6 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	gettimeofday(&start, &tzp);
 	for (uint64_t k = 0; k < nvals; k++) {
 		uint64_t key = vals[k];
-		key = key % pf.get_range();
 		if (pf.query(KeyObject(key, 0, 0, 0), PF_WAIT_FOR_LOCK) < 1) {
 			std::cerr << "Failed lookup for " <<
 				(uint64_t)vals[k] << " " << k << " " << nvals << std::endl;

@@ -271,7 +271,6 @@ bool PopcornFilter<key_object>::validate_anomalies(
 	for (auto it : key_lifetime) {
 		if (it.second.first < it.second.second) {
 			uint64_t key = it.first;
-			key = key % get_range();
 			uint32_t filter_idx = 0;
 			if (fbits > 0)
 				filter_idx = key >> nkeybits;
