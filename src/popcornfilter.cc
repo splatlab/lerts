@@ -226,7 +226,8 @@ int popcornfilter_main (PopcornFilterOpts opts)
 			PRINT("Validation failed!");
 	}
 #else
-	pf.find_anomalies();
+	if (!opts.do_odp)
+		pf.find_anomalies();
 #endif
 
 	PRINT("Total number of keys above threshold: " <<

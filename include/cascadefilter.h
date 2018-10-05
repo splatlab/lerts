@@ -199,6 +199,9 @@ class CascadeFilter {
 		uint32_t threshold_value;
 		bool odp;
 		bool count_stretch;
+		uint64_t total_anomalies;
+		uint64_t total_reported_shuffle_merge;
+		uint64_t total_reported_odp;
 		std::string prefix;
 		std::vector<uint32_t> thresholds;
 		std::vector<uint64_t> sizes;
@@ -229,6 +232,7 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	threshold_value(threshold_value), odp(odp),
 	prefix(prefix)
 {
+	total_anomalies = total_reported_shuffle_merge = total_reported_odp = 0;
 	if (nagebits)
 		max_age = 1 << nagebits;
 	else
@@ -290,6 +294,10 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 																 QF_HASH_INVERTIBLE, seed, file);
 	}
 }
+template <class key_object>
+CascadeFilter<key_object>::~CascadeFilter() {
+	anomaly_log.close();
+}
 
 	template <class key_object>
 const CQF<key_object>* CascadeFilter<key_object>::get_filter(uint32_t level)
@@ -335,6 +343,7 @@ uint64_t CascadeFilter<key_object>::get_num_dist_elements(void) const {
 
 template <class key_object>
 void CascadeFilter<key_object>::print_anomaly_stats(void) {
+#if 0
 	// find anomalies that are not reported yet.
 	//find_anomalies();
 	uint64_t num_shuffle_merge = 0, num_odp = 0;
@@ -356,17 +365,18 @@ void CascadeFilter<key_object>::print_anomaly_stats(void) {
 		}
 		++it;
 	}
+#endif
 
 	PRINT("Number of keys above the THRESHOLD value " <<
-				anomalies.dist_elts());
+				total_anomalies);
 	PRINT("Number of keys reported through shuffle-merges " <<
-				num_shuffle_merge);
-	PRINT("Number of keys reported through odp " << num_odp);
+				total_reported_shuffle_merge);
+	PRINT("Number of keys reported through odp " << total_reported_odp);
 }
 
 template <class key_object>
 uint64_t CascadeFilter<key_object>::get_num_keys_above_threshold(void) const {
-	return anomalies.dist_elts();
+	return total_anomalies;
 }
 
 template <class key_object>
@@ -648,6 +658,8 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 #endif
 			anomalies.insert(cur, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 			DEBUG("Reporting shuffle-merge: " << cur.to_string());
+			total_anomalies++;
+			total_reported_shuffle_merge++;
 		}
 	} else {
 		if (max_age) {
@@ -911,6 +923,8 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 #endif
 					anomalies.insert(cur_key, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 					DEBUG("Reporting shuffle-merge: " << cur_key.to_string());
+					total_anomalies++;
+					total_reported_shuffle_merge++;
 				}
 			}
 			/* Update cur_key. */
@@ -937,6 +951,8 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 #endif
 			anomalies.insert(cur_key, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 			DEBUG("Reporting shuffle-merge: " << cur_key.to_string());
+			total_anomalies++;
+			total_reported_shuffle_merge++;
 		}
 	}
 }
@@ -1008,6 +1024,8 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 #endif
 		anomalies.insert(dup_k, PF_WAIT_FOR_LOCK);
 		DEBUG("Reporting shuffle-merge: " << dup_k.to_string());
+		total_anomalies++;
+		total_reported_shuffle_merge++;
 	}
 
 	// This code is for the immediate reporting case.
@@ -1037,6 +1055,8 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 #endif
 			anomalies.insert(dup_k, PF_WAIT_FOR_LOCK);
 			DEBUG("Reporting odp: " << dup_k.to_string());
+			total_anomalies++;
+			total_reported_odp++;
 		}
 	}
 
