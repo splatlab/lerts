@@ -251,11 +251,13 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	ages = (uint32_t*)calloc(num_levels, sizeof(*ages));
 
 	// creating an exact CQF to store anomalies.
-	uint64_t anomaly_filter_size = sizes[0] * 16;
+	uint64_t anomaly_filter_size = sizes[0] / 2;
 	DEBUG("Creating anomaly filter of " << anomaly_filter_size <<
 					 " slots and THRESHOLD " << threshold_value);
+	// We use one extra value bit to record whether the key was reported through
+	// a shuffle-merge or an odp.
 	anomalies = CQF<key_object>(anomaly_filter_size, num_key_bits,
-															num_value_bits, QF_HASH_INVERTIBLE, seed);
+															num_value_bits + 1, QF_HASH_INVERTIBLE, seed);
 
 	filters = (CQF<key_object>*)calloc(num_levels, sizeof(CQF<key_object>));
 
@@ -323,7 +325,7 @@ uint64_t CascadeFilter<key_object>::get_num_dist_elements(void) const {
 template <class key_object>
 void CascadeFilter<key_object>::print_anomaly_stats(void) {
 	// find anomalies that are not reported yet.
-	find_anomalies();
+	//find_anomalies();
 	uint64_t num_shuffle_merge = 0, num_odp = 0;
 	typename CQF<key_object>::Iterator it = anomalies.begin();
 	while (!it.done()) {
@@ -627,7 +629,7 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 			if (anomalies.is_full())
 				abort();
 			anomalies.insert(cur, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
-			DEBUG("Reporting " << cur.to_string());
+			DEBUG("Reporting shuffle-merge: " << cur.to_string());
 		}
 	} else {
 		if (max_age) {
@@ -883,6 +885,7 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 					if (anomalies.is_full())
 						abort();
 					anomalies.insert(cur_key, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
+					DEBUG("Reporting shuffle-merge: " << cur_key.to_string());
 				}
 			}
 			/* Update cur_key. */
@@ -901,6 +904,7 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 			if (anomalies.is_full())
 				abort();
 			anomalies.insert(cur_key, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
+			DEBUG("Reporting shuffle-merge: " << cur_key.to_string());
 		}
 	}
 }
@@ -964,6 +968,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 		if (anomalies.is_full())
 			abort();
 		anomalies.insert(dup_k, PF_WAIT_FOR_LOCK);
+		DEBUG("Reporting shuffle-merge: " << dup_k.to_string());
 	}
 
 	// This code is for the immediate reporting case.
@@ -985,6 +990,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 			if (anomalies.is_full())
 				abort();
 			anomalies.insert(dup_k, PF_WAIT_FOR_LOCK);
+			DEBUG("Reporting odp: " << dup_k.to_string());
 		}
 	}
 

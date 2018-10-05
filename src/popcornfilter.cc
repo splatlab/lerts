@@ -230,7 +230,7 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	PRINT("Total number of keys above thrshold: " <<
 				pf.get_total_keys_above_threshold());
 
-	//pf.print_stats();
+	pf.print_stats();
 
 	return EXIT_SUCCESS;
 }				/* ----------  end of function main  ---------- */
