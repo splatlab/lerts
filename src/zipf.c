@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "gqf/hashutil.h"
+
 #ifndef  USE_MYRANDOM
 #define RFUN random
 #define RSEED srandom
@@ -152,6 +154,8 @@ void destroy_zipfian (ZIPFIAN z) {
 }
 
 void generate_random_keys (uint64_t *elems, long N, long gencount, double s) {
+	__uint128_t range = 1ULL << 32;
+	uint32_t seed = 2038074761;
 	int i;
 	uint32_t *counts;
 	/*struct timeval a,b,c;*/
@@ -167,7 +171,8 @@ void generate_random_keys (uint64_t *elems, long N, long gencount, double s) {
 		long g = zipfian_gen(z);
 		assert(0<=g && g<N);
 		counts[g]++;
-		elems[i] = g;
+		g = MurmurHash64A( ((void*)&g), sizeof(g), seed);
+		elems[i] = g % range;
 	}
 	/*gettimeofday(&c, NULL);*/
 	/*double rtime = tdiff(&b, &c);*/

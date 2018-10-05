@@ -53,7 +53,7 @@ class PopcornFilter {
 		uint32_t get_num_key_bits(void) const;
 		uint32_t get_num_value_bits(void) const;
 		uint32_t get_seed(void) const;
-		uint64_t get_range(void) const;
+		__uint128_t get_range(void) const;
 		uint64_t get_max_size(void) const;
 		uint64_t get_total_elements(void) const;
 		uint64_t get_total_dist_elements(void) const;
@@ -107,7 +107,7 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 	gfactor(gfactor), nagebits(nagebits), odp(do_odp),
 	threshold_value(threshold_value) {
 		fbits = log2(nfilters); // assuming nfilters is a power of 2.
-		nkeybits = NUM_KEY_BITS;
+		nkeybits = NUM_KEY_BITS - fbits;
 		nvaluebits = NUM_VALUE_BITS;
 		num_obs_seen = 0;
 		uint64_t sizes[nlevels];
@@ -175,8 +175,8 @@ uint32_t PopcornFilter<key_object>::get_seed(void) const {
 }
 
 template <class key_object>
-uint64_t PopcornFilter<key_object>::get_range(void) const {
-	uint64_t range = cf[0]->get_filter(0)->range();
+__uint128_t PopcornFilter<key_object>::get_range(void) const {
+	__uint128_t range = cf[0]->get_filter(0)->range();
 	range <<= fbits;
 	return range;
 }
@@ -216,7 +216,9 @@ bool PopcornFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 	bool ret = true;
 	KeyObject dup_k(k);
 
-	uint32_t filter_idx = dup_k.key >> nkeybits;
+	uint32_t filter_idx = 0;
+	if (fbits > 0)
+		filter_idx = dup_k.key >> nkeybits;
 	dup_k.key = dup_k.key & BITMASK(nkeybits);
 	ret = cf[filter_idx]->insert(dup_k, num_obs_seen, flag);
 
@@ -235,7 +237,9 @@ uint64_t PopcornFilter<key_object>::query(const key_object& k, uint8_t flag)
 	uint64_t count = 0;
 	KeyObject dup_k(k);
 
-	uint32_t filter_idx = dup_k.key >> nkeybits;
+	uint32_t filter_idx = 0;
+	if (fbits > 0)
+		filter_idx = dup_k.key >> nkeybits;
 	dup_k.key = dup_k.key & BITMASK(nkeybits);
 	count = cf[filter_idx]->count_key_value(dup_k, flag);
 
@@ -266,8 +270,11 @@ bool PopcornFilter<key_object>::validate_anomalies(
 		per_filter[nfilters];
 	for (auto it : key_lifetime) {
 		if (it.second.first < it.second.second) {
-			uint32_t filter_idx = it.first >> nkeybits;
-			uint64_t key = it.first & BITMASK(nkeybits);
+			uint64_t key = it.first;
+			key = key % get_range();
+			uint32_t filter_idx = 0;
+			if (fbits > 0)
+				filter_idx = key >> nkeybits;
 			per_filter[filter_idx][key] = it.second;
 		}
 	}

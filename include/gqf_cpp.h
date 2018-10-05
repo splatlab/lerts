@@ -65,7 +65,7 @@ class CQF {
 		bool is_exact(void);
 
 		const QF* get_cqf(void) const { return &cqf; }
-		uint64_t range(void) const { return cqf.metadata->range; }
+		__uint128_t range(void) const { return cqf.metadata->range; }
 		uint32_t seed(void) const { return cqf.metadata->seed; }
 		uint32_t keybits(void) const { return cqf.metadata->key_bits; }
 		uint32_t valuebits(void) const { return cqf.metadata->value_bits; }

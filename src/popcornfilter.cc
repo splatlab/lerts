@@ -48,12 +48,11 @@ void *thread_insert(void *a) {
 	 * cascade filter.
 	 */
 	for (uint64_t i = args->start; i < args->end; i++) {
-		if (args->vals[i] >= args->pf->get_range()) {
-			PRINT("Index: " << i << " val: " << args->vals[i]);
-		}
-		if (!args->pf->insert(KeyObject(args->vals[i], 0, 1, 0),
+		uint64_t key = args->vals[i];
+		key = key % args->pf->get_range();
+		if (!args->pf->insert(KeyObject(key, 0, 1, 0),
 													PF_TRY_ONCE_LOCK)) {
-			buffer.insert(KeyObject(args->vals[i], 0, 1, 0), PF_NO_LOCK);
+			buffer.insert(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
 			double load_factor = buffer.occupied_slots() /
 				(double)buffer.total_slots();
 			if (load_factor > 0.75) {
@@ -132,19 +131,19 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	PopcornFilter<KeyObject> pf(nfilters, qbits, nlevels, gfactor, nagebits,
 															do_odp, threshold_value);
 
-	uint64_t nvals = pf.get_max_size();
+	uint64_t nvals = 0;
 
 	uint64_t *vals;
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> keylifetimes;
 	if (opts.ip_file.size() > 1) {
 		PRINT("Reading input stream and logs from disk");
 		std::string streamlogfile(opts.ip_file + ".log");
-		vals = popcornfilter::read_stream_from_disk(opts.ip_file);
-		nvals = popcornfilter::get_number_keys(opts.ip_file);
+		vals = popcornfilter::read_stream_from_disk(opts.ip_file, &nvals);
 #ifdef VALIDATE
 		keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
 #endif
 	} else {
+	nvals = pf.get_max_size();
 #if 0
 		// This is a specific generator to produce Jon's use-case.
 		uint64_t quarter = nvals;
@@ -181,6 +180,7 @@ int popcornfilter_main (PopcornFilterOpts opts)
 		//keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
 #endif
 	}
+	PRINT("Total observations: " << nvals);
 
 	struct timeval start, end;
 	struct timezone tzp;
@@ -203,7 +203,6 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	popcornfilter::print_time_elapsed("", &start, &end);
 	PRINT("Finished insertions.");
 
-	//PRINT("Total elements inserted: " << pf.get_total_elements());
 	//PRINT("Total distinct elements inserted: " <<
 				//pf.get_total_dist_elements());
 
@@ -211,7 +210,9 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	PRINT("Querying elements.");
 	gettimeofday(&start, &tzp);
 	for (uint64_t k = 0; k < nvals; k++) {
-		if (pf.query(KeyObject(vals[k], 0, 0, 0), PF_WAIT_FOR_LOCK) < 1) {
+		uint64_t key = vals[k];
+		key = key % pf.get_range();
+		if (pf.query(KeyObject(key, 0, 0, 0), PF_WAIT_FOR_LOCK) < 1) {
 			std::cerr << "Failed lookup for " <<
 				(uint64_t)vals[k] << " " << k << " " << nvals << std::endl;
 			abort();

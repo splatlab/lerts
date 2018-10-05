@@ -113,46 +113,75 @@ namespace popcornfilter {
 		return count;
 	}
 
-	uint64_t *read_stream_from_disk(std::string file) {
+	uint64_t *read_stream_from_disk(std::string file, uint64_t *num_keys) {
+		int fd = open(file.c_str(), O_RDWR);
+		if (fd < 0) {
+			perror("Couldn't open file:");
+			exit(1);
+		}
+		struct stat sb;
+		int ret = fstat (fd, &sb);
+		if ( ret < 0) {
+			perror ("fstat");
+			exit(EXIT_FAILURE);
+		}
+		if (!S_ISREG (sb.st_mode)) {
+			fprintf (stderr, "%s is not a file.\n", file.c_str());
+			exit(EXIT_FAILURE);
+		}
+
+		*num_keys = sb.st_size/sizeof(uint64_t);
+		uint64_t *arr = (uint64_t *)mmap(NULL, sb.st_size, PROT_READ, MAP_SHARED,
+																		 fd, 0);
+		if (arr == MAP_FAILED) {
+			perror("Couldn't mmap metadata.");
+			exit(EXIT_FAILURE);
+		}
+
+		return arr;
+	}
+	
+	uint64_t *read_file_disk(std::string file) {
 		uint64_t *arr = (uint64_t *)malloc(get_number_keys(file) * sizeof(*arr));
 		if (arr == NULL) {
 			std::cout << "Can't allocate memory" << std::endl;
 			exit(1);
 		}
+
 		std::ifstream dumpfile(file.c_str());
 		uint64_t i = 0;
 		while (dumpfile >> arr[i++]) {}
 		return arr;
-	}
-
-	uint64_t get_number_keys(std::string file) {
-		std::ifstream infile(file);
-		uint64_t num_keys{0};
-		if (infile.is_open()) {
-			std::string line;
-			while (std::getline(infile, line)) { ++num_keys; }
 		}
 
-		return num_keys;
-	}
-
-	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
-		read_stream_log_from_disk(std::string file) {
-			uint64_t key, index0, index24;
-			std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> key_lifetime;
-
-			std::ifstream statsfile(file.c_str());
-			while (statsfile >> key >> index0 >> index24) {
-				assert (index0 <= index24);
-				if (index0 < index24) {
-					std::pair<uint64_t, uint64_t> val(index0, index24);
-					key_lifetime[key] = val;
-				}
+		uint64_t get_number_keys(std::string file) {
+			std::ifstream infile(file);
+			uint64_t num_keys{0};
+			if (infile.is_open()) {
+				std::string line;
+				while (std::getline(infile, line)) { ++num_keys; }
 			}
-			statsfile.close();
 
-			PRINT("Number of keys above threshold: " << key_lifetime.size());
-
-			return key_lifetime;
+			return num_keys;
 		}
+
+		std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
+			read_stream_log_from_disk(std::string file) {
+				uint64_t key, index0, index24;
+				std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> key_lifetime;
+
+				std::ifstream statsfile(file.c_str());
+				while (statsfile >> key >> index0 >> index24) {
+					assert (index0 <= index24);
+					if (index0 < index24) {
+						std::pair<uint64_t, uint64_t> val(index0, index24);
+						key_lifetime[key] = val;
+					}
+				}
+				statsfile.close();
+
+				PRINT("Number of keys above threshold: " << key_lifetime.size());
+
+				return key_lifetime;
+			}
 }

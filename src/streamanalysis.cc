@@ -52,12 +52,13 @@ int port;
 
 // defaults for command-line switches
 
-uint64_t range = (1ULL << 32);
 int perpacket = 50;
 int nthresh = 24;
 int mthresh = 4;
 int nsenders = 1;
 int countflag = 0;
+int stream_size = 50000000;
+char *filename = NULL;
 
 // packet stats
 
@@ -86,7 +87,7 @@ void read_cmd_options(int argc, char **argv)
 {
 	int op;
 
-	while ( (op = getopt(argc, argv, "b:t:m:p:c:")) != EOF) {
+	while ( (op = getopt(argc, argv, "b:t:m:p:c:s:f:")) != EOF) {
 		switch (op) {
 			case 'b':
 				perpacket = atoi(optarg);
@@ -102,6 +103,12 @@ void read_cmd_options(int argc, char **argv)
 				break;
 			case 'c':
 				countflag = 1;
+				break;
+			case 's':
+				stream_size = atoi(optarg);
+				break;
+			case 'f':
+				filename = optarg;
 				break;
 		}
 	}
@@ -163,21 +170,16 @@ void stats()
 int main(int argc, char **argv)
 {
 	uint32_t seed = 2038074761;
-	uint64_t *arr;
+	__uint128_t range = 1ULL << 32;
+	uint64_t total = 0;
 	uint64_t cnt = 0;
 
-	// create a file and mmap it to log <keys, value> from the stream.
-	uint64_t arr_size = 500000000* sizeof(*arr);
-	arr = (uint64_t *)malloc(arr_size);
-	if (arr == NULL) {
-		std::cout << "Can't allocate memory" << std::endl;
-		exit(1);
-	}
-
 	read_cmd_options(argc,argv);
+	// create a file and mmap it to log <keys, value> from the stream.
+	uint64_t arr_size = stream_size* sizeof(uint64_t);
+	uint64_t *arr = (uint64_t *)malloc(arr_size);
 
 	// sender stats and stop flags
-
 	count = new uint64_t[nsenders];
 	shut = new int[nsenders];
 	for (int i = 0; i < nsenders; i++) count[i] = shut[i] = 0;
@@ -240,26 +242,43 @@ int main(int argc, char **argv)
 		for (int i = 0; i < perpacket; i++) {
 			uint64_t key = strtoul(strtok(NULL,",\n"),NULL,0);
 			uint32_t value = strtoul(strtok(NULL,",\n"),NULL,0);
-			//uint32_t truth = strtoul(strtok(NULL,",\n"),NULL,0);
+			uint32_t truth = strtoul(strtok(NULL,",\n"),NULL,0);
 
 			key = MurmurHash64A( ((void*)&key), sizeof(key), seed);
-			key = (key << 1) | value;
 			arr[cnt++] = key % range;
-			//std::cout << arr[cnt - 1] << std::endl;
+			total += value + truth;
 		}
 	}
-	std::cout << "Dumping stream" << std::endl;
 
-	std::string filename("raw/streamdump");
-	std::ofstream file(filename.c_str());
-	for (uint32_t i = 0; i < cnt; i++)
-		file << arr[i] << std::endl;
-	file.close();
+	std::cout << "Received stream with " << cnt << " observations and " << total
+		<< std::endl;
 
-	std::cout << "Dumped " << cnt << " keys in " << filename << std::endl;
+	uint64_t final_size = cnt*sizeof(uint64_t);
+	int fd = open(filename, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
+	if (fd < 0) {
+		perror("Couldn't open file:");
+		exit(1);
+	}
+	int ret = posix_fallocate(fd, 0, final_size);
+	if (ret < 0) {
+		perror("Couldn't fallocate file:\n");
+		exit(EXIT_FAILURE);
+	}
+	uint64_t *final_arr = (uint64_t *)mmap(NULL, final_size, PROT_READ |
+																				 PROT_WRITE, MAP_SHARED, fd, 0);
+	if (final_arr == NULL) {
+		perror("Couldn't mmap file:");
+		exit(1);
+	}
+
+	memcpy(final_arr, arr, final_size);
 
 	// unmap
 	munmap(arr, arr_size);
+	close(fd);
+
+	std::cout << "Dumped " << cnt << " keys in " << filename << std::endl;
+
 
 	// close UDP port and print stats
 	::close(socket);
