@@ -43,7 +43,7 @@
 
 #define MAX_VALUE(nbits) ((1ULL << (nbits)) - 1)
 #define BITMASK(nbits)                                    \
-  ((nbits) == 64 ? 0xffffffffffffffff : MAX_VALUE(nbits))
+	((nbits) == 64 ? 0xffffffffffffffff : MAX_VALUE(nbits))
 
 template <class key_object>
 class CascadeFilter {
@@ -52,6 +52,8 @@ class CascadeFilter {
 									nagebits, bool odp, uint32_t threshold_value, uint32_t
 									filter_thlds[], uint64_t filter_sizes[], uint32_t
 									num_levels, std::string& prefix);
+
+		~CascadeFilter();
 
 		const CQF<key_object>* get_filter(uint32_t level) const;
 
@@ -73,6 +75,11 @@ class CascadeFilter {
 		/* Return the number of times key has been inserted, with the given
 			 value, into the cascade qf. */
 		uint64_t count_key_value(const key_object& key_val_cnt, uint8_t flag);
+
+		/**
+		 * report anomalies currently in the system.
+		 */
+		void find_anomalies(void);
 
 		bool validate_key_lifetimes(std::unordered_map<uint64_t,
 																std::pair<uint64_t, uint64_t>> key_lifetime,
@@ -138,11 +145,6 @@ class CascadeFilter {
 		 */
 		void update_flush_counters(uint32_t nlevels);
 
-		/**
-		 * report anomalies currently in the system.
-		 */
-		void find_anomalies(void);
-
 		void perform_shuffle_merge_if_needed(void);
 
 		/** Perform a standard cascade filter merge. It merges "num_levels" levels
@@ -158,7 +160,7 @@ class CascadeFilter {
 		 * RAM and the second level, i.e., the first level on-disk should same.
 		 * The rest of the levels on-disk grow exponentially in size.
 		 *
-		 * It uses a fix scheule for merges. There are "r" merges to the first
+		 * It uses a fix schedule for merges. There are "r" merges to the first
 		 * level on disk and "r^2" merges to the second level and so on.
 		 */
 		void merge();
@@ -189,6 +191,7 @@ class CascadeFilter {
 
 		CQF<key_object> *filters;
 		CQF<key_object> anomalies;
+		std::ofstream anomaly_log;
 		uint32_t total_num_levels;
 		uint32_t num_key_bits;
 		uint32_t num_value_bits;
@@ -251,9 +254,17 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	ages = (uint32_t*)calloc(num_levels, sizeof(*ages));
 
 	// creating an exact CQF to store anomalies.
-	uint64_t anomaly_filter_size = sizes[0] / 2;
+#ifdef VALIDATE
+	uint64_t anomaly_filter_size = sizes[0];
+#else
+	uint64_t anomaly_filter_size = sizes[0] / 4;
+	std::string anomaly_log_ext("anomaly.log");
+	std::string file = prefix + anomaly_log_ext;
+	anomaly_log.open(file.c_str());
+#endif
+
 	DEBUG("Creating anomaly filter of " << anomaly_filter_size <<
-					 " slots and THRESHOLD " << threshold_value);
+				" slots and THRESHOLD " << threshold_value);
 	// We use one extra value bit to record whether the key was reported through
 	// a shuffle-merge or an odp.
 	anomalies = CQF<key_object>(anomaly_filter_size, num_key_bits,
@@ -272,7 +283,7 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	//TODO: (prashant) Maybe make this a lazy initilization.
 	for (uint32_t i = 0; i < total_num_levels; i++) {
 		DEBUG("Creating level: " << i << " of " << sizes[i] <<
-						 " slots and threshold " << thresholds[i]);
+					" slots and threshold " << thresholds[i]);
 		std::string file_ext("_cqf.ser");
 		std::string file = prefix + std::to_string(i) + file_ext;
 		filters[i] = CQF<key_object>(sizes[i], num_key_bits, num_value_bits,
@@ -280,11 +291,11 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	}
 }
 
-template <class key_object>
+	template <class key_object>
 const CQF<key_object>* CascadeFilter<key_object>::get_filter(uint32_t level)
 	const {
 		return &filters[level];
-}
+	}
 
 template <class key_object>
 uint32_t CascadeFilter<key_object>::get_num_key_bits(void) const {
@@ -333,23 +344,23 @@ void CascadeFilter<key_object>::print_anomaly_stats(void) {
 		if (k.value == 0) {
 			num_shuffle_merge++;
 			if (count_stretch)
-				PRINT("Shuffle-merge: " << k.key << " count: " << k.count);
+				DEBUG("Shuffle-merge: " << k.key << " count: " << k.count);
 			else
-				PRINT("Shuffle-merge: " << k.key << " index: " << k.count);
+				DEBUG("Shuffle-merge: " << k.key << " index: " << k.count);
 		} else if (k.value == 1) {
 			num_odp++;
-			PRINT("ODP: " << k.key << " index: " << k.count);
+			DEBUG("ODP: " << k.key << " index: " << k.count);
 		} else {
-			PRINT("Wrong value in the anomaly CQF.");
+			ERROR("Wrong value in the anomaly CQF.");
 			abort();
 		}
 		++it;
 	}
 
 	PRINT("Number of keys above the THRESHOLD value " <<
-					 anomalies.dist_elts());
+				anomalies.dist_elts());
 	PRINT("Number of keys reported through shuffle-merges " <<
-					 num_shuffle_merge);
+				num_shuffle_merge);
 	PRINT("Number of keys reported through odp " << num_odp);
 }
 
@@ -389,14 +400,14 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 					it.second.first;
 				if (reporttime > lifetime * stretch) {
 					PRINT("Time-stretch reporting failed Key: " << it.first <<
-									 " Index-1: " << it.second.first << " Index-T " <<
-									 it.second.second << " Reporting index " <<
-									 anomalies.query_key(k, &value, 0) << " for stretch " <<
-									 stretch);
+								" Index-1: " << it.second.first << " Index-T " <<
+								it.second.second << " Reporting index " <<
+								anomalies.query_key(k, &value, 0) << " for stretch " <<
+								stretch);
 					failures++;
 				}
 				//result << idx++ << " " << lifetime << " " << reporttime << " " <<
-					//lifetime * stretch << std::endl;
+				//lifetime * stretch << std::endl;
 				result << it.first << " " << it.second.first << " " << it.second.second
 					<< " " << (it.second.second - it.second.first) << " " <<
 					anomalies.query_key(k, &value, 0) << " " <<
@@ -413,8 +424,8 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 				uint64_t reportindex = anomalies.query_key(k, &value, 0);
 				if (reportindex != it.second.second) {
 					PRINT("Immediate reporting failed Key: " << it.first <<
-									 " Index-T " << it.second.second << " Reporting index "
-									 << reportindex);
+								" Index-T " << it.second.second << " Reporting index "
+								<< reportindex);
 					failures++;
 				}
 				result << idx++ << " " << it.second.second << " " << reportindex <<
@@ -437,11 +448,11 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 																																		reporttime);
 				if (reportcount > threshold_value * 2) {
 					PRINT("Count stretch reporting failed Key: " << it.first <<
-									 " Reporting count " << reportcount);
+								" Reporting count " << reportcount);
 					failures++;
 				}
 				//result << idx++ << " " << threshold_value << " " << reportcount << " "
-					//<< threshold_value * 2 << std::endl;
+				//<< threshold_value * 2 << std::endl;
 				result << it.first << " " << it.second.first << " " << it.second.second
 					<< " " << (it.second.second - it.second.first) << " " <<
 					reportcount << " " <<
@@ -617,8 +628,8 @@ void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 
 template <class key_object>
 void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
-																							key_object cur, uint32_t
-																							nlevels) {
+																							 key_object cur, uint32_t
+																							 nlevels) {
 	uint64_t value;
 	if (cur.count >= threshold_value) {
 		if (anomalies.query_key(cur, &value, QF_KEY_IS_HASH) == 0) {
@@ -626,8 +637,15 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 			cur.count = num_obs_seen;
 			// value 0 means that it is reported through shuffle-merge.
 			cur.value = 0;
+#ifdef VALIDATE
 			if (anomalies.is_full())
 				abort();
+#else
+			if (anomalies.is_full())
+				anomalies.reset();
+			anomaly_log << "Reporting shuffle-merge: " << cur.to_string() <<
+				std::endl;
+#endif
 			anomalies.insert(cur, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 			DEBUG("Reporting shuffle-merge: " << cur.to_string());
 		}
@@ -728,7 +746,7 @@ void CascadeFilter<key_object>::merge() {
 	/* merge nlevels in (nlevels+1)th level. */
 	KeyObject cur_key, next_key;
 	DEBUG("Merging CQFs 0 to " << nlevels - 1 << " into the CQF "
-					 << nlevels);
+				<< nlevels);
 
 	DEBUG("Old CQFs");
 	for (uint32_t i = 0; i <= nlevels; i++) {
@@ -808,7 +826,7 @@ void CascadeFilter<key_object>::shuffle_merge() {
 	DEBUG("Old CQFs");
 	for (uint32_t i = 0; i < nlevels; i++) {
 		DEBUG("CQF " << i << " threshold " << thresholds[i] << " age " <<
-						 (unsigned)ages[i]);
+					(unsigned)ages[i]);
 		filters[i].dump_metadata();
 	}
 
@@ -882,8 +900,15 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 					cur_key.count = num_obs_seen;
 					// value 0 means that it is reported through shuffle-merge.
 					cur_key.value = 0;
+#ifdef VALIDATE
 					if (anomalies.is_full())
 						abort();
+#else
+					if (anomalies.is_full())
+						anomalies.reset();
+					anomaly_log << "Reporting shuffle-merge: " << cur_key.to_string() <<
+						std::endl;
+#endif
 					anomalies.insert(cur_key, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 					DEBUG("Reporting shuffle-merge: " << cur_key.to_string());
 				}
@@ -901,8 +926,15 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 			cur_key.count = num_obs_seen;
 			// value 0 means that it is reported through shuffle-merge.
 			cur_key.value = 0;
+#ifdef VALIDATE
 			if (anomalies.is_full())
 				abort();
+#else
+			if (anomalies.is_full())
+				anomalies.reset();
+			anomaly_log << "Reporting shuffle-merge: " << cur_key.to_string() <<
+				std::endl;
+#endif
 			anomalies.insert(cur_key, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 			DEBUG("Reporting shuffle-merge: " << cur_key.to_string());
 		}
@@ -965,8 +997,15 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 		dup_k.count = num_obs_seen;
 		// value 1 means that it is reported through odp.
 		dup_k.value = 0;
+#ifdef VALIDATE
 		if (anomalies.is_full())
 			abort();
+#else
+		if (anomalies.is_full())
+			anomalies.reset();
+		anomaly_log << "Reporting shuffle-merge: " << dup_k.to_string() <<
+			std::endl;
+#endif
 		anomalies.insert(dup_k, PF_WAIT_FOR_LOCK);
 		DEBUG("Reporting shuffle-merge: " << dup_k.to_string());
 	}
@@ -987,8 +1026,15 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 			// value 1 means that it is reported through odp.
 			dup_k.count = num_obs_seen;
 			dup_k.value = 1;
+#ifdef VALIDATE
 			if (anomalies.is_full())
 				abort();
+#else
+			if (anomalies.is_full())
+				anomalies.reset();
+			anomaly_log << "Reporting shuffle-merge: " << dup_k.to_string() <<
+				std::endl;
+#endif
 			anomalies.insert(dup_k, PF_WAIT_FOR_LOCK);
 			DEBUG("Reporting odp: " << dup_k.to_string());
 		}

@@ -217,8 +217,7 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	popcornfilter::print_time_elapsed("", &start, &end);
 	PRINT("Finished lookups.");
 
-	//pf.print_stats();
-
+#ifdef VALIDATE
 	if (nthreads == 1) {
 		PRINT("Performing validation");
 		if (pf.validate_anomalies(keylifetimes, vals))
@@ -226,8 +225,11 @@ int popcornfilter_main (PopcornFilterOpts opts)
 		else
 			PRINT("Validation failed!");
 	}
+#else
+	pf.find_anomalies();
+#endif
 
-	PRINT("Total number of keys above thrshold: " <<
+	PRINT("Total number of keys above threshold: " <<
 				pf.get_total_keys_above_threshold());
 
 	pf.print_stats();
