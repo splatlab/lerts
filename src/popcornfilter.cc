@@ -125,10 +125,12 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	uint64_t nthreads = opts.nthreads;
 	uint32_t nagebits = opts.nagebits;
 	uint32_t do_odp = opts.do_odp;
+	uint32_t greedy = opts.greedy;
+	uint32_t pinning = opts.pinning;
 	uint32_t threshold_value = opts.threshold_value;
 
 	PopcornFilter<KeyObject> pf(nfilters, qbits, nlevels, gfactor, nagebits,
-															do_odp, threshold_value);
+															do_odp, greedy, pinning, threshold_value);
 
 	uint64_t nvals = 0;
 

@@ -6,6 +6,8 @@
 
 class PopcornFilterOpts {
 	public:
+		int greedy{0};
+		int pinning{0};
 		int nfilters{1};
 		int qbits{16};
 		int nlevels{4};

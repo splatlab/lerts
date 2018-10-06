@@ -55,6 +55,10 @@ main ( int argc, char *argv[] )
 										"do not perform on-demand popcorning. (default is true.)",
 									option("-v", "--threshold_value") & value("threshold_value", pfopt.threshold_value) %
 									"threshold_value  to report. (default is 24)",
+									option("-e", "--greedy-flushing").set(pfopt.greedy, 1) %
+									"greedy flushing optimization. (default is 0)",
+									option("-p", "--pinning").set(pfopt.nagebits, 1) %
+									"pinning optimizations. (default is 0)",
 									option("-i", "--input-file") & value("input_file", pfopt.ip_file) %
 									"input file containing keys and values. (default is generate keys from a Zipfian distribution.)"
 									//option("-h", "--help")      % "show help"

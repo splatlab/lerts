@@ -49,9 +49,9 @@ template <class key_object>
 class CascadeFilter {
 	public:
 		CascadeFilter(uint32_t nkeybits, uint32_t nvaluebits, uint32_t
-									nagebits, bool odp, uint32_t threshold_value, uint32_t
-									filter_thlds[], uint64_t filter_sizes[], uint32_t
-									num_levels, std::string& prefix);
+									nagebits, bool odp, bool greedy, bool pinning, uint32_t
+									threshold_value, uint32_t filter_thlds[], uint64_t
+									filter_sizes[], uint32_t num_levels, std::string& prefix);
 
 		~CascadeFilter();
 
@@ -199,6 +199,8 @@ class CascadeFilter {
 		uint32_t threshold_value;
 		bool odp;
 		bool count_stretch;
+		bool greedy;
+		bool pinning;
 		uint64_t total_anomalies;
 		uint64_t total_reported_shuffle_merge;
 		uint64_t total_reported_odp;
@@ -223,14 +225,15 @@ bool operator!=(const typename CascadeFilter<key_object>::Iterator& a, const
 template <class key_object>
 CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 																				 nvaluebits, uint32_t nagebits, bool
-																				 odp, uint32_t threshold_value,
-																				 uint32_t filter_thlds[],
-																				 uint64_t filter_sizes[], uint32_t
-																				 num_levels, std::string& prefix) :
+																				 odp, bool greedy, bool pinning,
+																				 uint32_t threshold_value, uint32_t
+																				 filter_thlds[], uint64_t
+																				 filter_sizes[], uint32_t num_levels,
+																				 std::string& prefix) :
 	total_num_levels(num_levels), num_key_bits(nhashbits),
 	num_value_bits(nvaluebits + nagebits), num_age_bits(nagebits),
-	threshold_value(threshold_value), odp(odp),
-	prefix(prefix)
+	threshold_value(threshold_value), odp(odp), greedy(greedy),
+	pinning(pinning), prefix(prefix)
 {
 	total_anomalies = total_reported_shuffle_merge = total_reported_odp = 0;
 	if (nagebits)
@@ -494,19 +497,19 @@ bool CascadeFilter<key_object>::is_ram_full() const {
 		if (num_obs_seen % num_obs == 0)
 			return true;
 	} else {
-#ifdef GREEDY
-		if (get_filter(0)->is_full()) {
-			double load_factor = get_filter(0)->occupied_slots() /
-				(double)get_filter(0)->total_slots();
-			DEBUG("Load factor: " << load_factor);
-			return true;
+		if (greedy) {
+			if (get_filter(0)->is_full()) {
+				double load_factor = get_filter(0)->occupied_slots() /
+					(double)get_filter(0)->total_slots();
+				DEBUG("Load factor: " << load_factor);
+				return true;
+			}
+		} else {
+			uint64_t num_obs = get_filter(0)->total_slots();
+			if (num_obs_seen % num_obs == 0) {
+				return true;
+			}
 		}
-#else
-		uint64_t num_obs = get_filter(0)->total_slots();
-		if (num_obs_seen % num_obs == 0) {
-			return true;
-		}
-#endif
 	}
 	return false;
 }
@@ -811,11 +814,10 @@ void CascadeFilter<key_object>::shuffle_merge() {
 			increment_age(i);
 		nlevels += 1;
 	} else {
-#ifdef GREEDY
-		nlevels = find_first_empty_level() + 1;
-#else
-		nlevels = find_levels_to_flush() + 1;
-#endif
+		if (greedy)
+			nlevels = find_first_empty_level() + 1;
+		else
+			nlevels = find_levels_to_flush() + 1;
 	}
 
 	assert(nlevels <= total_num_levels);

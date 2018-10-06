@@ -43,7 +43,7 @@ class PopcornFilter {
 	public:
 		PopcornFilter(uint64_t nfilters, uint32_t qbits, uint32_t
 									nlevels, uint32_t gfactor, uint32_t nagebits, bool do_odp,
-									uint32_t threshold_value);
+									bool greedy, bool pinning, uint32_t threshold_value);
 
 		bool insert(const key_object& k, uint8_t flag);
 
@@ -71,6 +71,8 @@ class PopcornFilter {
 		uint32_t gfactor;
 		uint32_t nagebits;
 		bool odp;
+		bool greedy;
+		bool pinning;
 		uint32_t threshold_value;
 		uint32_t fbits;
 		uint32_t nkeybits;
@@ -101,11 +103,12 @@ class ThreadArgs {
 template <class key_object>
 PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 																				 uint32_t nlevels, uint32_t gfactor,
-																				 uint32_t nagebits, bool do_odp,
-																				 uint32_t threshold_value) :
+																				 uint32_t nagebits, bool do_odp, bool
+																				 greedy,  bool pinning, uint32_t
+																				 threshold_value) :
 	nfilters(nfilters), qbits(qbits), nlevels(nlevels),
-	gfactor(gfactor), nagebits(nagebits), odp(do_odp),
-	threshold_value(threshold_value) {
+	gfactor(gfactor), nagebits(nagebits), odp(do_odp), greedy(greedy),
+	pinning(pinning), threshold_value(threshold_value) {
 		fbits = log2(nfilters); // assuming nfilters is a power of 2.
 		nkeybits = NUM_KEY_BITS - fbits;
 		nvaluebits = NUM_VALUE_BITS;
@@ -153,9 +156,10 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 							 " as growth factor.");
 			std::string prefix = "logs/" + std::to_string(i) + "_";
 			cf.emplace_back(new CascadeFilter<KeyObject>(nkeybits, nvaluebits,
-																									 nagebits, odp,
-																									 threshold_value, thlds,
-																									 sizes, nlevels, prefix));
+																									 nagebits, odp, greedy,
+																									 pinning, threshold_value,
+																									 thlds, sizes, nlevels,
+																									 prefix));
 		}
 	}
 
