@@ -294,6 +294,7 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 		std::string file_ext("_cqf.ser");
 		std::string file = prefix + std::to_string(i) + file_ext;
 		// We use an extra bit for the pinning optimization.
+		// We use the lower-order bit to store the pinning value.
 		if (pinning)
 			num_value_bits++;
 		filters[i] = CQF<key_object>(sizes[i], num_key_bits, num_value_bits,
@@ -614,32 +615,49 @@ bool CascadeFilter<key_object>::is_aged(const key_object k) const {
 template <class key_object>
 void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 																							key_object k, uint32_t nlevels) {
-	for (int32_t i = nlevels; i > 0; i--) {
-		if (k.count >= thresholds[i]) {
-			key_object cur(k.key, k.value, thresholds[i], 0);
-			qf_arr[i].insert(cur, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
-			k.count -= thresholds[i];
-		} else {
-			if (max_age) {
-				uint64_t value;
-				uint64_t cur_count = filters[i].query_key(k, &value, QF_KEY_IS_HASH);
-				// reset the value bits of the key.
-				k.value = k.value & ~BITMASK(num_age_bits);
-				if (cur_count) { // if key is already present then use the existing age.
-					uint8_t cur_age = value & BITMASK(num_age_bits);
-					k.value = k.value | cur_age;
-				} else {	// assign the age based on the current num_flush of the level
-					k.value = k.value | ages[i];
-				}
-			}
-			qf_arr[i].insert(k, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
-			k.count = 0;
-			break;
+	if (pinning) {
+		uint64_t count = k.count;
+		int32_t i = 0;
+		// Find the highest level where the key is supposed to be inserted.
+		for (i = nlevels; i > 0; i--) {
+			if (count >= thresholds[i])
+				count -= thresholds[i];
 		}
+		uint32_t final_level = 0;
+		if (count > 0)
+			final_level = 0;
+		else
+			final_level = i;
+		k.value = k.value | 1;	// set the pinning bit.
+		qf_arr[final_level].insert(k, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
+	} else {
+		for (int32_t i = nlevels; i > 0; i--) {
+			if (k.count >= thresholds[i]) {
+				key_object cur(k.key, k.value, thresholds[i], 0);
+				qf_arr[i].insert(cur, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
+				k.count -= thresholds[i];
+			} else {
+				if (max_age) {
+					uint64_t value;
+					uint64_t cur_count = filters[i].query_key(k, &value, QF_KEY_IS_HASH);
+					// reset the value bits of the key.
+					k.value = k.value & ~BITMASK(num_age_bits);
+					if (cur_count) { // if key is already present then use the existing age.
+						uint8_t cur_age = value & BITMASK(num_age_bits);
+						k.value = k.value | cur_age;
+					} else {	// assign the age based on the current num_flush of the level
+						k.value = k.value | ages[i];
+					}
+				}
+				qf_arr[i].insert(k, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
+				k.count = 0;
+				break;
+			}
+		}
+		/* If some observations are left then insert them in the first level. */
+		if (k.count > 0)
+			qf_arr[0].insert(k, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 	}
-	/* If some observations are left then insert them in the first level. */
-	if (k.count > 0)
-		qf_arr[0].insert(k, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 }
 
 template <class key_object>
@@ -983,12 +1001,16 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 	key_object dup_k(k);
 	// Get the current RAM count/age of the key.
 	uint64_t ram_count = filters[0].query_key(dup_k, &value, 0);
+	// Check if the pinning is enabled and the pinning bit is set in RAM level.
+	bool final_count{false};
+	if (pinning && value  == 1)
+		final_count = true;
 
 	// This code is for the time-stretch case.
 	/* use lower-order bits to store the age. */
 	if (max_age) {
 		dup_k.value *= max_age;	// We shift the value to store age in lower bits.
-		if (ram_count) { // if key is already present then use the exisiting age.
+		if (ram_count) { // if key is already present then use the existing age.
 			uint8_t cur_age = value & BITMASK(num_age_bits);
 			dup_k.value = dup_k.value | cur_age;
 		} else // else we use the current age of the level.
@@ -1035,12 +1057,12 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 
 	// This code is for the immediate reporting case.
 	// If the count of the key is equal to "threshold_value -
-	// TOTAL_DISK_THRESHOLD" then we will
-	// have to perform an on-demand poprorn.
+	// TOTAL_DISK_THRESHOLD" and that's not the final count (i.e., key is not
+	// pinned in RAM) then we will have to perform an on-demand poprorn.
 	//
 	// We will not remove the key if it has been seen THRESHOLD times.
 	// The key will be removed in the next shuffle merge.
-	if (odp && ram_count >= popcorn_threshold &&
+	if (odp && ram_count >= popcorn_threshold && !final_count &&
 			anomalies.query_key(dup_k, &value, 0) == 0) {
 		uint64_t aggr_count;
 		aggr_count = ondisk_count(dup_k) + ram_count;
@@ -1092,6 +1114,9 @@ uint64_t CascadeFilter<key_object>::ondisk_count(key_object k) const {
 	uint64_t count = 0;
 	for (uint32_t i = 1; i < total_num_levels; i++) {
 		count += filters[i].query_key(k, &value, 0);
+		// if pinning is enabled and the key is pinned.
+		if (pinning && value == 1)
+			break;
 	}
 	return count;
 }
