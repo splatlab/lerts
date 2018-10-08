@@ -452,28 +452,32 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 	} else if (count_stretch) {
 		result.open("raw/count-stretch.data");
 		//result << "x_0 y_0 y_1 y_2" << std::endl;
-		result << "Key Inex-0 Index-2 Lifetime ReportCount Stretch" << std::endl;
+		result << "Key Inex-0 Index-2 Lifetime ReportCount Stretch TimeStretch" << std::endl;
 		// for count stretch the count stored with keys in anomalies is the actual
 		// count at the time of reporting.
 		for (auto it : key_lifetime) {
 			if (it.second.first < it.second.second) {
 				uint64_t value;
 				key_object k(it.first, 0, 0, 0);
-				uint64_t reporttime = anomalies.query_key(k, &value, 0);
+				uint64_t reportindex = anomalies.query_key(k, &value, 0);
 				uint64_t reportcount = popcornfilter::actual_count_at_index(vals,
 																																		it.first,
-																																		reporttime);
+																																		reportindex);
 				if (reportcount > threshold_value * 2) {
 					PRINT("Count stretch reporting failed Key: " << it.first <<
 								" Reporting count " << reportcount);
 					failures++;
 				}
+				uint64_t lifetime = it.second.second - it.second.first;
+				uint64_t reporttime = anomalies.query_key(k, &value, 0) -
+					it.second.first;
 				//result << idx++ << " " << threshold_value << " " << reportcount << " "
 				//<< threshold_value * 2 << std::endl;
 				result << it.first << " " << it.second.first << " " << it.second.second
 					<< " " << (it.second.second - it.second.first) << " " <<
 					reportcount << " " <<
-					reportcount/(double)threshold_value << std::endl;
+					reportcount/(double)threshold_value << " " <<
+					reporttime/(double)lifetime << std::endl;
 			}
 		}
 	} else {

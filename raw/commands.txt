@@ -1,30 +1,32 @@
 #time-stretch filter
-./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 1 -o -v 24 -i raw/streamdump_active50M
-./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 2 -o -v 24 -i raw/streamdump_active50M
-./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 4 -o -v 24 -i raw/streamdump_active50M
+./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 1 -o -v 24 -i raw/streamdump_mmap_active_50M
+./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 2 -o -v 24 -i raw/streamdump_mmap_active_50M
+./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 4 -o -v 24 -i raw/streamdump_mmap_active_50M
 
-./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 1 -o -v 24 -i raw/streamdump_powerlaw50M
-./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 2 -o -v 24 -i raw/streamdump_powerlaw50M
-./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 4 -o -v 24 -i raw/streamdump_powerlaw50M
+./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 1 -o -v 24 -i raw/streamdump_mmap_powerlaw_50M
+./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 2 -o -v 24 -i raw/streamdump_mmap_powerlaw_50M
+./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 4 -o -v 24 -i raw/streamdump_mmap_powerlaw_50M
 
-./main popcornfilter -f 1 -q 21 -l 3 -g 4 -t 1 -a 1 -o -v 24 -i raw/streamdump_active50M
-./main popcornfilter -f 1 -q 21 -l 3 -g 4 -t 1 -a 2 -o -v 24 -i raw/streamdump_active50M
-./main popcornfilter -f 1 -q 21 -l 3 -g 4 -t 1 -a 4 -o -v 24 -i raw/streamdump_active50M
+./main popcornfilter -f 1 -q 21 -l 3 -g 4 -t 1 -a 1 -o -v 24 -i raw/streamdump_mmap_active_50M
+./main popcornfilter -f 1 -q 21 -l 3 -g 4 -t 1 -a 2 -o -v 24 -i raw/streamdump_mmap_active_50M
+./main popcornfilter -f 1 -q 21 -l 3 -g 4 -t 1 -a 4 -o -v 24 -i raw/streamdump_mmap_active_50M
+
+./main popcornfilter -f 1 -q 20 -l 3 -g 4 -t 1 -a 1 -o -v 24 -i raw/streamdump_mmap_powerlaw_50M
 
 #time-stretch filter tests
 ./main popcornfilter -f 1 -q 21 -l 3 -g 2 -t 1 -a 1 -o -v 24 -i raw/streamdump_mmap_active_10M
 ./main popcornfilter -f 1 -q 20 -l 3 -g 2 -t 1 -a 1 -o -v 24 -i raw/streamdump_mmap_active_5M
 
 #count-stretch filter
-./main popcornfilter -f 1 -q 21 -l 3 -g 4 -t 1 -o -v 24 -i raw/streamdump_active50M
-./main popcornfilter -f 1 -q 20 -l 3 -g 4 -t 1 -o -v 24 -i raw/streamdump_powerlaw50M
-./main popcornfilter -f 1 -q 18 -l 4 -g 4 -t 1 -o -v 24 -i raw/streamdump_powerlaw50M
-./main popcornfilter -f 1 -q 16 -l 5 -g 4 -t 1 -o -v 24 -i raw/streamdump_powerlaw50M
+./main popcornfilter -f 1 -q 21 -l 3 -g 4 -t 1 -o -v 24 -i raw/streamdump_mmap_active_50M
+./main popcornfilter -f 1 -q 20 -l 3 -g 4 -t 1 -o -v 24 -i raw/streamdump_mmap_powerlaw_50M
+./main popcornfilter -f 1 -q 18 -l 4 -g 4 -t 1 -o -v 24 -i raw/streamdump_mmap_powerlaw_50M
+./main popcornfilter -f 1 -q 16 -l 5 -g 4 -t 1 -o -v 24 -i raw/streamdump_mmap_powerlaw_50M
 
 #popcorn filter on-demand popcorning
-./main popcornfilter -f 1 -q 24 -l 3 -g 4 -t 1 -v 24 -i raw/streamdump_powerlaw500M
-./main popcornfilter -f 1 -q 22 -l 4 -g 4 -t 1 -v 24 -i raw/streamdump_powerlaw500M
-./main popcornfilter -f 1 -q 20 -l 5 -g 4 -t 1 -v 24 -i raw/streamdump_powerlaw500M
+./main popcornfilter -f 1 -q 24 -l 3 -g 4 -t 1 -v 24 -i raw/streamdump_mmap_powerlaw_500M
+./main popcornfilter -f 1 -q 22 -l 4 -g 4 -t 1 -v 24 -i raw/streamdump_mmap_powerlaw_500M
+./main popcornfilter -f 1 -q 20 -l 5 -g 4 -t 1 -v 24 -i raw/streamdump_mmap_powerlaw_500M
 
 #creating plots from raw data
 cat raw/time-stretch.data | awk '{print $4","$6}' | tail -n +3 > raw/stretch && ./plot.py raw/stretch
