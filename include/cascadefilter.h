@@ -293,6 +293,9 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 					" slots and threshold " << thresholds[i]);
 		std::string file_ext("_cqf.ser");
 		std::string file = prefix + std::to_string(i) + file_ext;
+		// We use an extra bit for the pinning optimization.
+		if (pinning)
+			num_value_bits++;
 		filters[i] = CQF<key_object>(sizes[i], num_key_bits, num_value_bits,
 																 QF_HASH_INVERTIBLE, seed, file);
 	}
@@ -622,10 +625,10 @@ void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 				uint64_t cur_count = filters[i].query_key(k, &value, QF_KEY_IS_HASH);
 				// reset the value bits of the key.
 				k.value = k.value & ~BITMASK(num_age_bits);
-				if (cur_count) { // if key is already present then use the exisiting age.
+				if (cur_count) { // if key is already present then use the existing age.
 					uint8_t cur_age = value & BITMASK(num_age_bits);
 					k.value = k.value | cur_age;
-				} else {	// assign the age based in the current num_flush of the level
+				} else {	// assign the age based on the current num_flush of the level
 					k.value = k.value | ages[i];
 				}
 			}

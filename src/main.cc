@@ -37,6 +37,14 @@ main ( int argc, char *argv[] )
 	PopcornFilterOpts pfopt;
 	pfopt.console = console;
 
+	auto enusure_opt_count_stretch = [](const PopcornFilterOpts pfopt) -> bool {
+		if (pfopt.nagebits > 0 && (pfopt.greedy == 1  || pfopt.pinning == 1)) {
+			std::string e = "Optimizations can only be specified for the count-stretch filter";
+			throw std::runtime_error{e};
+		}
+		return true;
+	};
+
 	auto bm_pf_mode = (
 									command("popcornfilter").set(selected, mode::bm_pf),
 									required("-f", "--filters") & value("num_filters", pfopt.nfilters) %
@@ -57,7 +65,7 @@ main ( int argc, char *argv[] )
 									"threshold_value  to report. (default is 24)",
 									option("-e", "--greedy-flushing").set(pfopt.greedy, 1) %
 									"greedy flushing optimization. (default is 0)",
-									option("-p", "--pinning").set(pfopt.nagebits, 1) %
+									option("-p", "--pinning").set(pfopt.pinning, 1) %
 									"pinning optimizations. (default is 0)",
 									option("-i", "--input-file") & value("input_file", pfopt.ip_file) %
 									"input file containing keys and values. (default is generate keys from a Zipfian distribution.)"
@@ -83,7 +91,18 @@ main ( int argc, char *argv[] )
 
 	if(res) {
 		switch(selected) {
-			case mode::bm_pf: popcornfilter_main(pfopt);  break;
+			case mode::bm_pf:
+				try {
+					enusure_opt_count_stretch(pfopt);
+				} catch (std::exception& e) {
+					std::cout << "\n\nParsing command line failed with exception: " <<
+						e.what() << "\n";
+					std::cout << "\n\n";
+					std::cout << make_man_page(cli, "main");
+					return 1;
+				}
+				popcornfilter_main(pfopt);
+				break;
 			case mode::help: std::cout << make_man_page(cli, "main"); break;
 		}
 	} else {
