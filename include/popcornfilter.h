@@ -133,9 +133,10 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 			for (uint32_t i = 0; i < nlevels; i++)
 				thlds[i] = UINT32_MAX;
 		} else {
+			/* tau_l = r^(1/(theta-1)).*/
 			thlds[nlevels - 1] = floor(pow(gfactor, 2/3.0));
 			uint32_t j = 1;
-			/* taus grow with r^0.5. */
+			/* taus grow with r^(1/(theta-1)). */
 			uint32_t tau_ratio = thlds[nlevels - 1];
 			uint32_t total_ondisk_tau = 1;
 			for (int32_t i = nlevels - 2; i > 0; i--, j++) {
