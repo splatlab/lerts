@@ -17,7 +17,7 @@
 #include <fstream>
 #include <unordered_map>
 
-#ifdef DEBUG
+#ifdef DEBUG_MODE
 #define PRINT_DEBUG 1
 #else
 #define PRINT_DEBUG 0

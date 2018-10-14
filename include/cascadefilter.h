@@ -286,6 +286,8 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 		popcorn_threshold = threshold_value - sum_disk_threshold;
 	}
 
+	if (pinning)
+		num_value_bits++;
 	/* Initialize all the filters. */
 	//TODO: (prashant) Maybe make this a lazy initilization.
 	for (uint32_t i = 0; i < total_num_levels; i++) {
@@ -295,8 +297,6 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 		std::string file = prefix + std::to_string(i) + file_ext;
 		// We use an extra bit for the pinning optimization.
 		// We use the lower-order bit to store the pinning value.
-		if (pinning)
-			num_value_bits++;
 		filters[i] = CQF<key_object>(sizes[i], num_key_bits, num_value_bits,
 																 QF_HASH_INVERTIBLE, seed, file);
 	}
@@ -401,13 +401,12 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 	anomalies.dump_metadata();
 
 	//PRINT("Number of keys above threshold: " << get_num_keys_above_threshold());
-	uint64_t idx = 0;
 	if (max_age) {
 		result.open("raw/time-stretch.data");
 		//result << "x_0 y_0 y_1 y_2" << std::endl;
 		double stretch = 1 + 1 / (float)num_age_bits;
 		result << "Maximum allowed stretch: " << stretch << std::endl;
-		result << "Key Inex-0 Index-2 Lifetime ReportIndex Stretch" << std::endl;
+		result << "Key Index-0 Index-T Lifetime ReportIndex Stretch" << std::endl;
 		for (auto it : key_lifetime) {
 			if (it.second.first < it.second.second) {
 				uint64_t value;
@@ -433,10 +432,10 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 		}
 	} else if (odp) {
 		result.open("raw/immediate-reporting.data");
-		result << "x_0 y_0 y_1" << std::endl;
+		result << "odp Index-T Report index" << std::endl;
 		for (auto it : key_lifetime) {
 			if (it.second.first < it.second.second) {
-				uint64_t value;
+				uint64_t value = 0;
 				key_object k(it.first, 0, 0, 0);
 				uint64_t reportindex = anomalies.query_key(k, &value, 0);
 				if (reportindex != it.second.second) {
@@ -445,14 +444,14 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 								<< reportindex);
 					failures++;
 				}
-				result << idx++ << " " << it.second.second << " " << reportindex <<
+				result << value << " " << it.second.second << " " << reportindex <<
 					std::endl;
 			}
 		}
 	} else if (count_stretch) {
 		result.open("raw/count-stretch.data");
 		//result << "x_0 y_0 y_1 y_2" << std::endl;
-		result << "Key Inex-0 Index-2 Lifetime ReportCount Stretch TimeStretch" << std::endl;
+		result << "Key Index-0 Index-T Lifetime ReportCount Stretch TimeStretch" << std::endl;
 		// for count stretch the count stored with keys in anomalies is the actual
 		// count at the time of reporting.
 		for (auto it : key_lifetime) {
@@ -622,15 +621,18 @@ void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 	if (pinning) {
 		uint64_t count = k.count;
 		int32_t i = 0;
+		uint32_t final_level = 0;
 		// Find the highest level where the key is supposed to be inserted.
 		for (i = nlevels; i > 0; i--) {
-			if (count >= thresholds[i])
+			if (count >= thresholds[i]) {
 				count -= thresholds[i];
+				if (count == 0)
+					final_level = i;
+			}
+			else
+				break;
 		}
-		uint32_t final_level = 0;
 		if (count > 0)
-			final_level = 0;
-		else
 			final_level = i;
 		k.value = k.value | 1;	// set the pinning bit.
 		qf_arr[final_level].insert(k, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
@@ -994,7 +996,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 	num_obs_seen = obs_cnt;
 	perform_shuffle_merge_if_needed();
 
-	uint64_t value;
+	uint64_t value = 0;
 	// if the key is already reported then don't insert.
 	if (anomalies.query_key(k, &value, 0)) {
 		if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
@@ -1004,10 +1006,11 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 
 	key_object dup_k(k);
 	// Get the current RAM count/age of the key.
+	value = 0;		// reset value to reuse it.
 	uint64_t ram_count = filters[0].query_key(dup_k, &value, 0);
 	// Check if the pinning is enabled and the pinning bit is set in RAM level.
 	bool final_count{false};
-	if (pinning && value  == 1)
+	if (pinning && (value & 1)  == 1)
 		final_count = true;
 
 	// This code is for the time-stretch case.
@@ -1114,7 +1117,7 @@ bool CascadeFilter<key_object>::remove(const key_object& k, uint8_t flag) {
 
 template <class key_object>
 uint64_t CascadeFilter<key_object>::ondisk_count(key_object k) const {
-	uint64_t value;
+	uint64_t value = 0;
 	uint64_t count = 0;
 	for (uint32_t i = 1; i < total_num_levels; i++) {
 		count += filters[i].query_key(k, &value, 0);

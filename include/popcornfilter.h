@@ -124,6 +124,11 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 			PRINT("Creating a count-stretch filter.");
 		/* level sizes grow by a factor "r". */
 
+		if (greedy)
+			PRINT("Using greedy optimization.");
+		if (pinning)
+			PRINT("Using count aggregation optimization.");
+
 		sizes[0] = (1ULL << qbits);
 		for (uint32_t i = 1; i < nlevels; i++)
 			sizes[i] = pow(gfactor, i) * sizes[0];

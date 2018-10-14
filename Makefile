@@ -1,7 +1,7 @@
 TARGETS=main streamanalysis
 
 ifdef D
-	DEBUG=-g -DDEBUG
+	DEBUG=-g -DDEBUG_MODE
 	OPT=
 else
 	DEBUG=
