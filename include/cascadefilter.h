@@ -1010,8 +1010,11 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 	uint64_t ram_count = filters[0].query_key(dup_k, &value, 0);
 	// Check if the pinning is enabled and the pinning bit is set in RAM level.
 	bool final_count{false};
-	if (pinning && (value & 1)  == 1)
+	if (pinning && (value & 1)  == 1) {
 		final_count = true;
+		/* use lower-order bits to store the pinning bit. */
+		dup_k.value = dup_k.value | 1;
+	}
 
 	// This code is for the time-stretch case.
 	/* use lower-order bits to store the age. */
