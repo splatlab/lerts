@@ -618,7 +618,12 @@ bool CascadeFilter<key_object>::is_aged(const key_object k) const {
 template <class key_object>
 void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 																							key_object k, uint32_t nlevels) {
-	if (pinning) {
+	// We use the pinning optimization in two cases:
+	// 1. If the pinning optimization is on and:
+	//     1. If all the levels are involved in the shuffle-merge
+	//     2. If the last level involved in the shuffle-merge has the absolute
+	//     count of the key.
+	if (pinning && (nlevels == total_num_levels - 1 || (k.value & 1) == 1)) {
 		uint64_t count = k.count;
 		int32_t i = 0;
 		uint32_t final_level = 0;
@@ -626,8 +631,10 @@ void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 		for (i = nlevels; i > 0; i--) {
 			if (count >= thresholds[i]) {
 				count -= thresholds[i];
-				if (count == 0)
+				if (count == 0) {
 					final_level = i;
+					break;
+				}
 			}
 			else
 				break;
