@@ -432,7 +432,7 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 		}
 	} else if (odp) {
 		result.open("raw/immediate-reporting.data");
-		result << "odp Index-T Report index" << std::endl;
+		result << "key odp Index-T Report index" << std::endl;
 		for (auto it : key_lifetime) {
 			if (it.second.first < it.second.second) {
 				uint64_t value = 0;
@@ -444,8 +444,8 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 								<< reportindex);
 					failures++;
 				}
-				result << value << " " << it.second.second << " " << reportindex <<
-					std::endl;
+				result << it.first << " " <<  value << " " << it.second.second << " "
+					<< reportindex << std::endl;
 			}
 		}
 	} else if (count_stretch) {
@@ -1087,7 +1087,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 #else
 			if (anomalies.is_full())
 				anomalies.reset();
-			anomaly_log << "Reporting shuffle-merge: " << dup_k.to_string() <<
+			anomaly_log << "Reporting odp: " << dup_k.to_string() <<
 				std::endl;
 #endif
 			anomalies.insert(dup_k, PF_WAIT_FOR_LOCK);
@@ -1125,7 +1125,7 @@ uint64_t CascadeFilter<key_object>::ondisk_count(key_object k) const {
 	for (uint32_t i = 1; i < total_num_levels; i++) {
 		count += filters[i].query_key(k, &value, 0);
 		// if pinning is enabled and the key is pinned.
-		if (pinning && value == 1)
+		if (pinning && (value & 1)  == 1)
 			break;
 	}
 	return count;
