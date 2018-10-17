@@ -71,7 +71,7 @@ void *thread_insert(void *a) {
 			}
 		}
 	}
-	/* Finally dump the anything left in the buffer. */
+	/* Finally dump anything left in the buffer. */
 	if (buffer.total_elts() > 0) {
 		PRINT("Dumping buffer final time.");
 		typename CQF<KeyObject>::Iterator it = buffer.begin();
