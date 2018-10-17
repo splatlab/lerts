@@ -63,6 +63,7 @@ class CascadeFilter {
 		uint64_t get_num_dist_elements(void) const;
 		uint32_t get_num_key_bits(void) const;
 		uint32_t get_num_value_bits(void) const;
+		uint32_t get_num_age_bits(void) const;
 		uint32_t get_seed(void) const;
 		uint64_t get_max_size(void) const;
 
@@ -320,6 +321,11 @@ uint32_t CascadeFilter<key_object>::get_num_key_bits(void) const {
 template <class key_object>
 uint32_t CascadeFilter<key_object>::get_num_value_bits(void) const {
 	return num_value_bits;
+}
+
+template <class key_object>
+uint32_t CascadeFilter<key_object>::get_num_age_bits(void) const {
+	return num_age_bits;
 }
 
 template <class key_object>
@@ -931,6 +937,7 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 	cur_key = *it;
 	++it;
 
+	DEBUG("Finding anomalies final time.");
 	uint64_t value;
 	while(!it.done()) {
 		next_key = *it;
@@ -1081,8 +1088,9 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 	// The key will be removed in the next shuffle merge.
 	if (odp && ram_count >= popcorn_threshold && !final_count &&
 			anomalies.query_key(dup_k, &value, 0) == 0) {
-		uint64_t aggr_count;
-		aggr_count = ondisk_count(dup_k) + ram_count;
+		uint64_t aggr_count = 0, ondisk_cnt = 0;
+		ondisk_cnt = ondisk_count(dup_k);
+		aggr_count = ondisk_cnt + ram_count;
 		if (aggr_count == threshold_value) {
 			// count in the index at which the key is reported.
 			// value 1 means that it is reported through odp.
@@ -1101,6 +1109,16 @@ bool CascadeFilter<key_object>::insert(const key_object& k,
 			DEBUG("Reporting odp: " << dup_k.to_string());
 			total_anomalies++;
 			total_reported_odp++;
+		} else {
+			if (!pinning) {
+				dup_k.count = ondisk_cnt;
+				cqf_ret = filters[0].insert(dup_k, PF_WAIT_FOR_LOCK);
+				if (cqf_ret < 0)
+					ret = false;
+				else
+					ret = true;
+			}
+			// TODO: Handle pinning case
 		}
 	}
 

@@ -40,7 +40,8 @@ void *thread_insert(void *a) {
 	ThreadArgs<KeyObject> *args = (ThreadArgs<KeyObject>*)a;
 
 	CQF<KeyObject> buffer(BUFFER_SIZE, args->pf->get_num_key_bits(),
-												args->pf->get_num_value_bits(), QF_HASH_DEFAULT,
+												args->pf->get_num_value_bits() +
+												args->pf->get_num_age_bits(), QF_HASH_INVERTIBLE,
 												args->pf->get_seed());
 
 	/* First try and insert the key-value pair in the cascade filter. If the
@@ -51,6 +52,7 @@ void *thread_insert(void *a) {
 		uint64_t key = args->vals[i];
 		if (!args->pf->insert(KeyObject(key, 0, 1, 0),
 													PF_TRY_ONCE_LOCK)) {
+			DEBUG("Inserting in the buffer.");
 			buffer.insert(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
 			double load_factor = buffer.occupied_slots() /
 				(double)buffer.total_slots();
@@ -59,7 +61,7 @@ void *thread_insert(void *a) {
 				typename CQF<KeyObject>::Iterator it = buffer.begin();
 				do {
 					KeyObject key = *it;
-					if (!args->pf->insert(key, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH)) {
+					if (!args->pf->insert(key, PF_WAIT_FOR_LOCK)) {
 						std::cerr << "Failed insertion for " << (uint64_t)key.key <<
 							std::endl;
 						abort();
@@ -72,11 +74,12 @@ void *thread_insert(void *a) {
 	}
 	/* Finally dump the anything left in the buffer. */
 	if (buffer.total_elts() > 0) {
-		DEBUG("Dumping buffer final time.");
+		PRINT("Dumping buffer final time.");
 		typename CQF<KeyObject>::Iterator it = buffer.begin();
 		do {
 			KeyObject key = *it;
-			if (!args->pf->insert(key, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH)) {
+			//PRINT("Inserting key " + key.to_string());
+			if (!args->pf->insert(key, PF_WAIT_FOR_LOCK)) {
 				std::cerr << "Failed insertion for " << (uint64_t)key.key << std::endl;
 				abort();
 			}

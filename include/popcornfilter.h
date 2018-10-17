@@ -52,6 +52,7 @@ class PopcornFilter {
 		uint64_t get_total_keys_above_threshold(void) const;
 		uint32_t get_num_key_bits(void) const;
 		uint32_t get_num_value_bits(void) const;
+		uint32_t get_num_age_bits(void) const;
 		uint32_t get_seed(void) const;
 		__uint128_t get_range(void) const;
 		uint64_t get_max_size(void) const;
@@ -176,6 +177,11 @@ uint32_t PopcornFilter<key_object>::get_num_key_bits(void) const {
 template <class key_object>
 uint32_t PopcornFilter<key_object>::get_num_value_bits(void) const {
 	return cf[0]->get_num_value_bits();
+}
+
+template <class key_object>
+uint32_t PopcornFilter<key_object>::get_num_age_bits(void) const {
+	return cf[0]->get_num_age_bits();
 }
 
 template <class key_object>
