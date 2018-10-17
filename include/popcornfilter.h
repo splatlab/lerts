@@ -50,6 +50,7 @@ class PopcornFilter {
 		uint64_t query(const key_object& k, uint8_t flag);
 
 		uint64_t get_total_keys_above_threshold(void) const;
+		uint32_t get_total_key_bits(void) const;
 		uint32_t get_num_key_bits(void) const;
 		uint32_t get_num_value_bits(void) const;
 		uint32_t get_num_age_bits(void) const;
@@ -166,6 +167,11 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 																									 prefix));
 		}
 	}
+
+template <class key_object>
+uint32_t PopcornFilter<key_object>::get_total_key_bits(void) const {
+	return cf[0]->get_num_key_bits() + fbits;
+}
 
 template <class key_object>
 uint32_t PopcornFilter<key_object>::get_num_key_bits(void) const {

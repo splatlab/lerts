@@ -39,7 +39,7 @@
 void *thread_insert(void *a) {
 	ThreadArgs<KeyObject> *args = (ThreadArgs<KeyObject>*)a;
 
-	CQF<KeyObject> buffer(BUFFER_SIZE, args->pf->get_num_key_bits(),
+	CQF<KeyObject> buffer(BUFFER_SIZE, args->pf->get_total_key_bits(),
 												args->pf->get_num_value_bits(), QF_HASH_INVERTIBLE,
 												args->pf->get_seed());
 
@@ -209,7 +209,7 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	//PRINT("Total distinct elements inserted: " <<
 				//pf.get_total_dist_elements());
 
-#ifdef VALIDATE
+//#ifdef VALIDATE
 	PRINT("Querying elements.");
 	gettimeofday(&start, &tzp);
 	for (uint64_t k = 0; k < nvals; k++) {
@@ -223,7 +223,7 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	gettimeofday(&end, &tzp);
 	popcornfilter::print_time_elapsed("", &start, &end);
 	PRINT("Finished lookups.");
-#endif
+//#endif
 
 #ifdef VALIDATE
 	if (nthreads == 1) {
