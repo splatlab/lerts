@@ -40,8 +40,7 @@ void *thread_insert(void *a) {
 	ThreadArgs<KeyObject> *args = (ThreadArgs<KeyObject>*)a;
 
 	CQF<KeyObject> buffer(BUFFER_SIZE, args->pf->get_num_key_bits(),
-												args->pf->get_num_value_bits() +
-												args->pf->get_num_age_bits(), QF_HASH_INVERTIBLE,
+												args->pf->get_num_value_bits(), QF_HASH_INVERTIBLE,
 												args->pf->get_seed());
 
 	/* First try and insert the key-value pair in the cascade filter. If the
