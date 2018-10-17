@@ -216,7 +216,7 @@ int popcornfilter_main (PopcornFilterOpts opts)
 		uint64_t key = vals[k];
 		if (pf.query(KeyObject(key, 0, 0, 0), PF_WAIT_FOR_LOCK) < 1) {
 			std::cerr << "Failed lookup for " <<
-				(uint64_t)vals[k] << " " << k << " " << nvals << std::endl;
+				(uint64_t)vals[k] << " index: " << k << std::endl;
 			abort();
 		}
 	}

@@ -78,7 +78,6 @@ class PopcornFilter {
 		uint32_t fbits;
 		uint32_t nkeybits;
 		uint32_t nvaluebits;
-		uint64_t num_obs_seen;
 		LightweightLock pf_lw_lock;
 		std::vector<CascadeFilter<key_object>*> cf;
 };
@@ -113,7 +112,6 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 		fbits = log2(nfilters); // assuming nfilters is a power of 2.
 		nkeybits = NUM_KEY_BITS - fbits;
 		nvaluebits = NUM_VALUE_BITS;
-		num_obs_seen = 0;
 		uint64_t sizes[nlevels];
 		uint32_t thlds[nlevels];
 
@@ -233,15 +231,9 @@ bool PopcornFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 
 	uint32_t filter_idx = 0;
 	if (fbits > 0)
-		filter_idx = dup_k.key >> nkeybits;
+		filter_idx = (dup_k.key >> nkeybits) & BITMASK(fbits);
 	dup_k.key = dup_k.key & BITMASK(nkeybits);
-	ret = cf[filter_idx]->insert(dup_k, num_obs_seen, flag);
-
-	if (ret) {
-		pf_lw_lock.lock(PF_WAIT_FOR_LOCK);
-		num_obs_seen += dup_k.count;
-		pf_lw_lock.unlock();
-	}
+	ret = cf[filter_idx]->insert(dup_k, flag);
 
 	return ret;
 }
@@ -254,7 +246,7 @@ uint64_t PopcornFilter<key_object>::query(const key_object& k, uint8_t flag)
 
 	uint32_t filter_idx = 0;
 	if (fbits > 0)
-		filter_idx = dup_k.key >> nkeybits;
+		filter_idx = (dup_k.key >> nkeybits) & BITMASK(fbits);
 	dup_k.key = dup_k.key & BITMASK(nkeybits);
 	count = cf[filter_idx]->count_key_value(dup_k, flag);
 
