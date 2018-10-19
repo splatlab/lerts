@@ -1948,6 +1948,11 @@ int qf_insert(QF *qf, uint64_t key, uint64_t value, uint64_t count, uint8_t
 	else
 		ret = insert(qf, hash, count, flags);
 
+	if (ret == QF_NO_SPACE || ret > DISTANCE_FROM_HOME_SLOT_CUTOFF) {
+		fprintf(stderr, "The CQF is too full. Please resize.\n");
+		return QF_NO_SPACE;
+	}
+
 	/* pp: don't need resizing in popcornfilter. */
 	// check for fullness based on the distance from the home slot to the slot
 	// in which the key is inserted
