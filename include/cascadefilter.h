@@ -656,11 +656,12 @@ void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 		if (count > 0)
 			final_level = i;
 		k.value = k.value | 1;	// set the absolute count bit.
+		k.level = final_level;
 		qf_arr[final_level].insert(k, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 	} else {
 		for (int32_t i = nlevels; i > 0; i--) {
 			if (k.count >= thresholds[i]) {
-				key_object cur(k.key, k.value, thresholds[i], 0);
+				key_object cur(k.key, k.value, thresholds[i], i);
 				qf_arr[i].insert(cur, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 				k.count -= thresholds[i];
 			} else {
@@ -676,14 +677,17 @@ void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 						k.value = k.value | ages[i];
 					}
 				}
+				k.level = i;
 				qf_arr[i].insert(k, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 				k.count = 0;
 				break;
 			}
 		}
 		/* If some observations are left then insert them in the first level. */
-		if (k.count > 0)
+		if (k.count > 0) {
+			k.level = 0;
 			qf_arr[0].insert(k, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
+		}
 	}
 }
 
@@ -907,9 +911,7 @@ void CascadeFilter<key_object>::shuffle_merge() {
 		if (cur_key == next_key) {
 			// check if the absolute bit is 0.
 			// Aggregate count if the absolute count bit is not set.
-			if ((next_key.value & 1) == 1) {
-				cur_key = next_key;
-			} else if ((next_key.value & 1) == 0 && (cur_key.value & 1) == 0) {
+			if (!odp || (odp && (cur_key.value & 1) == 0)) {
 				cur_key.count += next_key.count;
 				cur_key.value = next_key.value;
 				cur_key.level = next_key.level;
@@ -1042,7 +1044,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 	bool absolute_count{false};
 	// Check if the absolute count is enabled
 	// If it's set then the RAM count is the absolute count of the key.
-	if ((value & 1)  == 1) {
+	if (ram_count > 0 && (value & 1)  == 1) {
 		absolute_count = true;
 		/* use lower-order bits to store the absolute count bit. */
 		dup_k.value = value;

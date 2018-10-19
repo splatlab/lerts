@@ -1926,6 +1926,10 @@ int qf_insert(QF *qf, uint64_t key, uint64_t value, uint64_t count, uint8_t
 		/*} else*/
 			/*return QF_NO_SPACE;*/
 	/*}*/
+	if (qf->metadata->noccupied_slots >= qf->metadata->nslots) {
+		fprintf(stderr, "The CQF is too full. Please resize.\n");
+		return QF_NO_SPACE;
+	}
 	if (count == 0)
 		return 0;
 

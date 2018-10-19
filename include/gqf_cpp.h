@@ -136,7 +136,10 @@ class KeyObject {
 template <class key_obj>
 struct compare {
 	bool operator()(const key_obj& lhs, const key_obj& rhs) {
-		return lhs.key > rhs.key;
+		if (lhs.key != rhs.key)
+			return lhs.key > rhs.key;
+		else
+			return lhs.level > rhs.level;
 	}
 };
 
