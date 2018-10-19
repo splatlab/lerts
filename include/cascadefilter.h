@@ -202,6 +202,7 @@ class CascadeFilter {
 		bool count_stretch;
 		bool greedy;
 		bool pinning;
+		uint64_t num_odps;
 		uint64_t total_anomalies;
 		uint64_t total_reported_shuffle_merge;
 		uint64_t total_reported_odp;
@@ -236,7 +237,8 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	threshold_value(threshold_value), odp(odp), greedy(greedy),
 	pinning(pinning), prefix(prefix)
 {
-	total_anomalies = total_reported_shuffle_merge = total_reported_odp = 0;
+	total_anomalies = total_reported_shuffle_merge = total_reported_odp =
+		num_odps = 0;
 	if (nagebits)
 		max_age = 1 << nagebits;
 	else
@@ -287,8 +289,10 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 		popcorn_threshold = threshold_value - sum_disk_threshold;
 	}
 
-	if (pinning)
+	// We use 1 bit to mark the keys with absolute count.
+	if (odp)
 		num_value_bits++;
+
 	/* Initialize all the filters. */
 	//TODO: (prashant) Maybe make this a lazy initilization.
 	for (uint32_t i = 0; i < total_num_levels; i++) {
@@ -296,8 +300,8 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 					" slots and threshold " << thresholds[i]);
 		std::string file_ext("_cqf.ser");
 		std::string file = prefix + std::to_string(i) + file_ext;
-		// We use an extra bit for the pinning optimization.
-		// We use the lower-order bit to store the pinning value.
+		// We use an extra bit for the absolute count optimization.
+		// We use the lower-order bit to store the absolute count value.
 		filters[i] = CQF<key_object>(sizes[i], num_key_bits, num_value_bits,
 																 QF_HASH_INVERTIBLE, seed, file);
 	}
@@ -402,6 +406,8 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 	// find anomalies that are not reported yet.
 	if (!odp)
 		find_anomalies();
+	else
+		PRINT("Num odps: " << num_odps);
 
 	DEBUG("Anomaly CQF ");
 	anomalies.dump_metadata();
@@ -438,11 +444,12 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 		}
 	} else if (odp) {
 		result.open("raw/immediate-reporting.data");
-		result << "key odp Index-T Report index" << std::endl;
+		result << "key odp Index-0 Index-T Lifetime Report_Index" << std::endl;
 		for (auto it : key_lifetime) {
 			if (it.second.first < it.second.second) {
 				uint64_t value = 0;
 				key_object k(it.first, 0, 0, 0);
+				uint64_t lifetime = it.second.second - it.second.first;
 				uint64_t reportindex = anomalies.query_key(k, &value, 0);
 				if (reportindex != it.second.second) {
 					PRINT("Immediate reporting failed Key: " << it.first <<
@@ -450,7 +457,8 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 								<< reportindex);
 					failures++;
 				}
-				result << it.first << " " <<  value << " " << it.second.second << " "
+				result << it.first << " " <<  value << " " << it.second.first << " "
+					<< it.second.second << " " << lifetime << " "
 					<< reportindex << std::endl;
 			}
 		}
@@ -624,8 +632,8 @@ bool CascadeFilter<key_object>::is_aged(const key_object k) const {
 template <class key_object>
 void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 																							key_object k, uint32_t nlevels) {
-	// We use the pinning optimization in two cases:
-	// 1. If the pinning optimization is on and:
+	// We use the absolute count optimization in two cases:
+	// 1. If the absolute count optimization is on and:
 	//     1. If all the levels are involved in the shuffle-merge
 	//     2. If the last level involved in the shuffle-merge has the absolute
 	//     count of the key.
@@ -647,7 +655,7 @@ void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 		}
 		if (count > 0)
 			final_level = i;
-		k.value = k.value | 1;	// set the pinning bit.
+		k.value = k.value | 1;	// set the absolute count bit.
 		qf_arr[final_level].insert(k, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
 	} else {
 		for (int32_t i = nlevels; i > 0; i--) {
@@ -897,12 +905,22 @@ void CascadeFilter<key_object>::shuffle_merge() {
 		 * Else, smear the count across levels starting from the bottom one.
 		 * */
 		if (cur_key == next_key) {
-			cur_key.count += next_key.count;
-			cur_key.value = next_key.value;
-			cur_key.level = next_key.level;
+			// check if the absolute bit is 0.
+			// Aggregate count if the absolute count bit is not set.
+			if ((next_key.value & 1) == 1) {
+				cur_key = next_key;
+			} else if ((next_key.value & 1) == 0 && (cur_key.value & 1) == 0) {
+				cur_key.count += next_key.count;
+				cur_key.value = next_key.value;
+				cur_key.level = next_key.level;
+			}
 		} else {
 			//PRINT("Inserting " << cur_key.to_string());
-			insert_element(new_filters, cur_key, nlevels - 1);
+			// When only odp is enabled the absolute count is only set in RAM
+			if (odp && (cur_key.value & 1) == 1)
+				insert_element(new_filters, cur_key, 0);
+			else
+				insert_element(new_filters, cur_key, nlevels - 1);
 			/* Update cur_key. */
 			cur_key = next_key;
 		}
@@ -1006,7 +1024,6 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 		if (!cf_lw_lock.lock(flag))
 			return false;
 
-	num_obs_seen += k.count;
 	perform_shuffle_merge_if_needed();
 
 	uint64_t value = 0;
@@ -1014,6 +1031,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 	if (anomalies.query_key(k, &value, 0)) {
 		if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 			cf_lw_lock.unlock();
+		num_obs_seen += k.count;
 		return true;
 	}
 
@@ -1021,12 +1039,13 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 	// Get the current RAM count/age of the key.
 	value = 0;		// reset value to reuse it.
 	uint64_t ram_count = filters[0].query_key(dup_k, &value, 0);
-	// Check if the pinning is enabled and the pinning bit is set in RAM level.
-	bool final_count{false};
-	if (pinning && (value & 1)  == 1) {
-		final_count = true;
-		/* use lower-order bits to store the pinning bit. */
-		dup_k.value = dup_k.value | 1;
+	bool absolute_count{false};
+	// Check if the absolute count is enabled
+	// If it's set then the RAM count is the absolute count of the key.
+	if ((value & 1)  == 1) {
+		absolute_count = true;
+		/* use lower-order bits to store the absolute count bit. */
+		dup_k.value = value;
 	}
 
 	// This code is for the time-stretch case.
@@ -1062,7 +1081,10 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 		// the count is the index at which the key is reported.
 		dup_k.count = num_obs_seen;
 		// value 1 means that it is reported through odp.
-		dup_k.value = 0;
+		if (!absolute_count)
+			dup_k.value = 0;
+		else
+			dup_k.value = 1;
 #ifdef VALIDATE
 		if (anomalies.is_full())
 			abort();
@@ -1075,7 +1097,10 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 		anomalies.insert(dup_k, PF_WAIT_FOR_LOCK);
 		DEBUG("Reporting shuffle-merge: " << dup_k.to_string());
 		total_anomalies++;
-		total_reported_shuffle_merge++;
+		if (!absolute_count)
+			total_reported_shuffle_merge++;
+		else
+			total_reported_odp++;
 	}
 
 	// This code is for the immediate reporting case.
@@ -1085,41 +1110,51 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 	//
 	// We will not remove the key if it has been seen THRESHOLD times.
 	// The key will be removed in the next shuffle merge.
-	if (odp && ram_count >= popcorn_threshold && !final_count &&
+	if (odp && ram_count >= popcorn_threshold && !absolute_count &&
 			anomalies.query_key(dup_k, &value, 0) == 0) {
 		uint64_t aggr_count = 0, ondisk_cnt = 0;
 		ondisk_cnt = ondisk_count(dup_k);
-		aggr_count = ondisk_cnt + ram_count;
-		if (aggr_count == threshold_value) {
-			// count in the index at which the key is reported.
-			// value 1 means that it is reported through odp.
-			dup_k.count = num_obs_seen;
-			dup_k.value = 1;
+		num_odps++;
+		if (ondisk_cnt > 0) {
+			aggr_count = ondisk_cnt + ram_count;
+			if (aggr_count >= threshold_value) {
+				// count is the index at which the key is reported.
+				// value 1 means that it is reported through odp.
+				dup_k.count = num_obs_seen;
+				dup_k.value = 1;
 #ifdef VALIDATE
-			if (anomalies.is_full())
-				abort();
+				if (anomalies.is_full())
+					abort();
 #else
-			if (anomalies.is_full())
-				anomalies.reset();
-			anomaly_log << "Reporting odp: " << dup_k.to_string() <<
-				std::endl;
+				if (anomalies.is_full())
+					anomalies.reset();
+				anomaly_log << "Reporting odp: " << dup_k.to_string() <<
+					std::endl;
 #endif
-			anomalies.insert(dup_k, PF_WAIT_FOR_LOCK);
-			DEBUG("Reporting odp: " << dup_k.to_string());
-			total_anomalies++;
-			total_reported_odp++;
-		} else {
-			if (!pinning) {
-				dup_k.count = ondisk_cnt;
+				anomalies.insert(dup_k, PF_WAIT_FOR_LOCK);
+				DEBUG("Reporting odp: " << dup_k.to_string());
+				total_anomalies++;
+				total_reported_odp++;
+			} else {
+				DEBUG("Adding on-disk count to a level in RAM.");
+				// add the on-disk count to RAM.
+				// delete the existing key
+				cqf_ret = filters[0].delete_key(dup_k, PF_WAIT_FOR_LOCK);
+				if (cqf_ret < 0) {
+					ERROR("Cannot delete key: " << dup_k.key);
+					exit(1);
+				}
+				dup_k.count = aggr_count;
+				dup_k.value = dup_k.value | 1;		// set the absolute count bit
 				cqf_ret = filters[0].insert(dup_k, PF_WAIT_FOR_LOCK);
 				if (cqf_ret < 0)
 					ret = false;
 				else
 					ret = true;
 			}
-			// TODO: Handle pinning case
 		}
 	}
+	num_obs_seen += k.count;
 
 	if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 		cf_lw_lock.unlock();

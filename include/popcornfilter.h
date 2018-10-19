@@ -127,7 +127,7 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 		if (greedy)
 			PRINT("Using greedy optimization.");
 		if (pinning)
-			PRINT("Using count aggregation optimization.");
+			PRINT("Using absolute count optimization.");
 
 		sizes[0] = (1ULL << qbits);
 		for (uint32_t i = 1; i < nlevels; i++)
@@ -170,7 +170,7 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 
 template <class key_object>
 uint32_t PopcornFilter<key_object>::get_total_key_bits(void) const {
-	return cf[0]->get_num_key_bits() + fbits;
+       return cf[0]->get_num_key_bits() + fbits;
 }
 
 template <class key_object>

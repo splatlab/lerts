@@ -49,7 +49,8 @@ class CQF {
 		
 		uint64_t query_key(const key_obj& k, uint64_t *val, uint8_t flags);
 
-		void remove(const key_obj& k, uint8_t flag);
+		int delete_key(const key_obj& k, uint8_t flag);
+		int replace_key(const key_obj& k, const key_obj& newkey, uint8_t flag);
 		void destroy();
 		uint64_t inner_prod(const CQF<key_obj>& in_cqf);
 
@@ -215,8 +216,14 @@ uint64_t CQF<key_obj>::query_key(const key_obj& k, uint64_t *val, uint8_t
 }
 
 template <class key_obj>
-void CQF<key_obj>::remove(const key_obj& k, uint8_t flag) {
-	qf_remove(&cqf, k.key, k.value, k.count, flag);
+int CQF<key_obj>::delete_key(const key_obj& k, uint8_t flag) {
+	return qf_delete_key_value(&cqf, k.key, k.value, flag);
+}
+
+template <class key_obj>
+int CQF<key_obj>::replace_key(const key_obj& k, const key_obj& newkey, uint8_t
+													 		flag) {
+	return qf_replace(&cqf, k.key, k.value, newkey.value, flag);
 }
 
 template <class key_obj>

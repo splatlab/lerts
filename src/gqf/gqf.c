@@ -1586,12 +1586,12 @@ inline static int _remove(QF *qf, __uint128_t hash, uint64_t count, uint8_t
 
 	if (GET_NO_LOCK(runtime_lock) != QF_NO_LOCK) {
 		if (!qf_lock(qf, hash_bucket_index, /*small*/ false, runtime_lock))
-			return -2;
+			return QF_COULDNT_LOCK;
 	}
 
 	/* Empty bucket */
 	if (!is_occupied(qf, hash_bucket_index))
-		return -1;
+		return QF_DOESNT_EXIST;
 
 	uint64_t runstart_index = hash_bucket_index == 0 ? 0 : run_end(qf, hash_bucket_index - 1) + 1;
 	uint64_t original_runstart_index = runstart_index;
@@ -1605,7 +1605,7 @@ inline static int _remove(QF *qf, __uint128_t hash, uint64_t count, uint8_t
 	}
 	/* remainder not found in the given run */
 	if (current_remainder != hash_remainder)
-		return -1;
+		return QF_DOESNT_EXIST;
 	
 	if (original_runstart_index == runstart_index && is_runend(qf, current_end))
 		only_item_in_the_run = 1;
@@ -1998,7 +1998,7 @@ int qf_remove(QF *qf, uint64_t key, uint64_t value, uint64_t count, uint8_t
 							flags)
 {
 	if (count == 0)
-		return true;
+		return 0;
 
 	if (GET_KEY_HASH(flags) != QF_KEY_IS_HASH) {
 		if (qf->metadata->hash_mode == QF_HASH_DEFAULT)
@@ -2016,18 +2016,22 @@ int qf_delete_key_value(QF *qf, uint64_t key, uint64_t value, uint8_t flags)
 {
 	uint64_t count = qf_count_key_value(qf, key, value, flags);
 	if (count == 0)
-		return true;
+		return 0;
 
-	if (GET_KEY_HASH(flags) != QF_KEY_IS_HASH) {
-		if (qf->metadata->hash_mode == QF_HASH_DEFAULT)
-			key = MurmurHash64A(((void *)&key), sizeof(key),
-													qf->metadata->seed) % qf->metadata->range;
-		else if (qf->metadata->hash_mode == QF_HASH_INVERTIBLE)
-			key = hash_64(key, BITMASK(qf->metadata->key_bits));
+	return qf_remove(qf, key, value, count, flags);
+}
+	
+int qf_replace(QF *qf, uint64_t key, uint64_t oldvalue, uint64_t newvalue,
+							 uint8_t flags)
+{
+	int ret = 0;
+	uint64_t count = qf_count_key_value(qf, key, oldvalue, flags);
+	if (count > 0) {
+		ret = qf_remove(qf, key, oldvalue, count, flags);
+		if (ret < 1)
+			return ret;
 	}
-	uint64_t hash = (key << qf->metadata->value_bits) | (value &
-																											 BITMASK(qf->metadata->value_bits));
-	return _remove(qf, hash, count, flags);
+	return qf_insert(qf, key, newvalue, count, flags);
 }
 
 uint64_t qf_count_key_value(const QF *qf, uint64_t key, uint64_t value,

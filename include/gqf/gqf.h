@@ -174,8 +174,8 @@ extern "C" {
 		 newvalue, count'), then the two associations will be merged and
 		 their counters will be summed, resulting in association (key,
 		 newvalue, count' + count). */
-	/* NOT IMPLEMENTED YET. */
-	//void qf_replace(QF *qf, uint64_t key, uint64_t oldvalue, uint64_t newvalue);
+	int qf_replace(QF *qf, uint64_t key, uint64_t oldvalue, uint64_t newvalue,
+								 uint8_t flags);
 
 	/****************************************
    Query functions
