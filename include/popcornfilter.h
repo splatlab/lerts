@@ -45,6 +45,8 @@ class PopcornFilter {
 									nlevels, uint32_t gfactor, uint32_t nagebits, bool do_odp,
 									bool greedy, bool pinning, uint32_t threshold_value);
 
+		~PopcornFilter();
+
 		bool insert(const key_object& k, uint8_t flag);
 
 		uint64_t query(const key_object& k, uint8_t flag);
@@ -167,6 +169,12 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 																									 prefix));
 		}
 	}
+
+template <class key_object>
+PopcornFilter<key_object>::~PopcornFilter() {
+		for (uint32_t i = 0; i < nfilters; i++)
+			delete cf[i];
+}
 
 template <class key_object>
 uint32_t PopcornFilter<key_object>::get_total_key_bits(void) const {

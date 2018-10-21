@@ -187,7 +187,7 @@ class CascadeFilter {
 		void insert_element(CQF<key_object> *qf_arr, key_object cur, uint32_t
 												level);
 
-		uint64_t ondisk_count(key_object k) const;
+		uint64_t ondisk_count(key_object k);
 
 
 		CQF<key_object> *filters;
@@ -203,6 +203,7 @@ class CascadeFilter {
 		bool greedy;
 		bool pinning;
 		uint64_t num_odps;
+		uint64_t num_point_queries;
 		uint64_t total_anomalies;
 		uint64_t total_reported_shuffle_merge;
 		uint64_t total_reported_odp;
@@ -238,7 +239,7 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	pinning(pinning), prefix(prefix)
 {
 	total_anomalies = total_reported_shuffle_merge = total_reported_odp =
-		num_odps = 0;
+		num_odps = num_point_queries = 0;
 	if (nagebits)
 		max_age = 1 << nagebits;
 	else
@@ -306,9 +307,12 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 																 QF_HASH_INVERTIBLE, seed, file);
 	}
 }
+
 template <class key_object>
 CascadeFilter<key_object>::~CascadeFilter() {
 	anomaly_log.close();
+	for (uint32_t i = 0; i < total_num_levels; i++)
+		filters[i].destroy();
 }
 
 	template <class key_object>
@@ -383,7 +387,11 @@ void CascadeFilter<key_object>::print_anomaly_stats(void) {
 		++it;
 	}
 #endif
-
+	
+	if (odp) {
+		PRINT("Num odps: " << num_odps);
+		PRINT("Num point queries: " << num_point_queries);
+	}
 	PRINT("Number of keys above the THRESHOLD value " <<
 				total_anomalies);
 	PRINT("Number of keys reported through shuffle-merges " <<
@@ -406,8 +414,6 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 	// find anomalies that are not reported yet.
 	if (!odp)
 		find_anomalies();
-	else
-		PRINT("Num odps: " << num_odps);
 
 	DEBUG("Anomaly CQF ");
 	anomalies.dump_metadata();
@@ -596,13 +602,13 @@ void CascadeFilter<key_object>::perform_shuffle_merge_if_needed(void) {
 			ages[0] = (ages[0] + 1) % max_age;
 			if (need_shuffle_merge_time_stretch()) {
 				DEBUG("Number of observations seen: " << num_obs_seen);
-				PRINT("Flushing " << num_flush);
+				PRINT("Flushing " << num_flush << " Num obs: " << num_obs_seen);
 				shuffle_merge();
 				// Increment the flushing count.
 				num_flush++;
 			}
 		} else {
-			PRINT("Flushing " << num_flush);
+			PRINT("Flushing " << num_flush << " Num obs: " << num_obs_seen);
 			shuffle_merge();
 			// Increment the flushing count.
 			num_flush++;
@@ -1210,11 +1216,12 @@ bool CascadeFilter<key_object>::remove(const key_object& k, uint8_t flag) {
 }
 
 template <class key_object>
-uint64_t CascadeFilter<key_object>::ondisk_count(key_object k) const {
+uint64_t CascadeFilter<key_object>::ondisk_count(key_object k) {
 	uint64_t count = 0;
 	for (uint32_t i = 1; i < total_num_levels; i++) {
 		uint64_t value = 0;
 		count += filters[i].query_key(k, &value, 0);
+		num_point_queries++;
 		// if pinning is enabled and the key is pinned.
 		if (pinning && count > 0 && (value & 1)  == 1)
 			break;

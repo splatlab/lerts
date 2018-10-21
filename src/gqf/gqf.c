@@ -1392,7 +1392,8 @@ static inline int insert1(QF *qf, __uint128_t hash, uint8_t runtime_lock)
 
 		if (operation >= 0) {
 			uint64_t empty_slot_index = find_first_empty_slot(qf, runend_index+1);
-			if (empty_slot_index >= qf->metadata->xnslots) {
+			if (empty_slot_index >= qf->metadata->xnslots && empty_slot_index <
+					runend_index + 1) {
 				return QF_NO_SPACE;
 			}
 			shift_remainders(qf, insert_index, empty_slot_index);
