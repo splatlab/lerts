@@ -41,8 +41,6 @@
 #include "gqf/hashutil.h"
 
 #define BUFFER_SIZE (1ULL << 16)
-#define PER_PACKET 50
-#define NUM_SENDERS 1
 
 typedef struct socket_attr {
 	int nsenders{1};
