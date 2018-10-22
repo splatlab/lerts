@@ -108,7 +108,7 @@ void *thread_insert_socket(void *a) {
 	for (int i = 0; i < attr.nsenders; i++)
 		attr.count[i] = attr.shut[i] = 0;
 
-	int maxbuf = 64*PER_PACKET;
+	int maxbuf = 64*attr.perpacket;
 	std::vector<char> buffer(maxbuf);
 	int ipacket;
 
