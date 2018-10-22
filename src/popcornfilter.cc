@@ -29,12 +29,166 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 #include <openssl/rand.h>
+#include <stdexcept>
+#include <signal.h>
+#include <netinet/in.h>
+#include <sys/errno.h>
+#include <sys/socket.h>
 
 #include "clipp.h"
 #include "ProgOpts.h"
 #include "popcornfilter.h"
+#include "gqf/hashutil.h"
 
 #define BUFFER_SIZE (1ULL << 16)
+#define PER_PACKET 50
+#define NUM_SENDERS 1
+
+typedef struct socket_attr {
+	int nsenders{1};
+	uint64_t nrecv{0};
+	int nshut {0};
+	int countflag{0};
+	int *shut;
+	uint64_t *count;
+	int perpacket{50};
+} socket_attr;
+
+socket_attr attr;
+
+template <class key_object>
+class ThreadArgs {
+	public:
+		PopcornFilter<key_object> *pf;
+		uint64_t *vals;
+		uint64_t start;
+		uint64_t end;
+
+		ThreadArgs() : pf(NULL), vals(NULL), start(0), end(0) {};
+		ThreadArgs(PopcornFilter<key_object> *pf, key_object *vals, uint64_t start,
+							 uint64_t end) : pf(pf), vals(vals), start(start), end(end) {};
+};
+
+template <class key_object>
+class ThreadArgsSocket {
+	public:
+		PopcornFilter<key_object> *pf;
+		int socket;
+
+		ThreadArgsSocket() : pf(NULL), socket(0) {};
+		ThreadArgsSocket(PopcornFilter<key_object> *pf, int socket) : pf(pf),
+		socket(socket) {};
+};
+
+// process STOP packets
+// return 1 if have received STOP packet from every sender
+// else return 0 if not ready to STOP
+int shutdown(char *buf)
+{
+	int iwhich = atoi(buf);
+	if (attr.shut[iwhich]) return 0;
+	attr.shut[iwhich] = 1;
+	attr.nshut++;
+	if (attr.nshut == attr.nsenders) return 1;
+	return 0;
+}
+
+void *thread_insert_socket(void *a) {
+	ThreadArgsSocket<KeyObject> *args = (ThreadArgsSocket<KeyObject>*)a;
+
+	CQF<KeyObject> buffer_cqf(BUFFER_SIZE, args->pf->get_total_key_bits(),
+														args->pf->get_num_value_bits(), QF_HASH_INVERTIBLE,
+														args->pf->get_seed());
+
+	uint32_t seed = 2038074761;
+	__uint128_t range = 1ULL << 48;
+	uint64_t total = 0;
+
+	// sender stats and stop flags
+	attr.shut = new int[attr.nsenders];
+	attr.count = new uint64_t[attr.nsenders];
+	for (int i = 0; i < attr.nsenders; i++)
+		attr.count[i] = attr.shut[i] = 0;
+
+	int maxbuf = 64*PER_PACKET;
+	std::vector<char> buffer(maxbuf);
+	int ipacket;
+
+	while (true) {
+		// read a packet with Nbytes
+		const int nbytes = ::recv(args->socket,&buffer[0],buffer.size()-1,0);
+		buffer[nbytes] = '\0';
+		// check if STOP packet
+		// exit if have received STOP packet from every sender
+		if (nbytes < 8) {
+			if (shutdown(&buffer[0]))
+				break;
+			continue;
+		}
+		attr.nrecv++;
+		// tally stats on packets from each sender
+		if (attr.countflag) {
+			sscanf(&buffer[0],"packet %d",&ipacket);
+			attr.count[ipacket % attr.nsenders]++;
+		}
+
+		// scan past header line
+		strtok(&buffer[0],"\n");
+
+		// process perpacket datums in packet
+		for (int i = 0; i < attr.perpacket; i++) {
+			uint64_t key = strtoul(strtok(NULL,",\n"),NULL,0);
+			uint32_t value = strtoul(strtok(NULL,",\n"),NULL,0);
+			uint32_t truth = strtoul(strtok(NULL,",\n"),NULL,0);
+
+			key = MurmurHash64A( ((void*)&key), sizeof(key), seed);
+			key = key % range;
+			// insert in the popcorn filter.
+			if (!args->pf->insert(KeyObject(key, 0, 1, 0),
+														PF_TRY_ONCE_LOCK)) {
+				DEBUG("Inserting in the buffer.");
+				buffer_cqf.insert(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
+				double load_factor = buffer_cqf.occupied_slots() /
+					(double)buffer_cqf.total_slots();
+				if (load_factor > 0.75) {
+					DEBUG("Dumping buffer.");
+					typename CQF<KeyObject>::Iterator it = buffer_cqf.begin();
+					do {
+						KeyObject key = *it;
+						if (!args->pf->insert(key, PF_WAIT_FOR_LOCK)) {
+							std::cerr << "Failed insertion for " << (uint64_t)key.key <<
+								std::endl;
+							abort();
+						}
+						++it;
+					} while(!it.done());
+					buffer_cqf.reset();
+				}
+			}
+			total += value + truth;
+		}
+	}
+	/* Finally dump anything left in the buffer. */
+	if (buffer_cqf.total_elts() > 0) {
+		PRINT("Dumping buffer final time.");
+		typename CQF<KeyObject>::Iterator it = buffer_cqf.begin();
+		do {
+			KeyObject key = *it;
+			//PRINT("Inserting key " + key.to_string());
+			if (!args->pf->insert(key, PF_WAIT_FOR_LOCK)) {
+				std::cerr << "Failed insertion for " << (uint64_t)key.key << std::endl;
+				abort();
+			}
+			++it;
+		} while(!it.done());
+	}
+
+	PRINT("Total: " << total);
+	// close UDP port and print stats
+	::close(args->socket);
+
+	return nullptr;
+}
 
 void *thread_insert(void *a) {
 	ThreadArgs<KeyObject> *args = (ThreadArgs<KeyObject>*)a;
@@ -86,17 +240,26 @@ void *thread_insert(void *a) {
 		} while(!it.done());
 	}
 
-	return NULL;
+	return nullptr;
 }
 
-void perform_insertion(std::vector<ThreadArgs<KeyObject>> args, uint32_t
-											 nthreads) {
+void perform_insertion(std::vector<void*> args, uint32_t nthreads, bool udp)
+{
 	pthread_t threads[nthreads];
+	void *(*start_routine) (void *) = nullptr;
+	
+	if (udp)
+		start_routine = &thread_insert_socket;
+	else
+		start_routine = &thread_insert;
 
 	for (uint32_t i = 0; i < nthreads; i++) {
-		DEBUG("Starting thread " << i << " from " << args[i].start << " to " <<
-						 args[i].end);
-		if (pthread_create(&threads[i], NULL, &thread_insert, &args[i])) {
+		if (!udp) {
+			ThreadArgs<KeyObject> *a = (ThreadArgs<KeyObject>*)args[i];
+			DEBUG("Starting thread " << i << " from " << a->start << " to " <<
+						a->end);
+		}
+		if (pthread_create(&threads[i], NULL, start_routine, (void*)args[i])) {
 			std::cerr << "Error creating thread " << i << std::endl;
 			abort();
 		}
@@ -135,18 +298,33 @@ int popcornfilter_main (PopcornFilterOpts opts)
 															do_odp, greedy, pinning, threshold_value);
 
 	uint64_t nvals = 0;
-
-	uint64_t *vals;
+	uint64_t *vals = nullptr;
+	int socket = 0;
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> keylifetimes;
-	if (opts.ip_file.size() > 1) {
+
+	if (opts.ip_file.size() > 1) {	// read input from a file.
 		PRINT("Reading input stream and logs from disk");
 		std::string streamlogfile(opts.ip_file + ".log");
 		vals = popcornfilter::read_stream_from_disk(opts.ip_file, &nvals);
 #ifdef VALIDATE
 		keylifetimes = popcornfilter::analyze_stream(vals, nvals, threshold_value);
 #endif
+	} else if (opts.port > 0) {
+		// setup UDP port
+		socket = ::socket(PF_INET6, SOCK_DGRAM, 0);
+		if (socket == -1)
+			throw std::runtime_error(std::string("socket(): ") + ::strerror(errno));
+
+		struct sockaddr_in6 address;
+		::memset(&address, 0, sizeof(address));
+		address.sin6_family = AF_INET6;
+		address.sin6_addr = in6addr_any;
+		address.sin6_port = htons(opts.port);
+		if (-1 == ::bind(socket, reinterpret_cast<sockaddr*>(&address),
+										 sizeof(address)))
+			throw std::runtime_error(std::string("bind(): ") + ::strerror(errno));
 	} else {
-	nvals = pf.get_max_size();
+		nvals = pf.get_max_size();
 #if 0
 		// This is a specific generator to produce Jon's use-case.
 		uint64_t quarter = nvals;
@@ -187,21 +365,30 @@ int popcornfilter_main (PopcornFilterOpts opts)
 
 	struct timeval start, end;
 	struct timezone tzp;
-	std::vector<ThreadArgs<KeyObject>> args;
+	std::vector<void*> args;
 	args.reserve(nthreads);
 
-	for (uint64_t i = 0; i < nthreads; i++) {
-		ThreadArgs<KeyObject> obj;
-		obj.pf = &pf;
-		obj.vals = vals;
-		obj.start = i * (nvals / nthreads);
-		obj.end = (i + 1) * (nvals / nthreads);
-		args.emplace_back(obj);
+	if (opts.port > 0) {
+		for (uint64_t i = 0; i < nthreads; i++) {
+			ThreadArgsSocket<KeyObject> *obj = new ThreadArgsSocket<KeyObject>();
+			obj->pf = &pf;
+			obj->socket = socket;
+			args.emplace_back((void*)obj);
+		}
+	} else {
+		for (uint64_t i = 0; i < nthreads; i++) {
+			ThreadArgs<KeyObject> *obj = new ThreadArgs<KeyObject>();
+			obj->pf = &pf;
+			obj->vals = vals;
+			obj->start = i * (nvals / nthreads);
+			obj->end = (i + 1) * (nvals / nthreads);
+			args.emplace_back((void*)obj);
+		}
 	}
 
 	PRINT("Inserting elements.");
 	gettimeofday(&start, &tzp);
-	perform_insertion(args, nthreads);
+	perform_insertion(args, nthreads, opts.port > 0 ? 1 : 0);
 	gettimeofday(&end, &tzp);
 	popcornfilter::print_time_elapsed("", &start, &end);
 	PRINT("Finished insertions.");

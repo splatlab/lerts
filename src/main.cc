@@ -68,7 +68,10 @@ main ( int argc, char *argv[] )
 									option("-p", "--pinning").set(pfopt.pinning, 1) %
 									"pinning optimizations. (default is 0)",
 									option("-i", "--input-file") & value("input_file", pfopt.ip_file) %
-									"input file containing keys and values. (default is generate keys from a Zipfian distribution.)"
+									"input file containing keys and values. (default is generate keys from a Zipfian distribution.)",
+									option("-u", "--udp-port") & value("udp_port", pfopt.port) %
+									"port at which generator will send the packets.)"
+									//option("-h", "--help")      % "show help"
 									//option("-h", "--help")      % "show help"
 									);
   auto cli = (

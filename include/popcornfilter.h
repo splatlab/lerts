@@ -61,6 +61,7 @@ class PopcornFilter {
 		uint64_t get_max_size(void) const;
 		uint64_t get_total_elements(void) const;
 		uint64_t get_total_dist_elements(void) const;
+		uint64_t get_total_observations_inserted(void) const;
 
 		void print_stats(void) const;
 		void find_anomalies(void) const;
@@ -83,19 +84,6 @@ class PopcornFilter {
 		uint32_t nvaluebits;
 		LightweightLock pf_lw_lock;
 		std::vector<CascadeFilter<key_object>*> cf;
-};
-
-template <class key_object>
-class ThreadArgs {
-	public:
-		PopcornFilter<key_object> *pf;
-		uint64_t *vals;
-		uint64_t start;
-		uint64_t end;
-
-		ThreadArgs() : pf(NULL), vals(NULL), start(0), end(0) {};
-		ThreadArgs(PopcornFilter<key_object> *pf, key_object *vals, uint64_t start,
-							 uint64_t end) : pf(pf), vals(vals), start(start), end(end) {};
 };
 
 #define NUM_KEY_BITS 48
@@ -230,6 +218,15 @@ uint64_t PopcornFilter<key_object>::get_total_dist_elements(void) const {
 }
 
 template <class key_object>
+uint64_t PopcornFilter<key_object>::get_total_observations_inserted(void)
+	const {
+	uint64_t total = 0;
+	for (uint32_t i = 0; i < nfilters; i++)
+		total += cf[i]->get_num_observations();
+	return total;
+}
+
+template <class key_object>
 uint64_t PopcornFilter<key_object>::get_total_keys_above_threshold(void) const
 {
 	uint64_t total = 0;
@@ -273,6 +270,7 @@ void PopcornFilter<key_object>::print_stats(void) const {
 		PRINT("cascadefilter " << i);
 		cf[i]->print_anomaly_stats();
 	}
+	PRINT("Total observations inserted: " << get_total_observations_inserted());
 }
 
 template <class key_object>

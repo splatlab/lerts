@@ -61,6 +61,7 @@ class CascadeFilter {
 		uint64_t get_num_keys_above_threshold(void) const;
 		uint64_t get_num_elements(void) const;
 		uint64_t get_num_dist_elements(void) const;
+		uint64_t get_num_observations(void) const;
 		uint32_t get_num_key_bits(void) const;
 		uint32_t get_num_value_bits(void) const;
 		uint32_t get_num_age_bits(void) const;
@@ -360,6 +361,11 @@ uint64_t CascadeFilter<key_object>::get_num_dist_elements(void) const {
 	for (uint32_t i = 0; i < total_num_levels; i++)
 		total_count += get_filter(i)->dist_elts();
 	return total_count;
+}
+
+template <class key_object>
+uint64_t CascadeFilter<key_object>::get_num_observations(void) const {
+	return num_obs_seen;
 }
 
 template <class key_object>

@@ -33,3 +33,92 @@ cat raw/time-stretch.data | awk '{print $4","$6}' | tail -n +3 > raw/stretch && 
 cat raw/time-stretch.data | awk '{print $4","$2}' | tail -n +3 > raw/birthtime && ./plot.py raw/birthtime
 cat raw/count-stretch.data | awk '{print $4","$6}' | tail -n +2 > raw/stretch && ./plot.py raw/stretch
 cat raw/count-stretch.data | awk '{print $4","$2}' | tail -n +2 > raw/birthtime && ./plot.py raw/birthtime
+
+
+
+./main popcornfilter -f 1 -q 24 -l 4 -g 4 -t 1 -v 28 -i raw/streamdump_mmap_active_new_500M
+Creating a popcorn filter.
+Creating a cascade filter with 48-bit hashes, 4 levels, and 4 as growth factor.
+Reading input stream and logs from disk
+Total observations: 499989950
+Inserting elements.
+Flushing 0 Num obs: 16777216
+Flushing 1 Num obs: 33554432
+Flushing 2 Num obs: 50331648
+Flushing 3 Num obs: 67108864
+Flushing 4 Num obs: 83886080
+Flushing 5 Num obs: 100663296
+Flushing 6 Num obs: 117440512
+Flushing 7 Num obs: 134217728
+Flushing 8 Num obs: 150994944
+Flushing 9 Num obs: 167772160
+Flushing 10 Num obs: 184549376
+Flushing 11 Num obs: 201326592
+Flushing 12 Num obs: 218103808
+Flushing 13 Num obs: 234881024
+Flushing 14 Num obs: 251658240
+Flushing 15 Num obs: 268435456
+Flushing 16 Num obs: 285212672
+Flushing 17 Num obs: 301989888
+Flushing 18 Num obs: 318767104
+Flushing 19 Num obs: 335544320
+Flushing 20 Num obs: 352321536
+Flushing 21 Num obs: 369098752
+Flushing 22 Num obs: 385875968
+Flushing 23 Num obs: 402653184
+Flushing 24 Num obs: 419430400
+Flushing 25 Num obs: 436207616
+Flushing 26 Num obs: 452984832
+Flushing 27 Num obs: 469762048
+Flushing 28 Num obs: 486539264
+Total Time Elapsed: 321.229065seconds
+Finished insertions.
+Total number of keys above threshold: 843433
+cascadefilter 0
+Num odps: 10200911
+Num point queries: 30602733
+Number of keys above the THRESHOLD value 843433
+Number of keys reported through shuffle-merges 404904
+Number of keys reported through odp 438529
+
+
+ ./main popcornfilter -f 1 -q 24 -l 4 -g 4 -t 1 -v 28 -e -p -i raw/streamdump_mmap_active_new_500M
+Creating a popcorn filter.
+Using greedy optimization.
+Using absolute count optimization.
+Creating a cascade filter with 48-bit hashes, 4 levels, and 4 as growth factor.
+Reading input stream and logs from disk
+Total observations: 499989950
+Inserting elements.
+Flushing 0 Num obs: 16865597
+Flushing 1 Num obs: 35237925
+Flushing 2 Num obs: 54415032
+Flushing 3 Num obs: 74158215
+Flushing 4 Num obs: 94345673
+Flushing 5 Num obs: 115248776
+Flushing 6 Num obs: 136455965
+Flushing 7 Num obs: 157897558
+Flushing 8 Num obs: 179545878
+Flushing 9 Num obs: 201348833
+Flushing 10 Num obs: 223696523
+Flushing 11 Num obs: 246168530
+Flushing 12 Num obs: 268764468
+Flushing 13 Num obs: 291389894
+Flushing 14 Num obs: 314105533
+Flushing 15 Num obs: 337306931
+Flushing 16 Num obs: 360542038
+Flushing 17 Num obs: 383738613
+Flushing 18 Num obs: 406964018
+Flushing 19 Num obs: 430298704
+Flushing 20 Num obs: 454360087
+Flushing 21 Num obs: 473707155
+Flushing 22 Num obs: 492981955
+Total Time Elapsed: 355.897461seconds
+Finished insertions.
+Total number of keys above threshold: 843433
+cascadefilter 0
+Num odps: 11233995
+Num point queries: 33691744
+Number of keys above the THRESHOLD value 843433
+Number of keys reported through shuffle-merges 498676
+Number of keys reported through odp 344757

@@ -1,4 +1,4 @@
-TARGETS=main streamanalysis
+TARGETS=main streamdump
 
 ifdef D
 	DEBUG=-g -DDEBUG_MODE
@@ -59,7 +59,7 @@ main:						$(OBJDIR)/main.o $(OBJDIR)/popcornfilter.o \
 								$(OBJDIR)/gqf.o $(OBJDIR)/gqf_file.o $(OBJDIR)/util.o \
 								$(OBJDIR)/hashutil.o
 
-streamanalysis: $(OBJDIR)/streamanalysis.o $(OBJDIR)/gqf.o $(OBJDIR)/util.o \
+streamdump: $(OBJDIR)/streamdump.o $(OBJDIR)/gqf.o $(OBJDIR)/util.o \
 								$(OBJDIR)/hashutil.o
 
 # dependencies between .o files and .h files
@@ -75,7 +75,7 @@ $(OBJDIR)/cascadefilter.o: 		$(LOC_INCLUDE)/cascadefilter.h \
 $(OBJDIR)/anomaly.o: 					$(LOC_INCLUDE)/gqf_cpp.h \
  															$(LOC_INCLUDE)/util.h
  															$(LOC_INCLUDE)/lock.h \
-$(OBJDIR)/streamanalysis.o: 	$(LOC_INCLUDE)/gqf_cpp.h \
+$(OBJDIR)/streamdump.o: 	$(LOC_INCLUDE)/gqf_cpp.h \
  															$(LOC_INCLUDE)/util.h \
  															$(LOC_INCLUDE)/lock.h
 
