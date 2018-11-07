@@ -538,7 +538,7 @@ bool CascadeFilter<key_object>::is_ram_full() const {
 				return true;
 			}
 		} else {
-			uint64_t num_obs = get_filter(0)->total_slots();
+			uint64_t num_obs = get_filter(0)->total_slots() * 0.75;
 			if (num_obs_seen % num_obs == 0) {
 				return true;
 			}
@@ -1086,7 +1086,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 	bool absolute_count{false};
 	// Check if the absolute count is enabled
 	// If it's set then the RAM count is the absolute count of the key.
-	if (ram_count > 0 && (value & 1)  == 1) {
+	if (odp && ram_count > 0 && (value & 1)  == 1) {
 		absolute_count = true;
 		/* use lower-order bits to store the absolute count bit. */
 		dup_k.value = value;

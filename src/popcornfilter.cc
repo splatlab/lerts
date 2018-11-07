@@ -212,10 +212,14 @@ void *thread_insert(void *a) {
 				typename CQF<KeyObject>::Iterator it = buffer.begin();
 				do {
 					KeyObject key = *it;
-					if (!args->pf->insert(key, PF_WAIT_FOR_LOCK)) {
-						std::cerr << "Failed insertion for " << (uint64_t)key.key <<
-							std::endl;
-						abort();
+					uint64_t count = key.count;
+					key.count = 1;
+					for (uint64_t c = 0; c < count; c++) {
+						if (!args->pf->insert(key, PF_WAIT_FOR_LOCK)) {
+							std::cerr << "Failed insertion for " << (uint64_t)key.key <<
+								std::endl;
+							abort();
+						}
 					}
 					++it;
 				} while(!it.done());
