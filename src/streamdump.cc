@@ -105,7 +105,7 @@ void read_cmd_options(int argc, char **argv)
 				countflag = 1;
 				break;
 			case 's':
-				stream_size = atoi(optarg);
+				stream_size = std::stol(optarg);
 				break;
 			case 'f':
 				filename = optarg;
