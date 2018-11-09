@@ -178,6 +178,12 @@ int main(int argc, char **argv)
 	// create a file and mmap it to log <keys, value> from the stream.
 	uint64_t arr_size = stream_size* sizeof(uint64_t);
 	uint64_t *arr = (uint64_t *)malloc(arr_size);
+	if (arr == NULL) {
+		std::cout << "malloc failed" << std::endl;
+		exit(1)
+	}
+	std::cout << "malloced array of size: " << arr_size << std::end;
+
 
 	// sender stats and stop flags
 	count = new uint64_t[nsenders];

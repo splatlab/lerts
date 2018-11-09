@@ -35,7 +35,6 @@ cat raw/count-stretch.data | awk '{print $4","$6}' | tail -n +2 > raw/stretch &&
 cat raw/count-stretch.data | awk '{print $4","$2}' | tail -n +2 > raw/birthtime && ./plot.py raw/birthtime
 
 
-
 ./main popcornfilter -f 1 -q 24 -l 4 -g 4 -t 1 -v 28 -i raw/streamdump_mmap_active_new_500M
 Creating a popcorn filter.
 Creating a cascade filter with 48-bit hashes, 4 levels, and 4 as growth factor.
