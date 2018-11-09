@@ -180,9 +180,9 @@ int main(int argc, char **argv)
 	uint64_t *arr = (uint64_t *)malloc(arr_size);
 	if (arr == NULL) {
 		std::cout << "malloc failed" << std::endl;
-		exit(1)
+		exit(1);
 	}
-	std::cout << "malloced array of size: " << arr_size << std::end;
+	std::cout << "malloced array of size: " << arr_size << std::endl;
 
 
 	// sender stats and stop flags
