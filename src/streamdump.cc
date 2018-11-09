@@ -57,7 +57,7 @@ int nthresh = 24;
 int mthresh = 4;
 int nsenders = 1;
 int countflag = 0;
-int stream_size = 50000000;
+uint64_t stream_size = 50000000;
 char *filename = NULL;
 
 // packet stats
