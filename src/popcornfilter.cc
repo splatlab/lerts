@@ -206,12 +206,9 @@ void *thread_insert(void *a) {
 	 */
 	while (offset != args->stream_size) {
 		uint64_t start = offset;
-		if (start + args->batch_size > args->stream_size) {
+		if (start + args->batch_size > args->stream_size)
 			args->batch_size = args->stream_size - start;
-			offset = args->stream_size;
-		} else {
-			offset += args->batch_size;
-		}
+		offset += args->batch_size;
 		uint64_t end = start + args->batch_size;
 		PRINT("Inserting from: " << start << " to: " << end);
 		while (start < end) {
