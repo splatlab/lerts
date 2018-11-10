@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <algorithm>
+#include <atomic>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -41,6 +42,8 @@
 #include "gqf/hashutil.h"
 
 #define BUFFER_SIZE (1ULL << 16)
+#define BATCH_SIZE 1000
+std::atomic<uint64_t> offset{0};
 
 typedef struct socket_attr {
 	int nsenders{1};
@@ -59,12 +62,14 @@ class ThreadArgs {
 	public:
 		PopcornFilter<key_object> *pf;
 		uint64_t *vals;
-		uint64_t start;
-		uint64_t end;
+		uint64_t stream_size;
+		uint64_t batch_size;
 
-		ThreadArgs() : pf(NULL), vals(NULL), start(0), end(0) {};
-		ThreadArgs(PopcornFilter<key_object> *pf, key_object *vals, uint64_t start,
-							 uint64_t end) : pf(pf), vals(vals), start(start), end(end) {};
+		ThreadArgs() : pf(nullptr), vals(nullptr), stream_size(0), batch_size{0}
+		{};
+		ThreadArgs(PopcornFilter<key_object> *pf, uint64_t *vals, uint64_t
+							 stream_size, uint64_t batch_size) : pf(pf), vals(vals),
+		stream_size(stream_size), batch_size(batch_size) {};
 };
 
 template <class key_object>
@@ -199,32 +204,44 @@ void *thread_insert(void *a) {
 	 * insert fails then insert in the buffer. Later dump the buffer in the
 	 * cascade filter.
 	 */
-	for (uint64_t i = args->start; i < args->end; i++) {
-		uint64_t key = args->vals[i];
-		if (!args->pf->insert(KeyObject(key, 0, 1, 0),
-													PF_TRY_ONCE_LOCK)) {
-			DEBUG("Inserting in the buffer.");
-			buffer.insert(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
-			double load_factor = buffer.occupied_slots() /
-				(double)buffer.total_slots();
-			if (load_factor > 0.75) {
-				DEBUG("Dumping buffer.");
-				typename CQF<KeyObject>::Iterator it = buffer.begin();
-				do {
-					KeyObject key = *it;
-					uint64_t count = key.count;
-					key.count = 1;
-					for (uint64_t c = 0; c < count; c++) {
-						if (!args->pf->insert(key, PF_WAIT_FOR_LOCK)) {
-							std::cerr << "Failed insertion for " << (uint64_t)key.key <<
-								std::endl;
-							abort();
+	while (offset != args->stream_size) {
+		uint64_t start = offset;
+		if (start + args->batch_size > args->stream_size) {
+			args->batch_size = args->stream_size - start;
+			offset = args->stream_size;
+		} else {
+			offset += args->batch_size;
+		}
+		uint64_t end = start + args->batch_size;
+		PRINT("Inserting from: " << start << " to: " << end);
+		while (start < end) {
+			uint64_t key = args->vals[start];
+			if (!args->pf->insert(KeyObject(key, 0, 1, 0),
+														PF_TRY_ONCE_LOCK)) {
+				DEBUG("Inserting in the buffer.");
+				buffer.insert(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
+				double load_factor = buffer.occupied_slots() /
+					(double)buffer.total_slots();
+				if (load_factor > 0.75) {
+					DEBUG("Dumping buffer.");
+					typename CQF<KeyObject>::Iterator it = buffer.begin();
+					do {
+						KeyObject key = *it;
+						uint64_t count = key.count;
+						key.count = 1;
+						for (uint64_t c = 0; c < count; c++) {
+							if (!args->pf->insert(key, PF_WAIT_FOR_LOCK)) {
+								std::cerr << "Failed insertion for " << (uint64_t)key.key <<
+									std::endl;
+								abort();
+							}
 						}
-					}
-					++it;
-				} while(!it.done());
-				buffer.reset();
+						++it;
+					} while(!it.done());
+					buffer.reset();
+				}
 			}
+			start++;
 		}
 	}
 	/* Finally dump anything left in the buffer. */
@@ -256,11 +273,11 @@ void perform_insertion(std::vector<void*> args, uint32_t nthreads, bool udp)
 		start_routine = &thread_insert;
 
 	for (uint32_t i = 0; i < nthreads; i++) {
-		if (!udp) {
-			ThreadArgs<KeyObject> *a = (ThreadArgs<KeyObject>*)args[i];
-			DEBUG("Starting thread " << i << " from " << a->start << " to " <<
-						a->end);
-		}
+		//if (!udp) {
+			//ThreadArgs<KeyObject> *a = (ThreadArgs<KeyObject>*)args[i];
+			//DEBUG("Starting thread " << i << " from " << a->start << " to " <<
+						//a->end);
+		//}
 		if (pthread_create(&threads[i], NULL, start_routine, (void*)args[i])) {
 			std::cerr << "Error creating thread " << i << std::endl;
 			abort();
@@ -372,18 +389,20 @@ int popcornfilter_main (PopcornFilterOpts opts)
 
 	if (opts.port > 0) {
 		for (uint64_t i = 0; i < nthreads; i++) {
-			ThreadArgsSocket<KeyObject> *obj = new ThreadArgsSocket<KeyObject>();
-			obj->pf = &pf;
-			obj->socket = socket;
+			ThreadArgsSocket<KeyObject> *obj = new ThreadArgsSocket<KeyObject>(&pf, socket);
 			args.emplace_back((void*)obj);
 		}
 	} else {
 		for (uint64_t i = 0; i < nthreads; i++) {
-			ThreadArgs<KeyObject> *obj = new ThreadArgs<KeyObject>();
-			obj->pf = &pf;
-			obj->vals = vals;
-			obj->start = i * (nvals / nthreads);
-			obj->end = (i + 1) * (nvals / nthreads);
+			uint64_t batch_size;
+			if (BATCH_SIZE * nthreads > nvals) {
+				batch_size = nvals/nthreads;
+			} else {
+				batch_size = BATCH_SIZE;
+			}
+			ThreadArgs<KeyObject> *obj = new ThreadArgs<KeyObject>(&pf, vals,
+																														 nvals,
+																														 batch_size);
 			args.emplace_back((void*)obj);
 		}
 	}
