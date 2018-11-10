@@ -210,7 +210,7 @@ void *thread_insert(void *a) {
 			args->batch_size = args->stream_size - start;
 		offset += args->batch_size;
 		uint64_t end = start + args->batch_size;
-		PRINT("Inserting from: " << start << " to: " << end);
+		DEBUG("Inserting from: " << start << " to: " << end);
 		while (start < end) {
 			uint64_t key = args->vals[start];
 			if (!args->pf->insert(KeyObject(key, 0, 1, 0),
