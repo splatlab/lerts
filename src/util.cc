@@ -38,6 +38,18 @@
 #include "util.h"
 
 namespace popcornfilter {
+	float cal_time_elapsed(struct timeval* start, struct timeval* end)
+	{
+		struct timeval elapsed;
+		if (start->tv_usec > end->tv_usec) {
+			end->tv_usec += 1000000;
+			end->tv_sec--;
+		}
+		elapsed.tv_usec = end->tv_usec - start->tv_usec;
+		elapsed.tv_sec = end->tv_sec - start->tv_sec;
+		return (elapsed.tv_sec * 1000000 + elapsed.tv_usec)/1000000.f;
+	}
+	
 	void print_time_elapsed(std::string desc, struct timeval* start, struct
 													timeval* end)
 	{
@@ -135,6 +147,12 @@ namespace popcornfilter {
 																		 fd, 0);
 		if (arr == MAP_FAILED) {
 			perror("Couldn't mmap metadata.");
+			exit(EXIT_FAILURE);
+		}
+
+		ret = madvise(arr, sb.st_size, MADV_SEQUENTIAL);
+		if (ret == -1) {
+			perror("madvise failed");
 			exit(EXIT_FAILURE);
 		}
 

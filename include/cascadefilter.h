@@ -220,6 +220,11 @@ class CascadeFilter {
 		uint32_t num_obs_seen;
 		uint32_t seed;
 		LightweightLock cf_lw_lock;
+		// to instrument
+		float total_mem_time;
+		float total_flush_time;
+		struct timeval mem_time_start, mem_time_end;
+		struct timeval flush_time_start, flush_time_end;
 };
 
 template <class key_object = KeyObject>
@@ -239,6 +244,7 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t nhashbits, uint32_t
 	threshold_value(threshold_value), odp(odp), greedy(greedy),
 	pinning(pinning), prefix(prefix)
 {
+	total_mem_time = total_flush_time = 0;
 	total_anomalies = total_reported_shuffle_merge = total_reported_odp =
 		num_odps = num_point_queries = 0;
 	if (nagebits)
@@ -403,6 +409,8 @@ void CascadeFilter<key_object>::print_anomaly_stats(void) {
 	PRINT("Number of keys reported through shuffle-merges " <<
 				total_reported_shuffle_merge);
 	PRINT("Number of keys reported through odp " << total_reported_odp);
+	PRINT("Total memory time (secs): " << total_mem_time);
+	PRINT("Total flush time (secs): " << total_flush_time);
 }
 
 template <class key_object>
@@ -609,13 +617,21 @@ void CascadeFilter<key_object>::perform_shuffle_merge_if_needed(void) {
 			if (need_shuffle_merge_time_stretch()) {
 				DEBUG("Number of observations seen: " << num_obs_seen);
 				PRINT("Flushing " << num_flush << " Num obs: " << num_obs_seen);
+				gettimeofday(&flush_time_start, NULL);
 				shuffle_merge();
+				gettimeofday(&flush_time_end, NULL);
+				total_flush_time += popcornfilter::cal_time_elapsed(&flush_time_start,
+																														&flush_time_end);
 				// Increment the flushing count.
 				num_flush++;
 			}
 		} else {
 			PRINT("Flushing " << num_flush << " Num obs: " << num_obs_seen);
-			shuffle_merge();
+				gettimeofday(&flush_time_start, NULL);
+				shuffle_merge();
+				gettimeofday(&flush_time_end, NULL);
+				total_flush_time += popcornfilter::cal_time_elapsed(&flush_time_start,
+																														&flush_time_end);
 			// Increment the flushing count.
 			num_flush++;
 		}
@@ -1070,6 +1086,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 
 	perform_shuffle_merge_if_needed();
 
+	gettimeofday(&mem_time_start, NULL);
 	uint64_t value = 0;
 	// if the key is already reported then don't insert.
 	if (anomalies.query_key(k, &value, 0)) {
@@ -1146,6 +1163,9 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 		else
 			total_reported_odp++;
 	}
+	gettimeofday(&mem_time_end, NULL);
+	total_mem_time += popcornfilter::cal_time_elapsed(&mem_time_start,
+																										&mem_time_end);
 
 	// This code is for the immediate reporting case.
 	// If the count of the key is equal to "threshold_value -
