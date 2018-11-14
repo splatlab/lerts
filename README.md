@@ -4,7 +4,7 @@ To run the program.
 
 ```bash
 $ make
-$ ./main popcornfilter -f 1 -q 12 -l 3 -g 2 -t 1 -a 1 -o -v 24
+$ ./main popcornfilter -f 1 -q 16 -l 3 -g 2 -t 1 -a 1 -o -v 24
 ```
 
 ```bash
