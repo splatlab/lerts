@@ -9,7 +9,7 @@ $ ./main popcornfilter -f 1 -q 16 -l 3 -g 2 -t 1 -a 1 -o -v 24
 
 ```bash
 SYNOPSIS
-        popcornfilter -f <num_filters> -q <quotient_bits> -l <num_levels> -g <growth_factor> -t <num_threads> [-a <num_age_bits>] [-o] [-v <threshold_value>] [-i <input_file>]
+        popcornfilter -f <num_filters> -q <quotient_bits> -l <num_levels> -g <growth_factor> -t <num_threads> [-a <num_age_bits>] [-o] [-v <threshold_value>] [-e] [-p] [-i <input_file>] [-u <udp_port>]
 
 OPTIONS
         <num_filters>
@@ -36,6 +36,14 @@ OPTIONS
         <threshold_value>
                     threshold_value  to report. (default is 24)
 
+        -e, --greedy-flushing
+                    greedy flushing optimization. (default is 0)
+
+        -p, --pinning
+                    pinning optimizations. (default is 0)
+
         <input_file>
                     input file containing keys and values. (default is generate keys from a Zipfian distribution.)
+
+        <udp_port>  port at which generator will send the packets.)
 ```
