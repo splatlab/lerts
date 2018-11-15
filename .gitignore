@@ -33,6 +33,7 @@ main
 cascadefilter
 merge
 test
+streamdump
 
 # QFs dump
 *.ser
