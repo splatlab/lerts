@@ -37,6 +37,7 @@ LD= g++ -std=c++11
 LOC_INCLUDE=include
 LOC_SRC=src
 OBJDIR=obj
+LOGDIR=logs
 
 CXXFLAGS += -Wall $(DEBUG) $(PROFILE) $(OPT) $(ARCH) $(GREEDY) $(VALIDATE) \
 						-m64 -I. -I$(LOC_INCLUDE)
@@ -61,6 +62,9 @@ main:						$(OBJDIR)/main.o $(OBJDIR)/popcornfilter.o \
 
 streamdump: $(OBJDIR)/streamdump.o $(OBJDIR)/gqf.o $(OBJDIR)/util.o \
 								$(OBJDIR)/hashutil.o
+
+test: $(LOGDIR)
+	./main popcornfilter -f 1 -q 16 -l 3 -g 2 -t 1 -a 1 -o -v 24
 
 # dependencies between .o files and .h files
 
@@ -104,6 +108,9 @@ $(OBJDIR)/%.o: $(LOC_SRC)/gqf/%.c | $(OBJDIR)
 
 $(OBJDIR):
 	@mkdir -p $(OBJDIR)
+
+$(LOGDIR):
+	@mkdir -p $(LOGDIR)
 
 clean:
 	rm -rf $(OBJDIR) core $(TARGETS)
