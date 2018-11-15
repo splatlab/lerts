@@ -1,38 +1,54 @@
-#time-stretch filter
-./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 1 -o -v 24 -i raw/streamdump_mmap_active_50M
-./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 2 -o -v 24 -i raw/streamdump_mmap_active_50M
-./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 4 -o -v 24 -i raw/streamdump_mmap_active_50M
-
-./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 1 -o -v 24 -i raw/streamdump_mmap_powerlaw_50M
-./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 2 -o -v 24 -i raw/streamdump_mmap_powerlaw_50M
-./main popcornfilter -f 1 -q 23 -l 3 -g 2 -t 1 -a 4 -o -v 24 -i raw/streamdump_mmap_powerlaw_50M
-
-./main popcornfilter -f 1 -q 21 -l 3 -g 4 -t 1 -a 1 -o -v 24 -i raw/streamdump_mmap_active_50M
-./main popcornfilter -f 1 -q 21 -l 3 -g 4 -t 1 -a 2 -o -v 24 -i raw/streamdump_mmap_active_50M
-./main popcornfilter -f 1 -q 21 -l 3 -g 4 -t 1 -a 4 -o -v 24 -i raw/streamdump_mmap_active_50M
-
-./main popcornfilter -f 1 -q 20 -l 3 -g 4 -t 1 -a 1 -o -v 24 -i raw/streamdump_mmap_powerlaw_50M
-
-#time-stretch filter tests
-./main popcornfilter -f 1 -q 21 -l 3 -g 2 -t 1 -a 1 -o -v 24 -i raw/streamdump_mmap_active_10M
-./main popcornfilter -f 1 -q 20 -l 3 -g 2 -t 1 -a 1 -o -v 24 -i raw/streamdump_mmap_active_5M
-
+#Validation experiments
 #count-stretch filter
-./main popcornfilter -f 1 -q 21 -l 3 -g 4 -t 1 -o -v 24 -i raw/streamdump_mmap_active_50M
-./main popcornfilter -f 1 -q 20 -l 3 -g 4 -t 1 -o -v 24 -i raw/streamdump_mmap_powerlaw_50M
-./main popcornfilter -f 1 -q 18 -l 4 -g 4 -t 1 -o -v 24 -i raw/streamdump_mmap_powerlaw_50M
-./main popcornfilter -f 1 -q 16 -l 5 -g 4 -t 1 -o -v 24 -i raw/streamdump_mmap_powerlaw_50M
+./main popcornfilter -f 1 -q 22 -l 3 -g 4 -t 1 -o -v 24 -i raw/streamdump_mmap_active_new_50M
 
-#popcorn filter on-demand popcorning
-./main popcornfilter -f 1 -q 24 -l 3 -g 4 -t 1 -v 24 -i raw/streamdump_mmap_powerlaw_500M
-./main popcornfilter -f 1 -q 22 -l 4 -g 4 -t 1 -v 24 -i raw/streamdump_mmap_powerlaw_500M
-./main popcornfilter -f 1 -q 20 -l 5 -g 4 -t 1 -v 24 -i raw/streamdump_mmap_powerlaw_500M
+#time-stretch filter
+./main popcornfilter -f 1 -q 22 -l 3 -g 4 -t 1 -a 1 -o -v 24 -i raw/streamdump_mmap_active_new_50M
+./main popcornfilter -f 1 -q 22 -l 3 -g 4 -t 1 -a 2 -o -v 24 -i raw/streamdump_mmap_active_new_50M
+./main popcornfilter -f 1 -q 22 -l 3 -g 4 -t 1 -a 3 -o -v 24 -i raw/streamdump_mmap_active_new_50M
+./main popcornfilter -f 1 -q 22 -l 3 -g 4 -t 1 -a 4 -o -v 24 -i raw/streamdump_mmap_active_new_50M
 
 #creating plots from raw data
 cat raw/time-stretch.data | awk '{print $4","$6}' | tail -n +3 > raw/stretch && ./plot.py raw/stretch
 cat raw/time-stretch.data | awk '{print $4","$2}' | tail -n +3 > raw/birthtime && ./plot.py raw/birthtime
 cat raw/count-stretch.data | awk '{print $4","$6}' | tail -n +2 > raw/stretch && ./plot.py raw/stretch
 cat raw/count-stretch.data | awk '{print $4","$2}' | tail -n +2 > raw/birthtime && ./plot.py raw/birthtime
+
+------------------------------------------------------------------------------
+
+#I/O validation and insertion throughput on SSD experiments
+#count-stretch filter
+cgexec -g memory:popcorning ./main popcornfilter -f 1 -q 22 -l 3 -g 4 -t 1 -o -v 24 -i raw/streamdump_mmap_active_new_50M
+cgexec -g memory:popcorning ./main popcornfilter -f 1 -q 22 -l 3 -g 4 -t 1 -v 24 -i raw/streamdump_mmap_active_new_50M
+
+#time-stretch filter
+cgexec -g memory:popcorning ./main popcornfilter -f 1 -q 22 -l 3 -g 4 -t 1 -a 1 -o -v 24 -i raw/streamdump_mmap_active_new_50M
+cgexec -g memory:popcorning ./main popcornfilter -f 1 -q 22 -l 3 -g 4 -t 1 -a 2 -o -v 24 -i raw/streamdump_mmap_active_new_50M
+cgexec -g memory:popcorning ./main popcornfilter -f 1 -q 22 -l 3 -g 4 -t 1 -a 3 -o -v 24 -i raw/streamdump_mmap_active_new_50M
+cgexec -g memory:popcorning ./main popcornfilter -f 1 -q 22 -l 3 -g 4 -t 1 -a 4 -o -v 24 -i raw/streamdump_mmap_active_new_50M
+
+------------------------------------------------------------------------------
+
+#Scaling experiments
+#count-stretch filter
+echo 33554432 > /var/cgroups/popcorning/memory.limit_in_bytes
+cgexec -g memory:popcorning ./main popcornfilter -f 8 -q 19 -l 3 -g 4 -t 1 -o -e -v 24 -i raw/streamdump_mmap_active_new_50M
+echo 67108864 > /var/cgroups/popcorning/memory.limit_in_bytes
+cgexec -g memory:popcorning ./main popcornfilter -f 8 -q 20 -l 4 -g 4 -t 1 -o -e -v 24 -i raw/streamdump_mmap_active_new_200M
+echo 134217728 > /var/cgroups/popcorning/memory.limit_in_bytes
+cgexec -g memory:popcorning ./main popcornfilter -f 16 -q 20 -l 4 -g 4 -t 1 -o -e -v 24 -i raw/streamdump_mmap_active_new_500M
+
+#time-stretch filter
+echo 67108864 > /var/cgroups/popcorning/memory.limit_in_bytes
+cgexec -g memory:popcorning ./main popcornfilter -f 8 -q 20 -l 4 -g 4 -t 1 -a 1 -o -v 24 -i raw/streamdump_mmap_active_new_200M
+echo 134217728 > /var/cgroups/popcorning/memory.limit_in_bytes
+cgexec -g memory:popcorning ./main popcornfilter -f 16 -q 20 -l 4 -g 4 -t 1 -a 1 -o -v 24 -i raw/streamdump_mmap_active_new_500M
+
+
+
+
+
+##############################################################################
 
 
 ./main popcornfilter -f 1 -q 24 -l 4 -g 4 -t 1 -v 28 -i raw/streamdump_mmap_active_new_500M

@@ -150,7 +150,7 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 							 "-bit hashes, " << nlevels << " levels, and " << gfactor <<
 							 " as growth factor.");
 			std::string prefix = "logs/" + std::to_string(i) + "_";
-			cf.emplace_back(new CascadeFilter<KeyObject>(nkeybits, nvaluebits,
+			cf.emplace_back(new CascadeFilter<KeyObject>(i, nkeybits, nvaluebits,
 																									 nagebits, odp, greedy,
 																									 pinning, threshold_value,
 																									 thlds, sizes, nlevels,

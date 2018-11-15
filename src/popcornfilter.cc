@@ -410,6 +410,7 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	gettimeofday(&end, &tzp);
 	popcornfilter::print_time_elapsed("", &start, &end);
 	PRINT("Finished insertions.");
+	PRINT("Insertion throughput: " << nvals/(float)popcornfilter::cal_time_elapsed(&start, &end));
 
 	//PRINT("Total distinct elements inserted: " <<
 				//pf.get_total_dist_elements());
@@ -446,7 +447,9 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	PRINT("Total number of keys above threshold: " <<
 				pf.get_total_keys_above_threshold());
 
+#ifdef VALIDATE
 	pf.print_stats();
+#endif
 
 	return EXIT_SUCCESS;
 }				/* ----------  end of function main  ---------- */
