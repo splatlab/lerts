@@ -1,5 +1,11 @@
 # popcorning
 
+To build and test a sample program.
+
+```bash
+$ make main test
+```
+
 To run the program.
 
 ```bash
