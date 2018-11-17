@@ -1,6 +1,6 @@
 #Data generation
-./streamdump -s 5000000000 -f raw/streamdump_mmap_active_new_5B 12345
-./active -n 100000000 -r 500000 -a 1048576 127.0.0.1@12345
+./streamdump -s 500000000 -f raw/streamdump_mmap_active_new_500M 12345
+./active -n 10000000 -r 500000 -a 1048576 127.0.0.1@12345
 
 ------------------------------------------------------------------------------
 
