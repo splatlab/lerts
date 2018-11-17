@@ -173,7 +173,7 @@ void *thread_insert_socket(void *a) {
 	}
 	/* Finally dump anything left in the buffer. */
 	if (buffer_cqf.total_elts() > 0) {
-		PRINT("Dumping buffer final time.");
+		//PRINT("Dumping buffer final time.");
 		typename CQF<KeyObject>::Iterator it = buffer_cqf.begin();
 		do {
 			KeyObject key = *it;
