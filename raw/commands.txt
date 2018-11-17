@@ -4,6 +4,11 @@
 
 ------------------------------------------------------------------------------
 
+#I/O monitorinig
+sudo iotop  -oPak
+
+------------------------------------------------------------------------------
+
 #Validation experiments
 #count-stretch filter
 ./main popcornfilter -f 1 -q 22 -l 3 -g 4 -t 1 -o -v 24 -i raw/streamdump_mmap_active_new_50M
