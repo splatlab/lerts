@@ -617,8 +617,8 @@ void CascadeFilter<key_object>::perform_shuffle_merge_if_needed(void) {
 			ages[0] = (ages[0] + 1) % max_age;
 			if (need_shuffle_merge_time_stretch()) {
 				DEBUG("Number of observations seen: " << num_obs_seen);
-				PRINT("CascadeFilter " << id << " Flushing " << num_flush <<
-							" Num obs: " << num_obs_seen);
+				//PRINT("CascadeFilter " << id << " Flushing " << num_flush <<
+							//" Num obs: " << num_obs_seen);
 				gettimeofday(&flush_time_start, NULL);
 				shuffle_merge();
 				gettimeofday(&flush_time_end, NULL);
@@ -628,8 +628,8 @@ void CascadeFilter<key_object>::perform_shuffle_merge_if_needed(void) {
 				num_flush++;
 			}
 		} else {
-			PRINT("CascadeFilter " << id << " Flushing " << num_flush <<
-						" Num obs: " << num_obs_seen);
+			//PRINT("CascadeFilter " << id << " Flushing " << num_flush <<
+						//" Num obs: " << num_obs_seen);
 			gettimeofday(&flush_time_start, NULL);
 			shuffle_merge();
 			gettimeofday(&flush_time_end, NULL);
@@ -1025,7 +1025,7 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 	cur_key = *it;
 	++it;
 
-	PRINT("Finding anomalies final time.");
+	DEBUG("Finding anomalies final time.");
 	uint64_t value;
 	while(!it.done()) {
 		next_key = *it;

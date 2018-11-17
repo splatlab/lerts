@@ -1,3 +1,9 @@
+#Data generation
+./streamdump -s 5000000000 -f raw/streamdump_mmap_active_new_5B 12345
+./active -n 100000000 -r 500000 -a 1048576 127.0.0.1@12345
+
+------------------------------------------------------------------------------
+
 #Validation experiments
 #count-stretch filter
 ./main popcornfilter -f 1 -q 22 -l 3 -g 4 -t 1 -o -v 24 -i raw/streamdump_mmap_active_new_50M

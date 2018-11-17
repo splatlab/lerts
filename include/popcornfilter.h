@@ -276,7 +276,7 @@ void PopcornFilter<key_object>::print_stats(void) const {
 template <class key_object>
 void PopcornFilter<key_object>::find_anomalies(void) const {
 	for (uint32_t i = 0; i < nfilters; i++) {
-		PRINT("cascadefilter " << i);
+		DEBUG("cascadefilter " << i);
 		cf[i]->find_anomalies();
 	}
 }
