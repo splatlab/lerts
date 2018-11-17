@@ -200,6 +200,7 @@ void *thread_insert(void *a) {
 												args->pf->get_num_value_bits(), QF_HASH_INVERTIBLE,
 												args->pf->get_seed());
 
+	uint64_t num_buffer_dumps = 0;
 	/* First try and insert the key-value pair in the cascade filter. If the
 	 * insert fails then insert in the buffer. Later dump the buffer in the
 	 * cascade filter.
@@ -220,6 +221,7 @@ void *thread_insert(void *a) {
 				double load_factor = buffer.occupied_slots() /
 					(double)buffer.total_slots();
 				if (load_factor > 0.75) {
+					num_buffer_dumps++;
 					DEBUG("Dumping buffer.");
 					typename CQF<KeyObject>::Iterator it = buffer.begin();
 					do {
@@ -255,6 +257,7 @@ void *thread_insert(void *a) {
 			++it;
 		} while(!it.done());
 	}
+	PRINT("Total number of buffer dumps: " << num_buffer_dumps);
 
 	return nullptr;
 }
