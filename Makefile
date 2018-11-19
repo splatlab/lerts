@@ -58,7 +58,7 @@ all: $(TARGETS)
 main:						$(OBJDIR)/main.o $(OBJDIR)/popcornfilter.o \
 								$(OBJDIR)/cascadefilter.o $(OBJDIR)/zipf.o \
 								$(OBJDIR)/gqf.o $(OBJDIR)/gqf_file.o $(OBJDIR)/util.o \
-								$(OBJDIR)/hashutil.o
+								$(OBJDIR)/hashutil.o $(OBJDIR)/partitioned_counter.o
 
 streamdump: $(OBJDIR)/streamdump.o $(OBJDIR)/gqf.o $(OBJDIR)/util.o \
 								$(OBJDIR)/hashutil.o
@@ -75,20 +75,20 @@ $(OBJDIR)/cascadefilter.o: 		$(LOC_INCLUDE)/cascadefilter.h \
 															$(LOC_INCLUDE)/gqf_cpp.h \
  															$(LOC_INCLUDE)/util.h \
  															$(LOC_INCLUDE)/lock.h \
+ 															$(LOC_INCLUDE)/partitioned_counter.h \
  															$(LOC_INCLUDE)/zipf.h
-$(OBJDIR)/anomaly.o: 					$(LOC_INCLUDE)/gqf_cpp.h \
- 															$(LOC_INCLUDE)/util.h
- 															$(LOC_INCLUDE)/lock.h \
 $(OBJDIR)/streamdump.o: 	$(LOC_INCLUDE)/gqf_cpp.h \
  															$(LOC_INCLUDE)/util.h \
  															$(LOC_INCLUDE)/lock.h
 
 # dependencies between .o files and .cc (or .c) files
 
-$(OBJDIR)gqf.o: $(LOC_SRC)/gqf/gqf.c $(LOC_INCLUDE)/gqf/gqf.h
+$(OBJDIR)/gqf.o: $(LOC_SRC)/gqf/gqf.c $(LOC_INCLUDE)/gqf/gqf.h
 $(OBJDIR)/gqf_file.o: 	$(LOC_SRC)/gqf/gqf_file.c $(LOC_INCLUDE)/gqf/gqf_file.h
 $(OBJDIR)/hashutil.o: 	$(LOC_INCLUDE)/gqf/hashutil.h
-$(OBJDIR)zipf.o: $(LOC_SRC)/zipf.c $(LOC_INCLUDE)/zipf.h
+$(OBJDIR)/zipf.o: $(LOC_SRC)/zipf.c $(LOC_INCLUDE)/zipf.h
+$(OBJDIR)/partitioned_counter.o: $(LOC_SRC)/partitioned_counter.c \
+																$(LOC_INCLUDE)/partitioned_counter.h
 
 #
 # generic build rules

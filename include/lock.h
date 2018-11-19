@@ -58,9 +58,8 @@ class SpinLock {
 
 class ReaderWriterLock {
 	public:
-		ReaderWriterLock() {
-			pc_init(&pc_counter, &readers, 8, 100);
-			writer = 0;
+		ReaderWriterLock() : readers(0), writer(0) {
+			pc_init(&pc_counter, &readers, 8, 8);
 		}
 
 		/**
@@ -107,9 +106,9 @@ class ReaderWriterLock {
 		}
 
 	private:
-		pc_t pc_counter;
 		int64_t readers;
 		volatile int writer;
+		pc_t pc_counter;
 };
 
 #endif
