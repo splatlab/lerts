@@ -82,7 +82,6 @@ class PopcornFilter {
 		uint32_t fbits;
 		uint32_t nkeybits;
 		uint32_t nvaluebits;
-		LightweightLock pf_lw_lock;
 		std::vector<CascadeFilter<key_object>*> cf;
 };
 

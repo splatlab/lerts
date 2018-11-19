@@ -219,7 +219,7 @@ class CascadeFilter {
 		uint32_t max_age;
 		uint32_t num_obs_seen;
 		uint32_t seed;
-		LightweightLock cf_lw_lock;
+		SpinLock cf_spin_lock;
 		uint32_t id;
 		// to instrument
 		float total_mem_time;
@@ -1091,7 +1091,7 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 template <class key_object>
 bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 	if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
-		if (!cf_lw_lock.lock(flag))
+		if (!cf_spin_lock.lock(flag))
 			return false;
 
 	perform_shuffle_merge_if_needed();
@@ -1101,7 +1101,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 	// if the key is already reported then don't insert.
 	if (anomalies.query_key(k, &value, 0)) {
 		if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
-			cf_lw_lock.unlock();
+			cf_spin_lock.unlock();
 		num_obs_seen += k.count;
 		return true;
 	}
@@ -1231,7 +1231,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 	num_obs_seen += k.count;
 
 	if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
-		cf_lw_lock.unlock();
+		cf_spin_lock.unlock();
 
 	return ret;
 }
@@ -1239,14 +1239,14 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 template <class key_object>
 bool CascadeFilter<key_object>::remove(const key_object& k, uint8_t flag) {
 	if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
-		if (!cf_lw_lock.lock(flag))
+		if (!cf_spin_lock.lock(flag))
 			return false;
 
 	for (uint32_t i = 0; i < total_num_levels; i++)
 		filters[i].remove(k, PF_WAIT_FOR_LOCK);
 
 	if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
-		cf_lw_lock.unlock();
+		cf_spin_lock.unlock();
 
 	return true;
 }
@@ -1269,7 +1269,7 @@ template <class key_object>
 uint64_t CascadeFilter<key_object>::count_key_value(const key_object& k,
 																										uint8_t flag) {
 	if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
-		if (!cf_lw_lock.lock(flag))
+		if (!cf_spin_lock.lock(flag))
 			return false;
 
 	uint64_t value;
@@ -1281,7 +1281,7 @@ uint64_t CascadeFilter<key_object>::count_key_value(const key_object& k,
 	}
 
 	if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
-		cf_lw_lock.unlock();
+		cf_spin_lock.unlock();
 	return count;
 }
 
