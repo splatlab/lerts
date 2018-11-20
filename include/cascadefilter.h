@@ -617,14 +617,14 @@ bool CascadeFilter<key_object>::perform_shuffle_merge_if_needed(uint8_t flag) {
 			ages[0] = (ages[0] + 1) % max_age;
 			if (need_shuffle_merge_time_stretch()) {
 				DEBUG("Number of observations seen: " << num_obs_seen);
-				PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
-							" Num obs: " << num_obs_seen);
 				gettimeofday(&flush_time_start, NULL);
 				// release the reader lock.
 				if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 					cf_rw_lock.read_unlock();
 				// acquire the write lock.
 				cf_rw_lock.write_lock();
+				PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
+							" Num obs: " << num_obs_seen);
 				shuffle_merge();
 				gettimeofday(&flush_time_end, NULL);
 				total_flush_time += popcornfilter::cal_time_elapsed(&flush_time_start,
@@ -639,14 +639,14 @@ bool CascadeFilter<key_object>::perform_shuffle_merge_if_needed(uint8_t flag) {
 						return false;
 			}
 		} else {
-			PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
-						" Num obs: " << num_obs_seen);
 			gettimeofday(&flush_time_start, NULL);
 			// release the reader lock.
 			if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 				cf_rw_lock.read_unlock();
 			// acquire the write lock.
 			cf_rw_lock.write_lock();
+			PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
+						" Num obs: " << num_obs_seen);
 			shuffle_merge();
 			gettimeofday(&flush_time_end, NULL);
 			total_flush_time += popcornfilter::cal_time_elapsed(&flush_time_start,

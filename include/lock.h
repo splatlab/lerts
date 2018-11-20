@@ -93,9 +93,9 @@ class ReaderWriterLock {
 		 */
 		void write_lock()
 		{
+			pc_sync(&pc_counter);
 			while (__sync_lock_test_and_set(&writer, 1))
 				while (writer != 0);
-			pc_sync(&pc_counter);
 			while(readers);
 		}
 
