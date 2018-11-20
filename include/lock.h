@@ -91,12 +91,19 @@ class ReaderWriterLock {
 		 * Try to acquire a write lock and spin until the lock is available.
 		 * Then wait till reader count is 0.
 		 */
-		void write_lock()
+		bool write_lock(uint8_t flag)
 		{
-			pc_sync(&pc_counter);
-			while (__sync_lock_test_and_set(&writer, 1))
-				while (writer != 0);
-			while(readers);
+			if (GET_PF_WAIT_FOR_LOCK(flag) != PF_WAIT_FOR_LOCK) {
+				return !__sync_lock_test_and_set(&writer, 1);
+			} else {
+				while (__sync_lock_test_and_set(&writer, 1))
+					while (writer != 0);
+				do {
+					pc_sync(&pc_counter);
+				} while(readers);
+			}
+
+			return false;
 		}
 
 		void write_unlock(void)

@@ -622,9 +622,9 @@ bool CascadeFilter<key_object>::perform_shuffle_merge_if_needed(uint8_t flag) {
 				if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 					cf_rw_lock.read_unlock();
 				// acquire the write lock.
-				cf_rw_lock.write_lock();
-				PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
-							" Num obs: " << num_obs_seen);
+				cf_rw_lock.write_lock(PF_TRY_ONCE_LOCK);
+				//PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
+							//" Num obs: " << num_obs_seen);
 				shuffle_merge();
 				gettimeofday(&flush_time_end, NULL);
 				total_flush_time += popcornfilter::cal_time_elapsed(&flush_time_start,
@@ -644,9 +644,9 @@ bool CascadeFilter<key_object>::perform_shuffle_merge_if_needed(uint8_t flag) {
 			if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 				cf_rw_lock.read_unlock();
 			// acquire the write lock.
-			cf_rw_lock.write_lock();
-			PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
-						" Num obs: " << num_obs_seen);
+			cf_rw_lock.write_lock(PF_TRY_ONCE_LOCK);
+			//PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
+						//" Num obs: " << num_obs_seen);
 			shuffle_merge();
 			gettimeofday(&flush_time_end, NULL);
 			total_flush_time += popcornfilter::cal_time_elapsed(&flush_time_start,
@@ -712,9 +712,8 @@ void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 			final_level = i;
 		k.value = k.value | 1;	// set the absolute count bit.
 		k.level = final_level;
-		int cqf_ret = qf_arr[final_level].insert(k, PF_WAIT_FOR_LOCK |
-																						 QF_KEY_IS_HASH);
-		if (cqf_ret < 0) {
+		int cqf_ret = qf_arr[final_level].insert(k, PF_NO_LOCK | QF_KEY_IS_HASH);
+		if (cqf_ret == QF_NO_SPACE) {
 			ERROR("CascadeFilter " << id << " Level " << final_level <<
 						" is too full. Please increase the size.");
 			exit(1);
@@ -723,8 +722,8 @@ void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 		for (int32_t i = nlevels; i > 0; i--) {
 			if (k.count >= thresholds[i]) {
 				key_object cur(k.key, k.value, thresholds[i], i);
-				int cqf_ret = qf_arr[i].insert(cur, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
-				if (cqf_ret < 0) {
+				int cqf_ret = qf_arr[i].insert(cur, PF_NO_LOCK | QF_KEY_IS_HASH);
+				if (cqf_ret == QF_NO_SPACE) {
 					ERROR("CascadeFilter " << id << " Level " << i <<
 								" is too full. Please increase the size.");
 					exit(1);
@@ -744,8 +743,8 @@ void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 					}
 				}
 				k.level = i;
-				int cqf_ret = qf_arr[i].insert(k, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
-				if (cqf_ret < 0) {
+				int cqf_ret = qf_arr[i].insert(k, PF_NO_LOCK | QF_KEY_IS_HASH);
+				if (cqf_ret == QF_NO_SPACE) {
 					ERROR("CascadeFilter " << id << " Level " << i <<
 								" is too full. Please increase the size.");
 					exit(1);
@@ -757,8 +756,8 @@ void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 		/* If some observations are left then insert them in the first level. */
 		if (k.count > 0) {
 			k.level = 0;
-			int cqf_ret = qf_arr[0].insert(k, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
-			if (cqf_ret < 0) {
+			int cqf_ret = qf_arr[0].insert(k, PF_NO_LOCK | QF_KEY_IS_HASH);
+			if (cqf_ret == QF_NO_SPACE) {
 				ERROR("CascadeFilter " << id <<
 							" Level 0 is too full. Please increase the size.");
 				exit(1);
@@ -803,9 +802,9 @@ void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 			// not aged yet. reinsert the key with aggregated count in the lowest
 			// level (involved in the shuffle-merge) it was present in.
 			else {
-				int cqf_ret = qf_arr[cur.level].insert(cur, PF_WAIT_FOR_LOCK |
+				int cqf_ret = qf_arr[cur.level].insert(cur, PF_NO_LOCK |
 																							 QF_KEY_IS_HASH);
-				if (cqf_ret < 0) {
+				if (cqf_ret == QF_NO_SPACE) {
 					ERROR("CascadeFilter " << id << " Level " << cur.level <<
 								" is too full. Please increase the size.");
 					exit(1);
@@ -914,8 +913,9 @@ void CascadeFilter<key_object>::merge() {
 		if (cur_key == next_key)
 			cur_key.count += next_key.count;
 		else {
-			int cqf_ret = filters[nlevels].insert(cur_key, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
-			if (cqf_ret < 0) {
+			int cqf_ret = filters[nlevels].insert(cur_key, PF_WAIT_FOR_LOCK |
+																						QF_KEY_IS_HASH);
+			if (cqf_ret == QF_NO_SPACE) {
 				ERROR("CascadeFilter " << id << " Level " << nlevels <<
 							" is too full. Please increase the size.");
 				exit(1);
@@ -928,8 +928,9 @@ void CascadeFilter<key_object>::merge() {
 	} while(!it.done());
 
 	/* Insert the last key in the cascade filter. */
-	int cqf_ret = filters[nlevels].insert(cur_key, PF_WAIT_FOR_LOCK | QF_KEY_IS_HASH);
-	if (cqf_ret < 0) {
+	int cqf_ret = filters[nlevels].insert(cur_key, PF_WAIT_FOR_LOCK |
+																				QF_KEY_IS_HASH);
+	if (cqf_ret == QF_NO_SPACE) {
 		ERROR("CascadeFilter " << id << " Level " << nlevels <<
 					" is too full. Please increase the size.");
 		exit(1);
@@ -1263,7 +1264,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 
 template <class key_object>
 bool CascadeFilter<key_object>::remove(const key_object& k, uint8_t flag) {
-	cf_rw_lock.write_lock();
+	cf_rw_lock.write_lock(PF_WAIT_FOR_LOCK);
 
 	for (uint32_t i = 0; i < total_num_levels; i++)
 		filters[i].remove(k, PF_WAIT_FOR_LOCK);
