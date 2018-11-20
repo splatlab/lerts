@@ -621,21 +621,26 @@ bool CascadeFilter<key_object>::perform_shuffle_merge_if_needed(uint8_t flag) {
 				// release the reader lock.
 				if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 					cf_rw_lock.read_unlock();
-				// acquire the write lock.
-				if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
-					if (!cf_rw_lock.write_lock(flag))
-						return false;
-				//PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
-							//" Num obs: " << num_obs_seen);
-				shuffle_merge();
-				gettimeofday(&flush_time_end, NULL);
-				total_flush_time += popcornfilter::cal_time_elapsed(&flush_time_start,
-																														&flush_time_end);
-				// Increment the flushing count.
-				num_flush++;
-				// release the write lock.
-				if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
+				// try once for the write lock
+				// if the lock is acquired then perform the shuffle-merge.
+				// Else, 
+				// if TRY_ONCE flag is passed then return false.
+				// else continue the insertion without the shuffle-merge.
+				if(cf_rw_lock.write_lock(PF_TRY_ONCE_LOCK)) {
+					//PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
+					//" Num obs: " << num_obs_seen);
+					shuffle_merge();
+					gettimeofday(&flush_time_end, NULL);
+					total_flush_time += popcornfilter::cal_time_elapsed(&flush_time_start,
+																															&flush_time_end);
+					// Increment the flushing count.
+					num_flush++;
+					// release the write lock.
 					cf_rw_lock.write_unlock();
+				} else {
+					if (GET_PF_TRY_ONCE_LOCK(flag) == PF_TRY_ONCE_LOCK)
+						return false;
+				}
 				// acquire the reader lock.
 				if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 					if (!cf_rw_lock.read_lock(flag))
@@ -646,21 +651,26 @@ bool CascadeFilter<key_object>::perform_shuffle_merge_if_needed(uint8_t flag) {
 			// release the reader lock.
 			if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 				cf_rw_lock.read_unlock();
-			// acquire the write lock.
-			if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
-				if (!cf_rw_lock.write_lock(flag))
-					return false;
-			//PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
-						//" Num obs: " << num_obs_seen);
-			shuffle_merge();
-			gettimeofday(&flush_time_end, NULL);
-			total_flush_time += popcornfilter::cal_time_elapsed(&flush_time_start,
-																													&flush_time_end);
-			// Increment the flushing count.
-			num_flush++;
-			// release the write lock.
-			if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
+			// try once for the write lock
+			// if the lock is acquired then perform the shuffle-merge.
+			// Else, 
+			// if TRY_ONCE flag is passed then return false.
+			// else continue the insertion without the shuffle-merge.
+			if(cf_rw_lock.write_lock(PF_TRY_ONCE_LOCK)) {
+				//PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
+				//" Num obs: " << num_obs_seen);
+				shuffle_merge();
+				gettimeofday(&flush_time_end, NULL);
+				total_flush_time += popcornfilter::cal_time_elapsed(&flush_time_start,
+																														&flush_time_end);
+				// Increment the flushing count.
+				num_flush++;
+				// release the write lock.
 				cf_rw_lock.write_unlock();
+			} else {
+				if (GET_PF_TRY_ONCE_LOCK(flag) == PF_TRY_ONCE_LOCK)
+					return false;
+			}
 			// acquire the reader lock.
 			if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 				if (!cf_rw_lock.read_lock(flag))
