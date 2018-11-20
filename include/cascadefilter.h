@@ -622,7 +622,9 @@ bool CascadeFilter<key_object>::perform_shuffle_merge_if_needed(uint8_t flag) {
 				if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 					cf_rw_lock.read_unlock();
 				// acquire the write lock.
-				cf_rw_lock.write_lock(PF_TRY_ONCE_LOCK);
+				if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
+					if (!cf_rw_lock.write_lock(flag))
+						return false;
 				//PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
 							//" Num obs: " << num_obs_seen);
 				shuffle_merge();
@@ -632,7 +634,8 @@ bool CascadeFilter<key_object>::perform_shuffle_merge_if_needed(uint8_t flag) {
 				// Increment the flushing count.
 				num_flush++;
 				// release the write lock.
-				cf_rw_lock.write_unlock();
+				if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
+					cf_rw_lock.write_unlock();
 				// acquire the reader lock.
 				if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 					if (!cf_rw_lock.read_lock(flag))
@@ -644,7 +647,9 @@ bool CascadeFilter<key_object>::perform_shuffle_merge_if_needed(uint8_t flag) {
 			if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 				cf_rw_lock.read_unlock();
 			// acquire the write lock.
-			cf_rw_lock.write_lock(PF_TRY_ONCE_LOCK);
+			if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
+				if (!cf_rw_lock.write_lock(flag))
+					return false;
 			//PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
 						//" Num obs: " << num_obs_seen);
 			shuffle_merge();
@@ -654,7 +659,8 @@ bool CascadeFilter<key_object>::perform_shuffle_merge_if_needed(uint8_t flag) {
 			// Increment the flushing count.
 			num_flush++;
 			// release the write lock.
-			cf_rw_lock.write_unlock();
+			if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
+				cf_rw_lock.write_unlock();
 			// acquire the reader lock.
 			if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 				if (!cf_rw_lock.read_lock(flag))
