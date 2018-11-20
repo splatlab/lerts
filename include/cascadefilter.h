@@ -1177,12 +1177,13 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 	 * still have the flag "PF_WAIT_FOR_LOCK" here just to be extra sure that we
 	 * will not corrupt the data structure.
 	 */
-	int cqf_ret = filters[0].insert(dup_k, PF_WAIT_FOR_LOCK);
-	bool ret;
-	if (cqf_ret < 0)
-		ret = false;
-	else
-		ret = true;
+	int cqf_ret = filters[0].insert(dup_k, flag);
+	if (cqf_ret < 0) {
+		if (cqf_ret == QF_NO_SPACE)
+			ERROR("In-memory CQF is full.");
+		else
+			return false;
+	}
 
 	// update the RAM count after the current insertion.
 	ram_count += dup_k.count;
@@ -1262,11 +1263,13 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 				}
 				dup_k.count = aggr_count;
 				dup_k.value = dup_k.value | 1;		// set the absolute count bit
-				cqf_ret = filters[0].insert(dup_k, PF_WAIT_FOR_LOCK);
-				if (cqf_ret < 0)
-					ret = false;
-				else
-					ret = true;
+				cqf_ret = filters[0].insert(dup_k, flag);
+				if (cqf_ret < 0) {
+					if (cqf_ret == QF_NO_SPACE)
+						ERROR("In-memory CQF is full.");
+					else
+						return false;
+				}
 			}
 		}
 	}
@@ -1275,7 +1278,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 	if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 		cf_rw_lock.read_unlock();
 
-	return ret;
+	return true;
 }
 
 template <class key_object>
