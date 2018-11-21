@@ -211,12 +211,12 @@ void *thread_insert(void *a) {
 			args->batch_size = args->stream_size - start;
 		offset += args->batch_size;
 		uint64_t end = start + args->batch_size;
-		DEBUG("Inserting from: " << start << " to: " << end);
+		//DEBUG("Inserting from: " << start << " to: " << end);
 		while (start < end) {
 			uint64_t key = args->vals[start];
 			if (!args->pf->insert(KeyObject(key, 0, 1, 0),
 														PF_TRY_ONCE_LOCK)) {
-				DEBUG("Inserting in the buffer.");
+				//DEBUG("Inserting in the buffer.");
 				buffer.insert(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
 				double load_factor = buffer.occupied_slots() /
 					(double)buffer.total_slots();

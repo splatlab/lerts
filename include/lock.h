@@ -58,9 +58,8 @@ class SpinLock {
 
 class ReaderWriterLock {
 	public:
-		ReaderWriterLock() {
-			pc_init(&pc_counter, &readers, 8, 100);
-			writer = 0;
+		ReaderWriterLock() : readers(0), writer(0) {
+			pc_init(&pc_counter, &readers, 8, 8);
 		}
 
 		/**
@@ -92,12 +91,19 @@ class ReaderWriterLock {
 		 * Try to acquire a write lock and spin until the lock is available.
 		 * Then wait till reader count is 0.
 		 */
-		void write_lock()
+		bool write_lock(uint8_t flag)
 		{
-			while (__sync_lock_test_and_set(&writer, 1))
-				while (writer != 0);
-			pc_sync(&pc_counter);
-			while(readers);
+			if (GET_PF_WAIT_FOR_LOCK(flag) != PF_WAIT_FOR_LOCK) {
+				return !__sync_lock_test_and_set(&writer, 1);
+			} else {
+				while (__sync_lock_test_and_set(&writer, 1))
+					while (writer != 0);
+				do {
+					pc_sync(&pc_counter);
+				} while(readers);
+			}
+
+			return false;
 		}
 
 		void write_unlock(void)
@@ -107,9 +113,9 @@ class ReaderWriterLock {
 		}
 
 	private:
-		pc_t pc_counter;
 		int64_t readers;
 		volatile int writer;
+		pc_t pc_counter;
 };
 
 #endif
