@@ -67,7 +67,7 @@ test: $(LOGDIR)
 	./main popcornfilter -f 1 -q 16 -l 3 -g 2 -t 1 -a 1 -o -v 24
 
 setup:
-	sudo apt install cgroup-tools
+	sudo apt install cgroup-tools libssl-dev
 	sudo cgconfigparser -l scripts/cgconfig.conf
 
 firehose:
