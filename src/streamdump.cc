@@ -256,8 +256,8 @@ int main(int argc, char **argv)
 		}
 	}
 
-	std::cout << "Received stream with " << cnt << " observations and " << total
-		<< std::endl;
+	std::cout << "Received stream with " << cnt << 
+		" observations and some garbage " << total << std::endl;
 
 	uint64_t final_size = cnt*sizeof(uint64_t);
 	int fd = open(filename, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);

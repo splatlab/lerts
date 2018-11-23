@@ -66,6 +66,34 @@ streamdump: $(OBJDIR)/streamdump.o $(OBJDIR)/gqf.o $(OBJDIR)/util.o \
 test: $(LOGDIR)
 	./main popcornfilter -f 1 -q 16 -l 3 -g 2 -t 1 -a 1 -o -v 24
 
+setup:
+	sudo apt install cgroup-tools
+	sudo cgconfigparser -l scripts/cgconfig.conf
+
+firehose:
+	git clone https://github.com/splatlab/firehose.git
+	cd firehose/generators/active/; make; cd -
+
+data_gen:
+	./streamdump -s 500000000 -f raw/streamdump_mmap_active_new_50M 12345 & \
+	./firehose/generators/active/active -n 10000000 -r 500000 -a 1048576 127.0.0.1@12345
+
+popcorn:
+	echo 134217728 > /var/cgroups/popcorning/memory.limit_in_bytes
+	cgexec -g memory:popcorning ./main popcornfilter -f 256 -q 16 -l 4 -g 4 -t 1 \
+		-o -e -v 24 -i raw/streamdump_mmap_active_new_500M >> 500M_data.output
+	cgexec -g memory:popcorning ./main popcornfilter -f 256 -q 16 -l 4 -g 4 -t 2 \
+		-o -e -v 24 -i raw/streamdump_mmap_active_new_500M >> 500M_data.output
+	cgexec -g memory:popcorning ./main popcornfilter -f 256 -q 16 -l 4 -g 4 -t 4 \
+		-o -e -v 24 -i raw/streamdump_mmap_active_new_500M >> 500M_data.output
+	cgexec -g memory:popcorning ./main popcornfilter -f 256 -q 16 -l 4 -g 4 -t 8 \
+		-o -e -v 24 -i raw/streamdump_mmap_active_new_500M >> 500M_data.output
+	cgexec -g memory:popcorning ./main popcornfilter -f 256 -q 16 -l 4 -g 4 -t 16 \
+		-o -e -v 24 -i raw/streamdump_mmap_active_new_500M >> 500M_data.output
+	cgexec -g memory:popcorning ./main popcornfilter -f 256 -q 16 -l 4 -g 4 -t 32 \
+		-o -e -v 24 -i raw/streamdump_mmap_active_new_500M >> 500M_data.output
+
+
 # dependencies between .o files and .h files
 
 $(OBJDIR)/main.o: 						$(LOC_INCLUDE)/popcornfilter.h
@@ -113,4 +141,4 @@ $(LOGDIR):
 	@mkdir -p $(LOGDIR)
 
 clean:
-	rm -rf $(OBJDIR) core $(TARGETS)
+	rm -rf $(OBJDIR) $(LOGDIR) firehose core $(TARGETS)
