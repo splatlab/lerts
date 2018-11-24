@@ -12,7 +12,7 @@ RAM=134217728
 #RAM=268435456
 
 
-Set -x
+set -x
 echo  $RAM > /var/cgroups/popcorning/memory.limit_in_bytes
 
 #---------- 512 cones
