@@ -116,7 +116,7 @@ popcorn500M:
 	echo "-f 256 -q 16 -l 4 -g 4 -t 16 -o -e -v 24" >> 500M_data.output
 	cgexec -g memory:popcorning ./main popcornfilter -f 256 -q 16 -l 4 -g 4 -t 16 \
 		-o -e -v 24 -i raw/streamdump_mmap_active_new_500M >> 500M_data.output
-	echo "-f 256 -q 16 -l 4 -g 4 -t 32 -o -e -v 24" >> 500M_data.output
+	echo "-f 1024 -q 14 -l 4 -g 4 -t 32 -o -e -v 24" >> 500M_data.output
 	cgexec -g memory:popcorning ./main popcornfilter -f 256 -q 16 -l 4 -g 4 -t 32 \
 		-o -e -v 24 -i raw/streamdump_mmap_active_new_500M >> 500M_data.output
 
