@@ -79,18 +79,18 @@ data_gen50M:
 	./firehose/generators/active/active -n 1000000 -r 500000 -a 1048576 127.0.0.1@12345
 
 popcorn50M:
-	echo "Scaling throughput for 50M dataset" > 50M_data.outpput
+	echo "Scaling throughput for 50M dataset" > 50M_data.output
 	echo 33554432 > /var/cgroups/popcorning/memory.limit_in_bytes
-	echo "-f 8 -q 19 -l 3 -g 4 -t 1 -o -e -v 24" >> 50M_output.data
+	echo "-f 8 -q 19 -l 3 -g 4 -t 1 -o -e -v 24" >> 50M_data.output
 	cgexec -g memory:popcorning ./main popcornfilter -f 8 -q 19 -l 3 -g 4 -t 1 \
 		-o -e -v 24 -i raw/streamdump_mmap_active_new_50M >> 50M_data.output
-	echo "-f 8 -q 19 -l 3 -g 4 -t 2 -o -e -v 24" >> 50M_output.data
+	echo "-f 8 -q 19 -l 3 -g 4 -t 2 -o -e -v 24" >> 50M_data.output
 	cgexec -g memory:popcorning ./main popcornfilter -f 8 -q 19 -l 3 -g 4 -t 2 \
 		-o -e -v 24 -i raw/streamdump_mmap_active_new_50M >> 50M_data.output
-	echo "-f 8 -q 19 -l 3 -g 4 -t 3 -o -e -v 24" >> 50M_output.data
+	echo "-f 8 -q 19 -l 3 -g 4 -t 3 -o -e -v 24" >> 50M_data.output
 	cgexec -g memory:popcorning ./main popcornfilter -f 8 -q 19 -l 3 -g 4 -t 3 \
 		-o -e -v 24 -i raw/streamdump_mmap_active_new_50M >> 50M_data.output
-	echo "-f 8 -q 19 -l 3 -g 4 -t 4 -o -e -v 24" >> 50M_output.data
+	echo "-f 8 -q 19 -l 3 -g 4 -t 4 -o -e -v 24" >> 50M_data.output
 	cgexec -g memory:popcorning ./main popcornfilter -f 8 -q 19 -l 3 -g 4 -t 4 \
 		-o -e -v 24 -i raw/streamdump_mmap_active_new_50M >> 50M_data.output
 
@@ -99,24 +99,24 @@ data_gen500M:
 	./firehose/generators/active/active -n 10000000 -r 500000 -a 1048576 127.0.0.1@12345
 
 popcorn500M:
-	echo "Scaling throughput for 500M dataset" > 500M_output.data
+	echo "Scaling throughput for 500M dataset" > 500M_data.output
 	echo 134217728 > /var/cgroups/popcorning/memory.limit_in_bytes
-	echo "-f 256 -q 16 -l 4 -g 4 -t 1 -o -e -v 24" >> 500M_output.data
+	echo "-f 256 -q 16 -l 4 -g 4 -t 1 -o -e -v 24" >> 500M_data.output
 	cgexec -g memory:popcorning ./main popcornfilter -f 256 -q 16 -l 4 -g 4 -t 1 \
 		-o -e -v 24 -i raw/streamdump_mmap_active_new_500M >> 500M_data.output
-	echo "-f 256 -q 16 -l 4 -g 4 -t 2 -o -e -v 24" >> 500M_output.data
+	echo "-f 256 -q 16 -l 4 -g 4 -t 2 -o -e -v 24" >> 500M_data.output
 	cgexec -g memory:popcorning ./main popcornfilter -f 256 -q 16 -l 4 -g 4 -t 2 \
 		-o -e -v 24 -i raw/streamdump_mmap_active_new_500M >> 500M_data.output
-	echo "-f 256 -q 16 -l 4 -g 4 -t 4 -o -e -v 24" >> 500M_output.data
+	echo "-f 256 -q 16 -l 4 -g 4 -t 4 -o -e -v 24" >> 500M_data.output
 	cgexec -g memory:popcorning ./main popcornfilter -f 256 -q 16 -l 4 -g 4 -t 4 \
 		-o -e -v 24 -i raw/streamdump_mmap_active_new_500M >> 500M_data.output
-	echo "-f 256 -q 16 -l 4 -g 4 -t 8 -o -e -v 24" >> 500M_output.data
+	echo "-f 256 -q 16 -l 4 -g 4 -t 8 -o -e -v 24" >> 500M_data.output
 	cgexec -g memory:popcorning ./main popcornfilter -f 256 -q 16 -l 4 -g 4 -t 8 \
 		-o -e -v 24 -i raw/streamdump_mmap_active_new_500M >> 500M_data.output
-	echo "-f 256 -q 16 -l 4 -g 4 -t 16 -o -e -v 24" >> 500M_output.data
+	echo "-f 256 -q 16 -l 4 -g 4 -t 16 -o -e -v 24" >> 500M_data.output
 	cgexec -g memory:popcorning ./main popcornfilter -f 256 -q 16 -l 4 -g 4 -t 16 \
 		-o -e -v 24 -i raw/streamdump_mmap_active_new_500M >> 500M_data.output
-	echo "-f 256 -q 16 -l 4 -g 4 -t 32 -o -e -v 24" >> 500M_output.data
+	echo "-f 256 -q 16 -l 4 -g 4 -t 32 -o -e -v 24" >> 500M_data.output
 	cgexec -g memory:popcorning ./main popcornfilter -f 256 -q 16 -l 4 -g 4 -t 32 \
 		-o -e -v 24 -i raw/streamdump_mmap_active_new_500M >> 500M_data.output
 
