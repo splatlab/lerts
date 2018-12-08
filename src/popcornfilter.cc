@@ -147,8 +147,8 @@ void *thread_insert_socket(void *a) {
 			key = MurmurHash64A( ((void*)&key), sizeof(key), seed);
 			key = key % range;
 			// insert in the popcorn filter.
-			if (!args->pf->insert(KeyObject(key, 0, 1, 0),
-														PF_TRY_ONCE_LOCK)) {
+			int ret = args->pf->insert(KeyObject(key, 0, 1, 0), PF_TRY_ONCE_LOCK);
+			if (ret == COULDNT_LOCK) {
 				DEBUG("Inserting in the buffer.");
 				buffer_cqf.insert(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
 				double load_factor = buffer_cqf.occupied_slots() /
@@ -167,6 +167,8 @@ void *thread_insert_socket(void *a) {
 					} while(!it.done());
 					buffer_cqf.reset();
 				}
+			} else if (ret == NO_SPACE) {
+				return nullptr;
 			}
 			total += value + truth;
 		}
@@ -214,8 +216,8 @@ void *thread_insert(void *a) {
 		//DEBUG("Inserting from: " << start << " to: " << end);
 		while (start < end) {
 			uint64_t key = args->vals[start];
-			if (!args->pf->insert(KeyObject(key, 0, 1, 0),
-														PF_TRY_ONCE_LOCK)) {
+			int ret = args->pf->insert(KeyObject(key, 0, 1, 0), PF_TRY_ONCE_LOCK);
+			if (ret == COULDNT_LOCK) {
 				//DEBUG("Inserting in the buffer.");
 				buffer.insert(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
 				double load_factor = buffer.occupied_slots() /
@@ -239,6 +241,8 @@ void *thread_insert(void *a) {
 					} while(!it.done());
 					buffer.reset();
 				}
+			} else if (ret == NO_SPACE) {
+				return nullptr;
 			}
 			start++;
 		}

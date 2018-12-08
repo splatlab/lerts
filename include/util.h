@@ -35,6 +35,9 @@
 	{ std::cout << x << std::endl; } \
 } while (0)
 
+#define NO_SPACE (-1)
+#define COULDNT_LOCK (-2)
+
 namespace popcornfilter {
 	float cal_time_elapsed(struct timeval* start, struct timeval* end);
 	/* Print elapsed time using the start and end timeval */
