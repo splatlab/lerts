@@ -1,4 +1,5 @@
-TARGETS=main streamdump
+TARGETS= $(COMPILE_TARGETS) test
+COMPILE_TARGETS=main streamdump
 
 ifdef D
 	DEBUG=-g -DDEBUG_MODE
@@ -175,7 +176,7 @@ $(OBJDIR)/partitioned_counter.o: $(LOC_SRC)/partitioned_counter.c \
 # generic build rules
 #
 
-$(TARGETS):
+$(COMPILE_TARGETS):
 	$(LD) $^ $(LDFLAGS) -o $@
 
 $(OBJDIR)/%.o: $(LOC_SRC)/%.cc | $(OBJDIR)

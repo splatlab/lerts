@@ -47,7 +47,7 @@ class PopcornFilter {
 
 		~PopcornFilter();
 
-		bool insert(const key_object& k, uint8_t flag);
+		bool insert(const key_object& k, uint64_t index, uint8_t flag);
 
 		uint64_t query(const key_object& k, uint8_t flag);
 
@@ -235,7 +235,8 @@ uint64_t PopcornFilter<key_object>::get_total_keys_above_threshold(void) const
 }
 
 template <class key_object>
-bool PopcornFilter<key_object>::insert(const key_object& k, uint8_t flag) {
+bool PopcornFilter<key_object>::insert(const key_object& k, uint64_t index,
+																			 uint8_t flag) {
 	bool ret = true;
 	KeyObject dup_k(k);
 
@@ -243,7 +244,7 @@ bool PopcornFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 	if (fbits > 0)
 		filter_idx = (dup_k.key >> nkeybits) & BITMASK(fbits);
 	dup_k.key = dup_k.key & BITMASK(nkeybits);
-	ret = cf[filter_idx]->insert(dup_k, flag);
+	ret = cf[filter_idx]->insert(dup_k, index, flag);
 
 	return ret;
 }

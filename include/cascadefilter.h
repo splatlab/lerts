@@ -69,7 +69,7 @@ class CascadeFilter {
 		uint64_t get_max_size(void) const;
 
 		/* Increment the counter for this key/value pair by count. */
-		bool insert(const key_object& key_val_cnt, uint8_t flag);
+		bool insert(const key_object& key_val_cnt, uint64_t index, uint8_t flag);
 
 		/* Remove count instances of this key/value combination. */
 		bool remove(const key_object& key_val_cnt, uint8_t flag);
@@ -1130,7 +1130,8 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 }
 
 template <class key_object>
-bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
+bool CascadeFilter<key_object>::insert(const key_object& k, uint64_t index,
+																			 uint8_t flag) {
 	if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 		if (!cf_rw_lock.read_lock(flag))
 			return false;
@@ -1144,7 +1145,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 	if (anomalies.query_key(k, &value, 0)) {
 		if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 			cf_rw_lock.read_unlock();
-		num_obs_seen += k.count;
+		num_obs_seen = index;
 		return true;
 	}
 
@@ -1273,7 +1274,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint8_t flag) {
 			}
 		}
 	}
-	num_obs_seen += k.count;
+	num_obs_seen = index;
 
 	if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 		cf_rw_lock.read_unlock();
