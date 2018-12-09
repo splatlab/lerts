@@ -81,11 +81,11 @@ class CascadeFilter {
 		/**
 		 * report anomalies currently in the system.
 		 */
-		void find_anomalies(void);
+		void find_anomalies(uint64_t index);
 
 		bool validate_key_lifetimes(std::unordered_map<uint64_t,
 																std::pair<uint64_t, uint64_t>> key_lifetime,
-																uint64_t *vals);
+																uint64_t *vals, uint64_t index);
 
 		class Iterator {
 			public:
@@ -147,7 +147,7 @@ class CascadeFilter {
 		 */
 		void update_flush_counters(uint32_t nlevels);
 
-		bool perform_shuffle_merge_if_needed(uint8_t flag);
+		bool perform_shuffle_merge_if_needed(uint64_t index, uint8_t flag);
 
 		/** Perform a standard cascade filter merge. It merges "num_levels" levels
 		 * and inserts all the elements into a new level.  Merge will be called
@@ -174,7 +174,7 @@ class CascadeFilter {
 		 * After the shuffle-merge the cqfs in @qf_arr will be destroyed and memory
 		 * will be freed.
 		 */
-		void shuffle_merge();
+		void shuffle_merge(uint64_t index);
 
 		/**
 		 * Spread the count of the key in the cascade filter.
@@ -186,7 +186,7 @@ class CascadeFilter {
 		 * Insert count in the last level.
 		 */
 		void insert_element(CQF<key_object> *qf_arr, key_object cur, uint32_t
-												level);
+												level, uint64_t index);
 
 		uint64_t ondisk_count(key_object k);
 
@@ -422,13 +422,13 @@ uint64_t CascadeFilter<key_object>::get_num_keys_above_threshold(void) const {
 template <class key_object>
 bool CascadeFilter<key_object>::validate_key_lifetimes(
 								std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
-								key_lifetime, uint64_t *vals) {
+								key_lifetime, uint64_t *vals, uint64_t index) {
 	uint32_t failures = 0;
 	std::ofstream result;
 
 	// find anomalies that are not reported yet.
 	if (!odp)
-		find_anomalies();
+		find_anomalies(index);
 
 	DEBUG("Anomaly CQF ");
 	anomalies.dump_metadata();
@@ -610,7 +610,9 @@ uint32_t CascadeFilter<key_object>::find_levels_to_flush(void) const {
 }
 
 template <class key_object>
-bool CascadeFilter<key_object>::perform_shuffle_merge_if_needed(uint8_t flag) {
+bool CascadeFilter<key_object>::perform_shuffle_merge_if_needed(uint64_t
+																																index, uint8_t
+																																flag) {
 	if (is_ram_full()) {
 		if (max_age) {
 			// Age is increased for level 0 whenever it is 1/alpha full.
@@ -627,9 +629,9 @@ bool CascadeFilter<key_object>::perform_shuffle_merge_if_needed(uint8_t flag) {
 				// if TRY_ONCE flag is passed then return false.
 				// else continue the insertion without the shuffle-merge.
 				if(cf_rw_lock.write_lock(PF_TRY_ONCE_LOCK)) {
-					//PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
-					//" Num obs: " << num_obs_seen);
-					shuffle_merge();
+					PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
+								" Num obs: " << num_obs_seen);
+					shuffle_merge(index);
 					gettimeofday(&flush_time_end, NULL);
 					total_flush_time += popcornfilter::cal_time_elapsed(&flush_time_start,
 																															&flush_time_end);
@@ -657,9 +659,9 @@ bool CascadeFilter<key_object>::perform_shuffle_merge_if_needed(uint8_t flag) {
 			// if TRY_ONCE flag is passed then return false.
 			// else continue the insertion without the shuffle-merge.
 			if(cf_rw_lock.write_lock(PF_TRY_ONCE_LOCK)) {
-				//PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
-				//" Num obs: " << num_obs_seen);
-				shuffle_merge();
+				PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
+							" Num obs: " << num_obs_seen);
+				shuffle_merge(index);
 				gettimeofday(&flush_time_end, NULL);
 				total_flush_time += popcornfilter::cal_time_elapsed(&flush_time_start,
 																														&flush_time_end);
@@ -785,12 +787,12 @@ void CascadeFilter<key_object>::smear_element(CQF<key_object> *qf_arr,
 template <class key_object>
 void CascadeFilter<key_object>::insert_element(CQF<key_object> *qf_arr,
 																							 key_object cur, uint32_t
-																							 nlevels) {
+																							 nlevels, uint64_t index) {
 	uint64_t value;
 	if (cur.count >= threshold_value) {
 		if (anomalies.query_key(cur, &value, QF_KEY_IS_HASH) == 0) {
 			// the count is the index at which the key is reported.
-			cur.count = num_obs_seen;
+			cur.count = index;
 			// value 0 means that it is reported through shuffle-merge.
 			cur.value = 0;
 #ifdef VALIDATE
@@ -965,7 +967,7 @@ void CascadeFilter<key_object>::merge() {
 }
 
 template <class key_object>
-void CascadeFilter<key_object>::shuffle_merge() {
+void CascadeFilter<key_object>::shuffle_merge(uint64_t index) {
 	/* The empty level is also involved in the shuffle merge. */
 	uint32_t nlevels = 0;
 	if (max_age) {
@@ -1029,9 +1031,9 @@ void CascadeFilter<key_object>::shuffle_merge() {
 			//PRINT("Inserting " << cur_key.to_string());
 			// When only odp is enabled the absolute count is only set in RAM
 			if (odp && (cur_key.value & 1) == 1)
-				insert_element(new_filters, cur_key, 0);
+				insert_element(new_filters, cur_key, 0, index);
 			else
-				insert_element(new_filters, cur_key, nlevels - 1);
+				insert_element(new_filters, cur_key, nlevels - 1, index);
 			/* Update cur_key. */
 			cur_key = next_key;
 		}
@@ -1041,7 +1043,7 @@ void CascadeFilter<key_object>::shuffle_merge() {
 
 	//PRINT("Inserting " << cur_key.to_string());
 	/* Insert the last key in the cascade filter. */
-	insert_element(new_filters, cur_key, nlevels - 1);
+	insert_element(new_filters, cur_key, nlevels - 1, index);
 
 	update_flush_counters(nlevels);
 
@@ -1060,7 +1062,7 @@ void CascadeFilter<key_object>::shuffle_merge() {
 }
 
 template <class key_object>
-void CascadeFilter<key_object>::find_anomalies(void) {
+void CascadeFilter<key_object>::find_anomalies(uint64_t index) {
 	KeyObject cur_key, next_key;
 	CascadeFilter<key_object>::Iterator it = begin(total_num_levels);
 	cur_key = *it;
@@ -1081,7 +1083,7 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 			if (cur_key.count >= threshold_value) {
 				if (anomalies.query_key(cur_key, &value, QF_KEY_IS_HASH) == 0) {
 					// the count is the index at which the key is reported.
-					cur_key.count = num_obs_seen;
+					cur_key.count = index;
 					// value 0 means that it is reported through shuffle-merge.
 					cur_key.value = 0;
 #ifdef VALIDATE
@@ -1109,7 +1111,7 @@ void CascadeFilter<key_object>::find_anomalies(void) {
 	if (cur_key.count >= threshold_value) {
 		if (anomalies.query_key(cur_key, &value, QF_KEY_IS_HASH) == 0) {
 			// the count is the index at which the key is reported.
-			cur_key.count = num_obs_seen;
+			cur_key.count = index;
 			// value 0 means that it is reported through shuffle-merge.
 			cur_key.value = 0;
 #ifdef VALIDATE
@@ -1136,7 +1138,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint64_t index,
 		if (!cf_rw_lock.read_lock(flag))
 			return false;
 
-	if (!perform_shuffle_merge_if_needed(flag))
+	if (!perform_shuffle_merge_if_needed(index, flag))
 		return false;
 
 	gettimeofday(&mem_time_start, NULL);
@@ -1145,7 +1147,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint64_t index,
 	if (anomalies.query_key(k, &value, 0)) {
 		if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 			cf_rw_lock.read_unlock();
-		num_obs_seen = index;
+		num_obs_seen += k.count;
 		return true;
 	}
 
@@ -1180,10 +1182,17 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint64_t index,
 	 */
 	int cqf_ret = filters[0].insert(dup_k, flag);
 	if (cqf_ret < 0) {
-		if (cqf_ret == QF_NO_SPACE)
-			ERROR("In-memory CQF is full.");
-		else
+		if (cqf_ret == QF_NO_SPACE) {
+			ERROR("CascadeFilter " << id << " Level " << 0 <<
+						" is too full. Please increase the size.");
+			PRINT("Flushes " << num_flush << " Num obs: " << num_obs_seen);
+			exit(1);
+		} else {
+			if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
+				cf_rw_lock.read_unlock();
+			num_obs_seen += k.count;
 			return false;
+		}
 	}
 
 	// update the RAM count after the current insertion.
@@ -1194,7 +1203,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint64_t index,
 	if (ram_count >= threshold_value &&
 			anomalies.query_key(dup_k, &value, 0) == 0) {
 		// the count is the index at which the key is reported.
-		dup_k.count = num_obs_seen;
+		dup_k.count = index;
 		// value 1 means that it is reported through odp.
 		if (!absolute_count)
 			dup_k.value = 0;
@@ -1238,7 +1247,7 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint64_t index,
 			if (aggr_count >= threshold_value) {
 				// count is the index at which the key is reported.
 				// value 1 means that it is reported through odp.
-				dup_k.count = num_obs_seen;
+				dup_k.count = index;
 				dup_k.value = 1;
 #ifdef VALIDATE
 				if (anomalies.is_full())
@@ -1266,15 +1275,21 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint64_t index,
 				dup_k.value = dup_k.value | 1;		// set the absolute count bit
 				cqf_ret = filters[0].insert(dup_k, flag);
 				if (cqf_ret < 0) {
-					if (cqf_ret == QF_NO_SPACE)
-						ERROR("In-memory CQF is full.");
-					else
+					if (cqf_ret == QF_NO_SPACE) {
+						ERROR("CascadeFilter " << id << " Level " << 0 <<
+									" is too full. Please increase the size.");
+						exit(1);
+					} else {
+						if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
+							cf_rw_lock.read_unlock();
+						num_obs_seen += k.count;
 						return false;
+					}
 				}
 			}
 		}
 	}
-	num_obs_seen = index;
+	num_obs_seen += k.count;
 
 	if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 		cf_rw_lock.read_unlock();

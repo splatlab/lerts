@@ -37,6 +37,14 @@ main ( int argc, char *argv[] )
 	PopcornFilterOpts pfopt;
 	pfopt.console = console;
 
+	auto check_power_of_two = [](const int nfilters) -> bool {
+		if (nfilters > 1 && ceil(log2(nfilters) != floor(log2(nfilters)))) {
+			std::string e = "Number of cones should be a power of 2.";
+			throw std::runtime_error{e};
+		}
+		return true;
+	};
+
 	auto enusure_opt_count_stretch = [](const PopcornFilterOpts pfopt) -> bool {
 		if (pfopt.nagebits > 0 && (pfopt.greedy == 1  || pfopt.pinning == 1)) {
 			std::string e = "Optimizations can only be specified for the count-stretch filter";
@@ -96,6 +104,7 @@ main ( int argc, char *argv[] )
 		switch(selected) {
 			case mode::bm_pf:
 				try {
+					check_power_of_two(pfopt.nfilters);
 					enusure_opt_count_stretch(pfopt);
 				} catch (std::exception& e) {
 					std::cout << "\n\nParsing command line failed with exception: " <<

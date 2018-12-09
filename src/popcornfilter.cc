@@ -443,14 +443,14 @@ int popcornfilter_main (PopcornFilterOpts opts)
 #ifdef VALIDATE
 	if (nthreads == 1) {
 		PRINT("Performing validation");
-		if (pf.validate_anomalies(keylifetimes, vals))
+		if (pf.validate_anomalies(keylifetimes, vals, nvals - 1))
 			PRINT("Validation successful!");
 		else
 			PRINT("Validation failed!");
 	}
 #else
 	if (!opts.do_odp)
-		pf.find_anomalies();
+		pf.find_anomalies(nvals - 1);
 #endif
 
 	PRINT("Total number of keys above threshold: " <<

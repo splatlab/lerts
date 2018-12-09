@@ -64,10 +64,10 @@ class PopcornFilter {
 		uint64_t get_total_observations_inserted(void) const;
 
 		void print_stats(void) const;
-		void find_anomalies(void) const;
+		void find_anomalies(uint64_t index) const;
 		bool validate_anomalies(std::unordered_map<uint64_t,
 															 std::pair<uint64_t, uint64_t>> key_lifetime,
-															 uint64_t *vals);
+															 uint64_t *vals, uint64_t index);
 
 	private:
 		uint64_t nfilters;
@@ -274,17 +274,17 @@ void PopcornFilter<key_object>::print_stats(void) const {
 }
 
 template <class key_object>
-void PopcornFilter<key_object>::find_anomalies(void) const {
+void PopcornFilter<key_object>::find_anomalies(uint64_t index) const {
 	for (uint32_t i = 0; i < nfilters; i++) {
 		DEBUG("cascadefilter " << i);
-		cf[i]->find_anomalies();
+		cf[i]->find_anomalies(index);
 	}
 }
 
 template <class key_object>
 bool PopcornFilter<key_object>::validate_anomalies(
 								std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
-								key_lifetime, uint64_t *vals) {
+								key_lifetime, uint64_t *vals, uint64_t index) {
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
 		per_filter[nfilters];
 	for (auto it : key_lifetime) {
@@ -297,7 +297,7 @@ bool PopcornFilter<key_object>::validate_anomalies(
 		}
 	}
 	for (uint32_t i = 0; i < nfilters; i++)
-		if (!cf[i]->validate_key_lifetimes(per_filter[i], vals))
+		if (!cf[i]->validate_key_lifetimes(per_filter[i], vals, index))
 			return false;
 	return true;
 }
