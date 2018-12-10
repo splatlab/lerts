@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <algorithm>
+#include <atomic>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -217,7 +218,7 @@ class CascadeFilter {
 		uint32_t gfactor;
 		uint32_t popcorn_threshold;
 		uint32_t max_age;
-		uint32_t num_obs_seen;
+		std::atomic<uint32_t> num_obs_seen;
 		uint32_t seed;
 		ReaderWriterLock cf_rw_lock;
 		uint32_t id;
@@ -629,8 +630,8 @@ bool CascadeFilter<key_object>::perform_shuffle_merge_if_needed(uint64_t
 				// if TRY_ONCE flag is passed then return false.
 				// else continue the insertion without the shuffle-merge.
 				if(cf_rw_lock.write_lock(PF_TRY_ONCE_LOCK)) {
-					PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
-								" Num obs: " << num_obs_seen);
+					//PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
+								//" Num obs: " << num_obs_seen);
 					shuffle_merge(index);
 					gettimeofday(&flush_time_end, NULL);
 					total_flush_time += popcornfilter::cal_time_elapsed(&flush_time_start,
@@ -659,8 +660,8 @@ bool CascadeFilter<key_object>::perform_shuffle_merge_if_needed(uint64_t
 			// if TRY_ONCE flag is passed then return false.
 			// else continue the insertion without the shuffle-merge.
 			if(cf_rw_lock.write_lock(PF_TRY_ONCE_LOCK)) {
-				PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
-							" Num obs: " << num_obs_seen);
+				//PRINT("CascadeFilter " << id << " Flushing " << num_flush <<
+							//" Num obs: " << num_obs_seen);
 				shuffle_merge(index);
 				gettimeofday(&flush_time_end, NULL);
 				total_flush_time += popcornfilter::cal_time_elapsed(&flush_time_start,
@@ -1185,12 +1186,11 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint64_t index,
 		if (cqf_ret == QF_NO_SPACE) {
 			ERROR("CascadeFilter " << id << " Level " << 0 <<
 						" is too full. Please increase the size.");
-			PRINT("Flushes " << num_flush << " Num obs: " << num_obs_seen);
+			ERROR("Flushes " << num_flush << " Num obs: " << num_obs_seen);
 			exit(1);
 		} else {
 			if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 				cf_rw_lock.read_unlock();
-			num_obs_seen += k.count;
 			return false;
 		}
 	}
@@ -1282,7 +1282,6 @@ bool CascadeFilter<key_object>::insert(const key_object& k, uint64_t index,
 					} else {
 						if (GET_PF_NO_LOCK(flag) != PF_NO_LOCK)
 							cf_rw_lock.read_unlock();
-						num_obs_seen += k.count;
 						return false;
 					}
 				}
