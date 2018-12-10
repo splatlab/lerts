@@ -12,7 +12,7 @@ public class TestFreq {
 
   public static void main(String[] args) {
     int Max = (1 << 30);
-    int size = (1 << 26);
+    int size = (1 << 19);
     int nitems = (int)(0.75*size);
 
     LongsSketch sketch1 = new LongsSketch(size);
