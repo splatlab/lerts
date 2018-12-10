@@ -1,27 +1,37 @@
+import java.util.*;
+
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import com.yahoo.memory.Memory;
 import com.yahoo.sketches.ArrayOfStringsSerDe;
-import com.yahoo.sketches.frequencies.ErrorType;
-import com.yahoo.sketches.frequencies.ItemsSketch;
+import com.yahoo.sketches.frequencies.*;
 
 
 
 public class TestFreq {
 
   public static void main(String[] args) {
-    ItemsSketch<String> sketch1 = new ItemsSketch<String>(64);
-    sketch1.update("a");
-    sketch1.update("a");
-    sketch1.update("b");
-    sketch1.update("c");
-    sketch1.update("a");
-    sketch1.update("d");
-    sketch1.update("a");
+    int Max = (1 << 30);
+    int size = (1 << 26);
+    int nitems = (int)(0.75*size);
 
-    System.out.println("Estimate a: " + sketch1.getEstimate("a"));
-    System.out.println("Estimate b: " + sketch1.getEstimate("b"));
-    System.out.println("Estimate c: " + sketch1.getEstimate("c"));
-    System.out.println("Estimate d: " + sketch1.getEstimate("d"));
+    LongsSketch sketch1 = new LongsSketch(size);
+
+    List<Long> itemList = new ArrayList<Long>();
+    for (int i = 0; i < nitems; i++) {
+      long item = (long)(Math.random() * Max);
+      //System.out.println("Inserting " + item);
+      itemList.add(item);
+    }
+
+    long startTime = System.currentTimeMillis();
+    for (int i = 0; i < itemList.size(); i++) {
+      sketch1.update(itemList.get(i));
+      //sketch1.getEstimate(itemList.get(i));
+    }
+    long endTime = System.currentTimeMillis();
+    double total_time = (endTime - startTime) / 1000.0;
+    System.out.println("Total time: " + total_time + " seconds");
+    System.out.println("Throughput " + nitems/total_time + " inserts/seconds");
   }
 }
