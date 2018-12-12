@@ -12,12 +12,13 @@ public class TestFreq {
 
   public static void main(String[] args) {
     int Max = (1 << 30);
-    int size = (1 << 19);
-    int nitems = (int)(0.75*size);
+    int size = (1 << Integer.parseInt(args[0]));
+    int nitems = (int)(10*size);
 
     LongsSketch sketch1 = new LongsSketch(size);
 
     List<Long> itemList = new ArrayList<Long>();
+    System.out.println("Nitems: " + nitems + " Size: " + size);
     for (int i = 0; i < nitems; i++) {
       long item = (long)(Math.random() * Max);
       //System.out.println("Inserting " + item);
