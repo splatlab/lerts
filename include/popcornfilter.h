@@ -221,7 +221,7 @@ uint64_t PopcornFilter<key_object>::get_total_observations_inserted(void)
 	const {
 	uint64_t total = 0;
 	for (uint32_t i = 0; i < nfilters; i++)
-		total += cf[i]->get_num_observations();
+		total += cf[i]->get_num_obs_inserted();
 	return total;
 }
 
