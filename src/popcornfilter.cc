@@ -43,7 +43,16 @@
 
 #define BUFFER_SIZE (1ULL << 16)
 #define BATCH_SIZE 1000
-std::atomic<uint64_t> offset{0};
+
+uint64_t offset{0};
+
+uint64_t get_offset(void) {
+	return __atomic_load_n(&offset, __ATOMIC_SEQ_CST);
+}
+
+uint64_t incr_offset(uint64_t count) {
+	return __atomic_fetch_add(&offset, count, __ATOMIC_SEQ_CST);
+}
 
 typedef struct socket_attr {
 	int nsenders{1};
@@ -137,9 +146,10 @@ void *thread_insert_socket(void *a) {
 
 		// scan past header line
 		strtok(&buffer[0],"\n");
+		uint64_t start = incr_offset(attr.perpacket);
 
 		// process perpacket datums in packet
-		for (int i = 0; i < attr.perpacket; i++) {
+		for (int i = 0; i < attr.perpacket; i++, start++) {
 			uint64_t key = strtoul(strtok(NULL,",\n"),NULL,0);
 			uint32_t value = strtoul(strtok(NULL,",\n"),NULL,0);
 			uint32_t truth = strtoul(strtok(NULL,",\n"),NULL,0);
@@ -147,7 +157,7 @@ void *thread_insert_socket(void *a) {
 			key = MurmurHash64A( ((void*)&key), sizeof(key), seed);
 			key = key % range;
 			// insert in the popcorn filter.
-			if (!args->pf->insert(KeyObject(key, 0, 1, 0),
+			if (!args->pf->insert(KeyObject(key, 0, 1, 0), start + i,
 														PF_TRY_ONCE_LOCK)) {
 				DEBUG("Inserting in the buffer.");
 				buffer_cqf.insert(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
@@ -158,7 +168,7 @@ void *thread_insert_socket(void *a) {
 					typename CQF<KeyObject>::Iterator it = buffer_cqf.begin();
 					do {
 						KeyObject key = *it;
-						if (!args->pf->insert(key, PF_WAIT_FOR_LOCK)) {
+						if (!args->pf->insert(key, start + i, PF_WAIT_FOR_LOCK)) {
 							std::cerr << "Failed insertion for " << (uint64_t)key.key <<
 								std::endl;
 							abort();
@@ -174,15 +184,17 @@ void *thread_insert_socket(void *a) {
 	/* Finally dump anything left in the buffer. */
 	if (buffer_cqf.total_elts() > 0) {
 		//PRINT("Dumping buffer final time.");
+		uint64_t start = get_offset();
 		typename CQF<KeyObject>::Iterator it = buffer_cqf.begin();
 		do {
 			KeyObject key = *it;
 			//PRINT("Inserting key " + key.to_string());
-			if (!args->pf->insert(key, PF_WAIT_FOR_LOCK)) {
+			if (!args->pf->insert(key, start, PF_WAIT_FOR_LOCK)) {
 				std::cerr << "Failed insertion for " << (uint64_t)key.key << std::endl;
 				abort();
 			}
 			++it;
+			start++;
 		} while(!it.done());
 	}
 
@@ -205,16 +217,18 @@ void *thread_insert(void *a) {
 	 * insert fails then insert in the buffer. Later dump the buffer in the
 	 * cascade filter.
 	 */
-	while (offset != args->stream_size) {
-		uint64_t start = offset;
-		if (start + args->batch_size > args->stream_size)
+	uint64_t start{0}, end{0};
+	do {
+		start = incr_offset(args->batch_size);
+		if (start >= args->stream_size)
+			break;
+		else if (start + args->batch_size > args->stream_size)
 			args->batch_size = args->stream_size - start;
-		offset += args->batch_size;
-		uint64_t end = start + args->batch_size;
-		//DEBUG("Inserting from: " << start << " to: " << end);
+		end = start + args->batch_size;
+		//PRINT("Inserting from: " << start << " to: " << end);
 		while (start < end) {
 			uint64_t key = args->vals[start];
-			if (!args->pf->insert(KeyObject(key, 0, 1, 0),
+			if (!args->pf->insert(KeyObject(key, 0, 1, 0), start,
 														PF_TRY_ONCE_LOCK)) {
 				//DEBUG("Inserting in the buffer.");
 				buffer.insert(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
@@ -229,7 +243,7 @@ void *thread_insert(void *a) {
 						uint64_t count = key.count;
 						key.count = 1;
 						for (uint64_t c = 0; c < count; c++) {
-							if (!args->pf->insert(key, PF_WAIT_FOR_LOCK)) {
+							if (!args->pf->insert(key, start, PF_WAIT_FOR_LOCK)) {
 								std::cerr << "Failed insertion for " << (uint64_t)key.key <<
 									std::endl;
 								abort();
@@ -242,19 +256,21 @@ void *thread_insert(void *a) {
 			}
 			start++;
 		}
-	}
+	} while (end < args->stream_size);
 	/* Finally dump anything left in the buffer. */
 	if (buffer.total_elts() > 0) {
 //		PRINT("Dumping buffer final time.");
+		start = get_offset();
 		typename CQF<KeyObject>::Iterator it = buffer.begin();
 		do {
 			KeyObject key = *it;
 			//PRINT("Inserting key " + key.to_string());
-			if (!args->pf->insert(key, PF_WAIT_FOR_LOCK)) {
+			if (!args->pf->insert(key, start, PF_WAIT_FOR_LOCK)) {
 				std::cerr << "Failed insertion for " << (uint64_t)key.key << std::endl;
 				abort();
 			}
 			++it;
+			start++;
 		} while(!it.done());
 	}
 	PRINT("Total number of buffer dumps: " << num_buffer_dumps);
@@ -435,16 +451,14 @@ int popcornfilter_main (PopcornFilterOpts opts)
 #endif
 
 #ifdef VALIDATE
-	if (nthreads == 1) {
 		PRINT("Performing validation");
-		if (pf.validate_anomalies(keylifetimes, vals))
+		if (pf.validate_anomalies(keylifetimes, vals, nvals - 1))
 			PRINT("Validation successful!");
 		else
 			PRINT("Validation failed!");
-	}
 #else
 	if (!opts.do_odp)
-		pf.find_anomalies();
+		pf.find_anomalies(nvals - 1);
 #endif
 
 	PRINT("Total number of keys above threshold: " <<

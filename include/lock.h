@@ -93,17 +93,20 @@ class ReaderWriterLock {
 		 */
 		bool write_lock(uint8_t flag)
 		{
+			// acquire write lock.
 			if (GET_PF_WAIT_FOR_LOCK(flag) != PF_WAIT_FOR_LOCK) {
-				return !__sync_lock_test_and_set(&writer, 1);
+				if (__sync_lock_test_and_set(&writer, 1))
+					return false;
 			} else {
 				while (__sync_lock_test_and_set(&writer, 1))
 					while (writer != 0);
-				do {
-					pc_sync(&pc_counter);
-				} while(readers);
 			}
+			// wait for readers to finish
+			do {
+				pc_sync(&pc_counter);
+			} while(readers);
 
-			return false;
+			return true;
 		}
 
 		void write_unlock(void)

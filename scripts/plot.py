@@ -3,7 +3,7 @@
 import sys
 from decimal import *
 import matplotlib.pyplot as plt
-plt.rcParams.update({'font.size': 48})
+plt.rcParams.update({'font.size': 24})
 import csv
 
 x = []
