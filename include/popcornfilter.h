@@ -296,9 +296,24 @@ bool PopcornFilter<key_object>::validate_anomalies(
 			per_filter[filter_idx][key] = it.second;
 		}
 	}
+	std::ofstream result;
+	if (nagebits > 0) {
+		result.open("raw/time-stretch.data");
+		result << "Key Index-0 Index-T Lifetime ReportIndex Stretch" << std::endl;
+	} else if (odp) {
+		result.open("raw/immediate-reporting.data");
+		result << "key odp Index-0 Index-T Lifetime Report_Index" << std::endl;
+	} else {
+		result.open("raw/count-stretch.data");
+		//result << "x_0 y_0 y_1 y_2" << std::endl;
+		result << "Key Index-0 Index-T Lifetime ReportCount Stretch TimeStretch" << std::endl;
+	}
+
 	for (uint32_t i = 0; i < nfilters; i++)
-		if (!cf[i]->validate_key_lifetimes(per_filter[i], vals, index))
+		if (!cf[i]->validate_key_lifetimes(per_filter[i], vals, index, result))
 			return false;
+
+	result.close();
 	return true;
 }
 
