@@ -86,7 +86,8 @@ class CascadeFilter {
 
 		bool validate_key_lifetimes(std::unordered_map<uint64_t,
 																std::pair<uint64_t, uint64_t>> key_lifetime,
-																uint64_t *vals, uint64_t index);
+																uint64_t *vals, uint64_t index, std::ofstream&
+								result);
 
 		class Iterator {
 			public:
@@ -459,9 +460,9 @@ uint64_t CascadeFilter<key_object>::get_num_keys_above_threshold(void) const {
 template <class key_object>
 bool CascadeFilter<key_object>::validate_key_lifetimes(
 								std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
-								key_lifetime, uint64_t *vals, uint64_t index) {
+								key_lifetime, uint64_t *vals, uint64_t index, std::ofstream&
+								result) {
 	uint32_t failures = 0;
-	std::ofstream result;
 
 	// find anomalies that are not reported yet.
 	if (!odp)
@@ -472,11 +473,7 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 
 	//PRINT("Number of keys above threshold: " << get_num_keys_above_threshold());
 	if (max_age) {
-		result.open("raw/time-stretch.data");
-		//result << "x_0 y_0 y_1 y_2" << std::endl;
 		double stretch = 1 + 1 / (float)num_age_bits;
-		result << "Maximum allowed stretch: " << stretch << std::endl;
-		result << "Key Index-0 Index-T Lifetime ReportIndex Stretch" << std::endl;
 		for (auto it : key_lifetime) {
 			if (it.second.first < it.second.second) {
 				uint64_t value;
@@ -501,8 +498,6 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 			}
 		}
 	} else if (odp) {
-		result.open("raw/immediate-reporting.data");
-		result << "key odp Index-0 Index-T Lifetime Report_Index" << std::endl;
 		for (auto it : key_lifetime) {
 			if (it.second.first < it.second.second) {
 				uint64_t value = 0;
@@ -521,9 +516,6 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 			}
 		}
 	} else if (count_stretch) {
-		result.open("raw/count-stretch.data");
-		//result << "x_0 y_0 y_1 y_2" << std::endl;
-		result << "Key Index-0 Index-T Lifetime ReportCount Stretch TimeStretch" << std::endl;
 		// for count stretch the count stored with keys in anomalies is the actual
 		// count at the time of reporting.
 		for (auto it : key_lifetime) {
@@ -531,6 +523,12 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 				uint64_t value;
 				key_object k(it.first, 0, 0, 0);
 				uint64_t reportindex = anomalies.query_key(k, &value, 0);
+				// with multiple threads the reportindex can be greater than the
+				// maximum index in the stream
+				if (reportindex > index) {
+					PRINT("Reporting index: " << reportindex << " index: " << index);
+					reportindex = index;
+				}
 				uint64_t reportcount = popcornfilter::actual_count_at_index(vals,
 																																		it.first,
 																																		reportindex);
@@ -561,7 +559,6 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 		PRINT("Failed to report " << failures << " keys on time.");
 		return false;
 	}
-	//result.close();
 }
 
 template <class key_object>
@@ -675,8 +672,8 @@ bool CascadeFilter<key_object>::perform_shuffle_merge_if_needed(uint64_t
 			// if TRY_ONCE flag is passed then return false.
 			// else continue the insertion without the shuffle-merge.
 			if(cf_rw_lock.write_lock(PF_TRY_ONCE_LOCK)) {
-				PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
-				" Num obs: " << num_obs_seen * (num_flush + 1));
+				//PRINT("CascadeFilter " << id << " Flushing " << num_flush << 
+				//" Num obs: " << num_obs_seen * (num_flush + 1));
 				shuffle_merge(index);
 				gettimeofday(&flush_time_end, NULL);
 				total_flush_time += popcornfilter::cal_time_elapsed(&flush_time_start,
@@ -706,8 +703,8 @@ bool CascadeFilter<key_object>::perform_shuffle_merge_if_needed(uint64_t
 			// if TRY_ONCE flag is passed then return false.
 			// else continue the insertion without the shuffle-merge.
 			if(cf_rw_lock.write_lock(PF_TRY_ONCE_LOCK)) {
-				PRINT("CascadeFilter " << id << " Flushing " << num_flush <<
-							" Num obs: " << num_obs_seen * (num_flush + 1));
+				//PRINT("CascadeFilter " << id << " Flushing " << num_flush <<
+							//" Num obs: " << num_obs_seen * (num_flush + 1));
 				shuffle_merge(index);
 				gettimeofday(&flush_time_end, NULL);
 				total_flush_time += popcornfilter::cal_time_elapsed(&flush_time_start,
