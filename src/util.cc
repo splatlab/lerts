@@ -183,6 +183,13 @@ namespace popcornfilter {
 			return num_keys;
 		}
 
+		void write_stream_to_disk(std::string file, uint64_t *arr, uint64_t len) {
+			std::ofstream dumpfile(file.c_str());
+			for (uint64_t i = 0; i < len; i++)
+				dumpfile << arr[i] << std::endl;
+			dumpfile.close();
+		}
+
 		std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
 			read_stream_log_from_disk(std::string file) {
 				uint64_t key, index0, index24;

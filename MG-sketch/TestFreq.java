@@ -1,5 +1,7 @@
 import java.util.*;
 
+import java.io.*;
+import java.io.FileNotFoundException;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import com.yahoo.memory.Memory;
@@ -11,19 +13,33 @@ import com.yahoo.sketches.frequencies.*;
 public class TestFreq {
 
   public static void main(String[] args) {
-    int Max = (1 << 30);
     int size = (1 << Integer.parseInt(args[0]));
-    int nitems = (int)(0.75*size);
+    String filename = args[1];
 
     LongsSketch sketch1 = new LongsSketch(size);
 
+    BufferedReader reader = null;
     List<Long> itemList = new ArrayList<Long>();
-    System.out.println("Nitems: " + nitems + " Size: " + size);
-    for (int i = 0; i < nitems; i++) {
-      long item = (long)(Math.random() * Max);
-      //System.out.println("Inserting " + item);
-      itemList.add(item);
+    try {
+      reader = new BufferedReader(new FileReader(filename));
+      String text = null;
+      while ((text = reader.readLine()) != null) {
+        itemList.add(Long.parseLong(text));
+      }
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    } finally {
+      try {
+        if (reader != null) {
+          reader.close();
+        }
+      } catch (IOException e) {
+      }
     }
+    int nitems = itemList.size();
+    System.out.println("Nitems: " + nitems);
 
     long startTime = System.currentTimeMillis();
     for (int i = 0; i < itemList.size(); i++) {

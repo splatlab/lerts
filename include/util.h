@@ -53,6 +53,7 @@ namespace popcornfilter {
 													 start_idx, uint64_t lifetime, uint32_t num);
 	uint64_t *read_file_disk(std::string file);
 	uint64_t *read_stream_from_disk(std::string file, uint64_t *num_keys);
+	void write_stream_to_disk(std::string file, uint64_t *arr, uint64_t len);
 	uint64_t get_number_keys(std::string file);
 
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
