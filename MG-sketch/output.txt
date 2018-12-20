@@ -1,10 +1,11 @@
 java -cp ./*:$CLASSPATH TestFreq 26 streamdump_mmap_active_new_50M.txt
 
-/usr/bin/time cgexec -g memory:popcorning java -cp ./*:$CLASSPATH TestFreq 26  streamdump_mmap_active_new_50M.txt
+/usr/bin/time cgexec -g memory:popcorning java -cp ./*:$CLASSPATH TestFreq 26
+streamdump_mmap_active_new_50M.txt
 Picked up _JAVA_OPTIONS: -Xmx30g
-Nitems: 50331648 Size: 67108864
-Total time: 8604.639 seconds
-Throughput 5849.361954638655 inserts/seconds
-176.78user 3676.28system 2:26:37elapsed 43%CPU (0avgtext+0avgdata
-47868maxresident)k
-1166081768inputs+17240outputs (55114920major+160939127minor)pagefaults 0swaps
+Nitems: 50000000
+Total time: 8754.558 seconds
+Throughput 5711.310610998293 inserts/seconds
+150.71user 4086.84system 2:30:06elapsed 47%CPU (0avgtext+0avgdata
+48300maxresident)k
+1169696856inputs+20088outputs (67420666major+139134078minor)pagefaults 0swaps
