@@ -470,6 +470,8 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 	//if (!odp)
 		//find_anomalies(index);
 
+	PRINT("Total flushes: " << num_flush);
+
 	DEBUG("Anomaly CQF ");
 	anomalies.dump_metadata();
 
