@@ -65,6 +65,8 @@ main ( int argc, char *argv[] )
 									"growth factor in each cascade filter. (default is 4)",
 									required("-t", "--threads") & value("num_threads", pfopt.nthreads) %
 									"number of threads (default is 1)",
+									option("-c", "--cascade_filter").set(pfopt.cascade, 1) %
+									"create a cascade filter. (default is 0)",
 									option("-a", "--age_bits") & value("num_age_bits", pfopt.nagebits) %
 									"number of aging bits. (default is 0)",
 									option("-o", "--no-odp").set(pfopt.do_odp, 0) %

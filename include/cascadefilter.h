@@ -50,8 +50,8 @@ template <class key_object>
 class CascadeFilter {
 	public:
 		CascadeFilter(uint32_t id, uint32_t nkeybits, uint32_t nvaluebits, uint32_t
-									nagebits, bool odp, bool greedy, bool pinning, uint32_t
-									threshold_value, uint32_t filter_thlds[], uint64_t
+									nagebits, bool cascade, bool odp, bool greedy, bool pinning,
+									uint32_t threshold_value, uint32_t filter_thlds[], uint64_t
 									filter_sizes[], uint32_t num_levels, std::string& prefix);
 
 		~CascadeFilter();
@@ -202,6 +202,7 @@ class CascadeFilter {
 		uint32_t num_value_bits;
 		uint32_t num_age_bits;
 		uint32_t threshold_value;
+		bool cascade;
 		bool odp;
 		bool count_stretch;
 		bool greedy;
@@ -240,14 +241,15 @@ bool operator!=(const typename CascadeFilter<key_object>::Iterator& a, const
 template <class key_object>
 CascadeFilter<key_object>::CascadeFilter(uint32_t id, uint32_t nhashbits,
 																				 uint32_t nvaluebits, uint32_t
-																				 nagebits, bool odp, bool greedy, bool
-																				 pinning, uint32_t threshold_value,
+																				 nagebits, bool cascade, bool odp,
+																				 bool greedy, bool pinning, uint32_t
+																				 threshold_value,
 																				 uint32_t filter_thlds[], uint64_t
 																				 filter_sizes[], uint32_t num_levels,
 																				 std::string& prefix) :
 	total_num_levels(num_levels), num_key_bits(nhashbits),
 	num_value_bits(nvaluebits + nagebits), num_age_bits(nagebits),
-	threshold_value(threshold_value), odp(odp), greedy(greedy),
+	threshold_value(threshold_value), cascade(cascade), odp(odp), greedy(greedy),
 	pinning(pinning), prefix(prefix), id(id)
 {
 	total_mem_time = total_flush_time = 0;
@@ -472,28 +474,33 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 	anomalies.dump_metadata();
 
 	//PRINT("Number of keys above threshold: " << get_num_keys_above_threshold());
-	if (max_age) {
+	if (max_age || cascade) {
 		double stretch = 1 + 1 / (float)num_age_bits;
 		for (auto it : key_lifetime) {
 			if (it.second.first < it.second.second) {
 				uint64_t value;
 				key_object k(it.first, 0, 0, 0);
 				uint64_t lifetime = it.second.second - it.second.first;
-				uint64_t reporttime = anomalies.query_key(k, &value, 0) -
-					it.second.first;
+				uint64_t reportindex = anomalies.query_key(k, &value, 0);
+				uint64_t reporttime = reportindex - it.second.first;
 				if (reporttime > lifetime * stretch) {
-					PRINT("Time-stretch reporting failed Key: " << it.first <<
-								" Index-1: " << it.second.first << " Index-T " <<
-								it.second.second << " Reporting index " <<
-								anomalies.query_key(k, &value, 0) << " for stretch " <<
-								stretch);
+					//PRINT("Time-stretch reporting failed Key: " << it.first <<
+								//" Index-1: " << it.second.first << " Index-T " <<
+								//it.second.second << " Reporting index " <<
+								//anomalies.query_key(k, &value, 0) << " for stretch " <<
+								//stretch);
 					failures++;
 				}
+				uint64_t reportcount = popcornfilter::actual_count_at_index(vals,
+																																		it.first,
+																																		reportindex < index ? reportindex : index);
+
 				//result << idx++ << " " << lifetime << " " << reporttime << " " <<
 				//lifetime * stretch << std::endl;
 				result << it.first << " " << it.second.first << " " << it.second.second
 					<< " " << (it.second.second - it.second.first) << " " <<
-					anomalies.query_key(k, &value, 0) << " " <<
+					reportindex << " " <<
+					reportcount/(double)threshold_value << " " <<
 					reporttime/(double)lifetime << std::endl;
 			}
 		}
@@ -505,9 +512,9 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 				uint64_t lifetime = it.second.second - it.second.first;
 				uint64_t reportindex = anomalies.query_key(k, &value, 0);
 				if (reportindex != it.second.second) {
-					PRINT("Immediate reporting failed Key: " << it.first <<
-								" Index-T " << it.second.second << " Reporting index "
-								<< reportindex);
+					//PRINT("Immediate reporting failed Key: " << it.first <<
+								//" Index-T " << it.second.second << " Reporting index "
+								//<< reportindex);
 					failures++;
 				}
 				result << it.first << " " <<  value << " " << it.second.first << " "
@@ -526,15 +533,15 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 				// with multiple threads the reportindex can be greater than the
 				// maximum index in the stream
 				if (reportindex > index) {
-					PRINT("Reporting index: " << reportindex << " index: " << index);
+					//PRINT("Reporting index: " << reportindex << " index: " << index);
 					reportindex = index;
 				}
 				uint64_t reportcount = popcornfilter::actual_count_at_index(vals,
 																																		it.first,
-																																		reportindex);
+																																		reportindex < index ? reportindex : index);
 				if (reportcount > threshold_value * 2) {
-					PRINT("Count stretch reporting failed Key: " << it.first <<
-								" Reporting count " << reportcount);
+					//PRINT("Count stretch reporting failed Key: " << it.first <<
+								//" Reporting count " << reportcount);
 					failures++;
 				}
 				uint64_t lifetime = it.second.second - it.second.first;

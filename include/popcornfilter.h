@@ -42,8 +42,9 @@ template <class key_object>
 class PopcornFilter {
 	public:
 		PopcornFilter(uint64_t nfilters, uint32_t qbits, uint32_t
-									nlevels, uint32_t gfactor, uint32_t nagebits, bool do_odp,
-									bool greedy, bool pinning, uint32_t threshold_value);
+									nlevels, uint32_t gfactor, uint32_t nagebits, bool cascade,
+									bool do_odp, bool greedy, bool pinning, uint32_t
+									threshold_value);
 
 		~PopcornFilter();
 
@@ -75,6 +76,7 @@ class PopcornFilter {
 		uint32_t nlevels;
 		uint32_t gfactor;
 		uint32_t nagebits;
+		bool cascade;
 		bool odp;
 		bool greedy;
 		bool pinning;
@@ -93,12 +95,12 @@ class PopcornFilter {
 template <class key_object>
 PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 																				 uint32_t nlevels, uint32_t gfactor,
-																				 uint32_t nagebits, bool do_odp, bool
-																				 greedy,  bool pinning, uint32_t
-																				 threshold_value) :
+																				 uint32_t nagebits, bool cascade, bool
+																				 do_odp, bool greedy,  bool pinning,
+																				 uint32_t threshold_value) :
 	nfilters(nfilters), qbits(qbits), nlevels(nlevels),
-	gfactor(gfactor), nagebits(nagebits), odp(do_odp), greedy(greedy),
-	pinning(pinning), threshold_value(threshold_value) {
+	gfactor(gfactor), nagebits(nagebits), cascade(cascade), odp(do_odp),
+	greedy(greedy), pinning(pinning), threshold_value(threshold_value) {
 		fbits = log2(nfilters); // assuming nfilters is a power of 2.
 		nkeybits = NUM_KEY_BITS - fbits;
 		nvaluebits = NUM_VALUE_BITS;
@@ -123,7 +125,7 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 			sizes[i] = pow(gfactor, i) * sizes[0];
 
 		// if there are age bits then taus are infinity.
-		if (nagebits) {
+		if (nagebits || cascade) {
 			for (uint32_t i = 0; i < nlevels; i++)
 				thlds[i] = UINT32_MAX;
 		} else {
@@ -150,10 +152,10 @@ PopcornFilter<key_object>::PopcornFilter(uint64_t nfilters, uint32_t qbits,
 							 //" as growth factor.");
 			std::string prefix = "logs/" + std::to_string(i) + "_";
 			cf.emplace_back(new CascadeFilter<KeyObject>(i, nkeybits, nvaluebits,
-																									 nagebits, odp, greedy,
-																									 pinning, threshold_value,
-																									 thlds, sizes, nlevels,
-																									 prefix));
+																									 nagebits, cascade, odp,
+																									 greedy, pinning,
+																									 threshold_value, thlds,
+																									 sizes, nlevels, prefix));
 		}
 	}
 
@@ -296,17 +298,18 @@ bool PopcornFilter<key_object>::validate_anomalies(
 			per_filter[filter_idx][key] = it.second;
 		}
 	}
-	std::ofstream result;
+	std::string file_name = "raw/Stretch-" + std::to_string(nfilters) + "-" +
+		std::to_string(qbits) + "-" + std::to_string(nlevels) + "-" +
+		std::to_string(gfactor) + "-" + std::to_string(nagebits) + "-" +
+		std::to_string(cascade) +  ".data"; 
+	std::ofstream result(file_name);
 	if (nagebits > 0) {
-		result.open("raw/time-stretch.data");
-		result << "Key Index-0 Index-T Lifetime ReportIndex Stretch" << std::endl;
+		result << "Key Index-0 Index-T Lifetime ReportIndex CountStretch TimeStretch" << std::endl;
 	} else if (odp) {
-		result.open("raw/immediate-reporting.data");
 		result << "key odp Index-0 Index-T Lifetime Report_Index" << std::endl;
 	} else {
-		result.open("raw/count-stretch.data");
 		//result << "x_0 y_0 y_1 y_2" << std::endl;
-		result << "Key Index-0 Index-T Lifetime ReportCount Stretch TimeStretch" << std::endl;
+		result << "Key Index-0 Index-T Lifetime ReportCount CountStretch TimeStretch" << std::endl;
 	}
 
 	for (uint32_t i = 0; i < nfilters; i++)

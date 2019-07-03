@@ -1,0 +1,130 @@
+#!/bin/bash
+
+#
+# This scripts compiles the code in the validation mode and creates the @raw
+# dir.
+#
+
+logdir=logs
+make clean; make V=1 main; make streamdump; mkdir -p $logdir
+
+#
+# setup firehose
+#
+
+git clone https://github.com/splatlab/firehose.git
+cd firehose/generators/active/; make; cd -
+
+#
+#  This script generates data from Firehose active generator and dumps that
+#  into a file.
+#
+#  **The input to this script is the size of the final output file.**
+#
+
+numobs=$(($1/8))
+packets=$(($numobs/50))
+file=raw/streamdump_mmap_active_new_$numobs
+echo "Generating $numobs observation from Firehose active (packets: $packets, active set: 1048576) and dumping into file $file"
+
+./streamdump -s $numobs -f $file 12345 & \
+./firehose/generators/active/active -n $packets -r 500000 -a 1048576 127.0.0.1@12345
+
+f=1
+q=22
+l=3
+g=4
+t=1
+
+#
+# This script generate validation results for the cascade filter.
+#
+
+a=0
+c=1
+stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
+
+echo "Running count stretch validation experiments for $numobs from $file."
+./main popcornfilter -f 1 -q 22 -l 3 -g 4 -t 1 -c -o -v 24 -i $file
+echo "structure,stretch" > raw/cf-count-$numobs
+echo "structure,stretch" > raw/cf-count-$numobs
+cat $stretch_out | awk '{print "cf,"$6}' | tail -n +2 >> raw/cf-count-$numobs
+cat $stretch_out | awk '{print "cf,"$7}' | tail -n +2 >> raw/cf-time-$numobs
+echo "Count stretch finished! Output in: raw/cf-$numobs"
+
+#
+# This script generate validation results for count-stretch.
+#
+
+a=0
+c=0
+stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
+
+echo "Running count stretch validation experiments for $numobs from $file."
+./main popcornfilter -f 1 -q 22 -l 3 -g 4 -t 1 -o -v 24 -i $file
+echo "structure,stretch" > raw/pf-$numobs
+cat $stretch_out | awk '{print "pf,"$6}' | tail -n +2 >> raw/pf-$numobs
+echo "Count stretch finished! Output in: raw/pf-$numobs"
+
+#
+# count stretch with cones and threads.
+#
+#./main popcornfilter -f 8 -q 19 -l 3 -g 4 -t 1 -o -v 24 -i $file
+#echo "structure,stretch" > raw/pf-c-$numobs
+#cat $count_stretch_out | awk '{print "pf-c,"$6}' | tail -n +2 > raw/pf-c-$numobs
+#echo "Count stretch with cones finished! Output in: raw/pf-c-$numobs"
+#./main popcornfilter -f 8 -q 19 -l 3 -g 4 -t 8 -o -v 24 -i $file
+#echo "structure,stretch" > raw/pf-ct-$numobs
+#cat $count_stretch_out | awk '{print "pf-c,"$6}' | tail -n +2 > raw/pf-ct-$numobs
+#echo "Count stretch with cones and threads finished! Output in: raw/pf-ct-$numobs"
+
+#
+# This script generate validation results for time-stretch.
+#
+
+c=0
+
+a=1
+stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
+echo "Running time stretch validation experiments for $numobs from $file."
+./main popcornfilter -f 1 -q 22 -l 3 -g 4 -t 1 -a 1 -o -v 24 -i $file
+echo "structure,stretch" > raw/tf1-$numobs
+cat $stretch_out | awk '{print "tf1,"$7}' | tail -n +2 >> raw/tf1-$numobs
+echo "Time stretch with age bits 1 finished!"
+
+a=2
+stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
+./main popcornfilter -f 1 -q 22 -l 3 -g 4 -t 1 -a 2 -o -v 24 -i $file
+echo "structure,stretch" > raw/tf2-$numobs
+cat $stretch_out | awk '{print "tf2,"$7}' | tail -n +2 >> raw/tf2-$numobs
+echo "Time stretch with age bits 2 finished!"
+
+a=3
+stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
+./main popcornfilter -f 1 -q 22 -l 3 -g 4 -t 1 -a 3 -o -v 24 -i $file
+echo "structure,stretch" > raw/tf3-$numobs
+cat $stretch_out | awk '{print "tf3,"$7}' | tail -n +2 >> raw/tf3-$numobs
+echo "Time stretch with age bits 3 finished!"
+
+a=4
+stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
+./main popcornfilter -f 1 -q 22 -l 3 -g 4 -t 1 -a 4 -o -v 24 -i $file
+echo "structure,stretch" > raw/tf4-$numobs
+cat $stretch_out | awk '{print "tf4,"$7}' | tail -n +2 >> raw/tf4-$numobs
+echo "Time stretch with age bits 4 finished!"
+
+#
+# time stretch with cones and threads.
+#
+#./main popcornfilter -f 8 -q 19 -l 3 -g 4 -t 1 -a 1 -o -v 24 -i $file
+#echo "structure,stretch" > raw/tf1-c-$numobs
+#cat $time_stretch_out | awk '{print "tf1-c,"$7}' | tail -n +2 > raw/tf1-c-$numobs
+#echo "Time stretch with age bits 1 and cones finished!"
+#./main popcornfilter -f 8 -q 19 -l 3 -g 4 -t 4 -a 1 -o -v 24 -i $file
+#echo "structure,stretch" > raw/tf1-ct-$numobs
+#cat $time_stretch_out | awk '{print "tf1-ct,"$7}' | tail -n +2 > raw/tf1-ct-$numobs
+#echo "Time stretch with age bits 1, cones and threads finished!"
+
+
+
+
