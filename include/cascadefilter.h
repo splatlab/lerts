@@ -467,8 +467,8 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 	uint32_t failures = 0;
 
 	// find anomalies that are not reported yet.
-	if (!odp)
-		find_anomalies(index);
+	//if (!odp)
+		//find_anomalies(index);
 
 	DEBUG("Anomaly CQF ");
 	anomalies.dump_metadata();
