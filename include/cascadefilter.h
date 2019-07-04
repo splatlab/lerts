@@ -484,26 +484,28 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 				key_object k(it.first, 0, 0, 0);
 				uint64_t lifetime = it.second.second - it.second.first;
 				uint64_t reportindex = anomalies.query_key(k, &value, 0);
-				uint64_t reporttime = reportindex - it.second.first;
-				if (reporttime > lifetime * stretch) {
-					//PRINT("Time-stretch reporting failed Key: " << it.first <<
-								//" Index-1: " << it.second.first << " Index-T " <<
-								//it.second.second << " Reporting index " <<
-								//anomalies.query_key(k, &value, 0) << " for stretch " <<
-								//stretch);
-					failures++;
-				}
-				uint64_t reportcount = popcornfilter::actual_count_at_index(vals,
-																																		it.first,
-																																		reportindex < index ? reportindex : index);
+				if (reportindex > 0) {
+					uint64_t reporttime = reportindex - it.second.first;
+					if (reporttime > lifetime * stretch) {
+						//PRINT("Time-stretch reporting failed Key: " << it.first <<
+						//" Index-1: " << it.second.first << " Index-T " <<
+						//it.second.second << " Reporting index " <<
+						//anomalies.query_key(k, &value, 0) << " for stretch " <<
+						//stretch);
+						failures++;
+					}
+					uint64_t reportcount = popcornfilter::actual_count_at_index(vals,
+																																			it.first,
+																																			reportindex < index ? reportindex : index);
 
-				//result << idx++ << " " << lifetime << " " << reporttime << " " <<
-				//lifetime * stretch << std::endl;
-				result << it.first << " " << it.second.first << " " << it.second.second
-					<< " " << (it.second.second - it.second.first) << " " <<
-					reportindex << " " <<
-					reportcount/(double)threshold_value << " " <<
-					reporttime/(double)lifetime << std::endl;
+					//result << idx++ << " " << lifetime << " " << reporttime << " " <<
+					//lifetime * stretch << std::endl;
+					result << it.first << " " << it.second.first << " " << it.second.second
+						<< " " << (it.second.second - it.second.first) << " " <<
+						reportindex << " " <<
+						reportcount/(double)threshold_value << " " <<
+						reporttime/(double)lifetime << std::endl;
+				}
 			}
 		}
 	} else if (odp) {
@@ -513,15 +515,17 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 				key_object k(it.first, 0, 0, 0);
 				uint64_t lifetime = it.second.second - it.second.first;
 				uint64_t reportindex = anomalies.query_key(k, &value, 0);
-				if (reportindex != it.second.second) {
-					//PRINT("Immediate reporting failed Key: " << it.first <<
-								//" Index-T " << it.second.second << " Reporting index "
-								//<< reportindex);
-					failures++;
+				if (reportindex > 0) {
+					if (reportindex != it.second.second) {
+						//PRINT("Immediate reporting failed Key: " << it.first <<
+						//" Index-T " << it.second.second << " Reporting index "
+						//<< reportindex);
+						failures++;
+					}
+					result << it.first << " " <<  value << " " << it.second.first << " "
+						<< it.second.second << " " << lifetime << " "
+						<< reportindex << std::endl;
 				}
-				result << it.first << " " <<  value << " " << it.second.first << " "
-					<< it.second.second << " " << lifetime << " "
-					<< reportindex << std::endl;
 			}
 		}
 	} else if (count_stretch) {
@@ -532,30 +536,32 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 				uint64_t value;
 				key_object k(it.first, 0, 0, 0);
 				uint64_t reportindex = anomalies.query_key(k, &value, 0);
-				// with multiple threads the reportindex can be greater than the
-				// maximum index in the stream
-				if (reportindex > index) {
-					//PRINT("Reporting index: " << reportindex << " index: " << index);
-					reportindex = index;
+				if (reportindex > 0) {
+					// with multiple threads the reportindex can be greater than the
+					// maximum index in the stream
+					if (reportindex > index) {
+						//PRINT("Reporting index: " << reportindex << " index: " << index);
+						reportindex = index;
+					}
+					uint64_t reportcount = popcornfilter::actual_count_at_index(vals,
+																																			it.first,
+																																			reportindex < index ? reportindex : index);
+					if (reportcount > threshold_value * 2) {
+						//PRINT("Count stretch reporting failed Key: " << it.first <<
+						//" Reporting count " << reportcount);
+						failures++;
+					}
+					uint64_t lifetime = it.second.second - it.second.first;
+					uint64_t reporttime = anomalies.query_key(k, &value, 0) -
+						it.second.first;
+					//result << idx++ << " " << threshold_value << " " << reportcount << " "
+					//<< threshold_value * 2 << std::endl;
+					result << it.first << " " << it.second.first << " " << it.second.second
+						<< " " << (it.second.second - it.second.first) << " " <<
+						reportcount << " " <<
+						reportcount/(double)threshold_value << " " <<
+						reporttime/(double)lifetime << std::endl;
 				}
-				uint64_t reportcount = popcornfilter::actual_count_at_index(vals,
-																																		it.first,
-																																		reportindex < index ? reportindex : index);
-				if (reportcount > threshold_value * 2) {
-					//PRINT("Count stretch reporting failed Key: " << it.first <<
-								//" Reporting count " << reportcount);
-					failures++;
-				}
-				uint64_t lifetime = it.second.second - it.second.first;
-				uint64_t reporttime = anomalies.query_key(k, &value, 0) -
-					it.second.first;
-				//result << idx++ << " " << threshold_value << " " << reportcount << " "
-				//<< threshold_value * 2 << std::endl;
-				result << it.first << " " << it.second.first << " " << it.second.second
-					<< " " << (it.second.second - it.second.first) << " " <<
-					reportcount << " " <<
-					reportcount/(double)threshold_value << " " <<
-					reporttime/(double)lifetime << std::endl;
 			}
 		}
 	} else {
