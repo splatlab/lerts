@@ -31,13 +31,14 @@ echo "Generating $numobs observation from Firehose active (packets: $packets, ac
 ./firehose/generators/active/active -n $packets -r 500000 -a 1048576 127.0.0.1@12345
 
 log_num=$(echo "x=$numobs;num=l(x);den=l(2);scale=0;num/den" | bc -l)
-echo $log_num
+echo "Num observations: $log_num"
 
-l=$(echo "scale=0;x=$log_num;((x-22)/2 + 1)" | bc -l)
-echo $l
-if [ $l -lt 3 ]; then 
-  l=3;
-fi
+#l=$(echo "scale=0;x=$log_num;((x-22)/2 + 1)" | bc -l)
+#echo $l
+#if [ $l -lt 3 ]; then 
+  #l=3;
+#fi
+l=4
 g=4
 
 
@@ -47,7 +48,7 @@ g=4
 
 f=1
 q=$(echo "scale=0;x=$log_num;y=$l;x-2*(y-1)" | bc -l)
-echo $q
+echo "Memory CQF: $q"
 t=1
 a=0
 c=1
