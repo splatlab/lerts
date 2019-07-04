@@ -40,6 +40,8 @@ if [ $l -lt 3 ]; then
 fi
 g=4
 
+#: <<'END'
+
 #
 # This script generate validation results for the cascade filter.
 #
@@ -97,6 +99,7 @@ echo "structure,stretch" > raw/pf-ct-$numobs
 cat $stretch_out | awk '{print "pf-ct,"$6}' | tail -n +2 >> raw/pf-ct-$numobs
 echo "Count stretch with cones and threads finished! Output in: raw/pf-ct-$numobs"
 
+
 #
 # This script generate validation results for time-stretch.
 #
@@ -109,6 +112,7 @@ c=0
 stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
 
 echo "Running time stretch validation experiments for $numobs from $file."
+echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file"
 ./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file
 echo "structure,stretch" > raw/tf1-$numobs
 cat $stretch_out | awk '{print "tf1,"$7}' | tail -n +2 >> raw/tf1-$numobs
@@ -144,6 +148,7 @@ echo "Time stretch with age bits 4 finished!"
 #
 # time stretch with cones and threads.
 #
+a=1
 f=8
 q=19
 stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
@@ -163,3 +168,4 @@ echo "structure,stretch" > raw/tf1-ct-$numobs
 cat $stretch_out | awk '{print "tf1-ct,"$7}' | tail -n +2 >> raw/tf1-ct-$numobs
 echo "Time stretch with age bits 1, cones and threads finished!"
 
+#END
