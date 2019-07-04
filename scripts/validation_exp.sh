@@ -30,7 +30,7 @@ echo "Generating $numobs observation from Firehose active (packets: $packets, ac
 ./streamdump -s $numobs -f $file 12345 & \
 ./firehose/generators/active/active -n $packets -r 500000 -a 1048576 127.0.0.1@12345
 
-log_num=$(echo "x=$numobs;l(x)/l(2)" | bc -l)
+log_num=$(echo "x=$numobs;num=l(x);den=l(2);scale=0;num/den" | bc -l)
 echo $log_num
 
 l=$(echo "scale=0;x=$log_num;((x-22)/2 + 1)" | bc -l)
@@ -40,18 +40,20 @@ if [ $l -lt 3 ]; then
 fi
 g=4
 
-#: <<'END'
 
 #
 # This script generate validation results for the cascade filter.
 #
 
 f=1
-q=22
+q=$(echo "scale=0;x=$log_num;y=$l;x-2*(y-1)" | bc -l)
+echo $q
 t=1
 a=0
 c=1
 stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
+
+#: <<'END'
 
 echo "Running count stretch validation experiments for $numobs from $file."
 echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -c -o -v 24 -i $file"
@@ -81,7 +83,7 @@ echo "Count stretch finished! Output in: raw/pf-$numobs"
 #
 
 f=8
-q=19
+q=$q-3
 stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
 
 echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -o -v 24 -i $file"
@@ -105,7 +107,7 @@ echo "Count stretch with cones and threads finished! Output in: raw/pf-ct-$numob
 #
 
 f=1
-q=22
+q=$(echo "x=$log_num;y=$l;x-2(y-1)" | bc -l)
 t=1
 a=1
 c=0
@@ -150,7 +152,7 @@ echo "Time stretch with age bits 4 finished!"
 #
 a=1
 f=8
-q=19
+q=$q-3
 stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
 
 echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file"
