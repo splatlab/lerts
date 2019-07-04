@@ -63,7 +63,7 @@ echo "structure,stretch" > raw/cf-count-$numobs
 echo "structure,stretch" > raw/cf-count-$numobs
 cat $stretch_out | awk '{print "cf,"$6}' | tail -n +2 >> raw/cf-count-$numobs
 cat $stretch_out | awk '{print "cf,"$7}' | tail -n +2 >> raw/cf-time-$numobs
-echo "Count stretch finished! Output in: raw/cf-$numobs"
+echo "Count/Time stretch finished for cascade filter! Output in: raw/cf-$numobs"
 
 #
 # This script generate validation results for count-stretch.
@@ -108,7 +108,8 @@ echo "Count stretch with cones and threads finished! Output in: raw/pf-ct-$numob
 #
 
 f=1
-q=$(echo "x=$log_num;y=$l;x-2(y-1)" | bc -l)
+q=$(echo "scale=0;x=$log_num;y=$l;x-2*(y-1)" | bc -l)
+echo "Memory CQF: $q"
 t=1
 a=1
 c=0
