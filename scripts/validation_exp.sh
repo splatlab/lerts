@@ -84,7 +84,7 @@ echo "Count stretch finished! Output in: raw/pf-$numobs"
 #
 
 f=8
-q=$q-3
+q=$(echo "$q-3" | bc -l)
 stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
 
 echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -o -v 24 -i $file"
@@ -154,7 +154,7 @@ echo "Time stretch with age bits 4 finished!"
 #
 a=1
 f=8
-q=$q-3
+q=$(echo "$q-3" | bc -l)
 stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
 
 echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file"
