@@ -468,12 +468,33 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 
 	// find anomalies that are not reported yet.
 	//if (!odp)
-		//find_anomalies(index);
+	//find_anomalies(index);
 
 	PRINT("Total flushes: " << num_flush);
 
 	DEBUG("Anomaly CQF ");
 	anomalies.dump_metadata();
+
+	// calculate count at reporting index.
+	std::unordered_map<uint64_t, uint64_t> key_counts;
+	for (uint64_t i = 0; i <= index; i++) {
+		auto it = key_lifetime.find(vals[i]);
+		if (it != key_lifetime.end() && (*it).second.first <
+				(*it).second.second) {
+			key_object k(vals[i], 0, 0, 0);
+			uint64_t value;
+			uint64_t reportindex = anomalies.query_key(k, &value, 0);
+			reportindex = reportindex < index ? reportindex : index;
+			if (reportindex >= i) {	// this key is reported
+				auto key_itr = key_counts.find(vals[i]);
+				if (key_itr == key_counts.end()) {
+					key_counts[vals[i]] = 1;
+				} else {
+					key_counts[vals[i]] = (*key_itr).second + 1;
+				}
+			}
+		}
+	}
 
 	//PRINT("Number of keys above threshold: " << get_num_keys_above_threshold());
 	if (max_age || cascade) {
@@ -494,9 +515,10 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 						//stretch);
 						failures++;
 					}
-					uint64_t reportcount = popcornfilter::actual_count_at_index(vals,
-																																			it.first,
-																																			reportindex < index ? reportindex : index);
+					//uint64_t reportcount = popcornfilter::actual_count_at_index(vals,
+					//it.first,
+					//reportindex < index ? reportindex : index);
+					uint64_t reportcount = key_counts[it.first];
 
 					//result << idx++ << " " << lifetime << " " << reporttime << " " <<
 					//lifetime * stretch << std::endl;
@@ -543,9 +565,10 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 						//PRINT("Reporting index: " << reportindex << " index: " << index);
 						reportindex = index;
 					}
-					uint64_t reportcount = popcornfilter::actual_count_at_index(vals,
-																																			it.first,
-																																			reportindex < index ? reportindex : index);
+					//uint64_t reportcount = popcornfilter::actual_count_at_index(vals,
+					//it.first,
+					//reportindex < index ? reportindex : index);
+					uint64_t reportcount = key_counts[it.first];
 					if (reportcount > threshold_value * 2) {
 						//PRINT("Count stretch reporting failed Key: " << it.first <<
 						//" Reporting count " << reportcount);
