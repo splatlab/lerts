@@ -83,7 +83,7 @@ class CQF {
 			if (PRINT_DEBUG)
 				qf_dump_metadata(&cqf);
 		}
-		bool is_full(void) const;
+		bool is_full(float threshold = 0.9) const;
 
 		void drop_pages(uint64_t cur);
 
@@ -190,10 +190,10 @@ template <class key_obj> CQF<key_obj>::CQF(const CQF<key_obj>& copy_cqf) {
 }
 
 template <class key_obj>
-bool CQF<key_obj>::is_full(void) const {
+bool CQF<key_obj>::is_full(float threshold) const {
 	double load_factor = cqf.metadata->noccupied_slots /
 		(double)cqf.metadata->nslots;
-	if (load_factor > 0.90) {
+	if (load_factor > threshold) {
 		DEBUG("Load factor: " << load_factor);
 		return true;
 	}

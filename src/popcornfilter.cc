@@ -19,6 +19,7 @@
 #include <bitset>
 #include <cassert>
 #include <fstream>
+#include <chrono>
 
 #include <math.h>
 #include <time.h>
@@ -41,8 +42,9 @@
 #include "popcornfilter.h"
 #include "gqf/hashutil.h"
 
-#define BUFFER_SIZE (1ULL << 16)
-#define BATCH_SIZE 1000
+#define BUFFER_SIZE (1ULL << 17)
+#define BATCH_SIZE (1ULL << 10)
+#define THROUGHPUT_SIZE (BATCH_SIZE*(1ULL<<7))
 
 uint64_t offset{0};
 
@@ -53,6 +55,8 @@ uint64_t get_offset(void) {
 uint64_t incr_offset(uint64_t count) {
 	return __atomic_fetch_add(&offset, count, __ATOMIC_SEQ_CST);
 }
+
+std::ofstream throughput("Instantaneous_throughput.txt");
 
 typedef struct socket_attr {
 	int nsenders{1};
@@ -67,18 +71,19 @@ typedef struct socket_attr {
 socket_attr attr;
 
 template <class key_object>
-class ThreadArgs {
+struct ThreadArgs {
 	public:
 		PopcornFilter<key_object> *pf;
 		uint64_t *vals;
 		uint64_t stream_size;
 		uint64_t batch_size;
+		std::ofstream throughput;
 
 		ThreadArgs() : pf(nullptr), vals(nullptr), stream_size(0), batch_size{0}
 		{};
 		ThreadArgs(PopcornFilter<key_object> *pf, uint64_t *vals, uint64_t
-							 stream_size, uint64_t batch_size) : pf(pf), vals(vals),
-		stream_size(stream_size), batch_size(batch_size) {};
+							 stream_size, uint64_t batch_size) :
+			pf(pf), vals(vals), stream_size(stream_size), batch_size(batch_size) {};
 };
 
 template <class key_object>
@@ -212,14 +217,24 @@ void *thread_insert(void *a) {
 												args->pf->get_num_value_bits(), QF_HASH_INVERTIBLE,
 												args->pf->get_seed());
 
+	float flush_threshold = popcornfilter::RandomBetween(0.5, 0.8);
+
 	uint64_t num_buffer_dumps = 0;
 	/* First try and insert the key-value pair in the cascade filter. If the
 	 * insert fails then insert in the buffer. Later dump the buffer in the
 	 * cascade filter.
 	 */
 	uint64_t start{0}, end{0};
+	throughput << start << "," <<
+		std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()
+		<< '\n';
 	do {
 		start = incr_offset(args->batch_size);
+		if (start != 0 && start % THROUGHPUT_SIZE == 0) {
+			throughput << start << "," <<
+				std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()
+				<< '\n';
+		}
 		if (start >= args->stream_size)
 			break;
 		else if (start + args->batch_size > args->stream_size)
@@ -234,7 +249,7 @@ void *thread_insert(void *a) {
 				buffer.insert(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
 				double load_factor = buffer.occupied_slots() /
 					(double)buffer.total_slots();
-				if (load_factor > 0.75) {
+				if (load_factor > flush_threshold) {
 					num_buffer_dumps++;
 					DEBUG("Dumping buffer.");
 					typename CQF<KeyObject>::Iterator it = buffer.begin();
@@ -403,7 +418,6 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	struct timezone tzp;
 	std::vector<void*> args;
 	args.reserve(nthreads);
-
 	if (opts.port > 0) {
 		for (uint64_t i = 0; i < nthreads; i++) {
 			ThreadArgsSocket<KeyObject> *obj = new ThreadArgsSocket<KeyObject>(&pf, socket);
@@ -431,6 +445,8 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	popcornfilter::print_time_elapsed("", &start, &end);
 	PRINT("Finished insertions.");
 	PRINT("Insertion throughput: " << nvals/(float)popcornfilter::cal_time_elapsed(&start, &end));
+
+	throughput.close();
 
 	//PRINT("Total distinct elements inserted: " <<
 				//pf.get_total_dist_elements());

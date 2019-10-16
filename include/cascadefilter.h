@@ -227,6 +227,7 @@ class CascadeFilter {
 		uint32_t seed;
 		ReaderWriterLock cf_rw_lock;
 		uint32_t id;
+		float ram_cqf_threshold;
 		// to instrument
 		float total_mem_time;
 		float total_flush_time;
@@ -250,8 +251,8 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t id, uint32_t nhashbits,
 	total_num_levels(num_levels), num_key_bits(nhashbits),
 	num_value_bits(nvaluebits + nagebits), num_age_bits(nagebits),
 	threshold_value(threshold_value), cascade(cascade), odp(odp), greedy(greedy),
-	pinning(pinning), prefix(prefix), id(id)
-{
+	pinning(pinning), prefix(prefix), id(id),
+	ram_cqf_threshold(popcornfilter::RandomBetween(0.8, 0.9)) {
 	total_mem_time = total_flush_time = 0;
 	total_anomalies = total_reported_shuffle_merge = total_reported_odp =
 		num_odps = num_point_queries = 0;
@@ -332,7 +333,7 @@ CascadeFilter<key_object>::~CascadeFilter() {
 }
 
 	template <class key_object>
-const CQF<key_object>* CascadeFilter<key_object>::get_filter(uint32_t level)
+ const CQF<key_object>* CascadeFilter<key_object>::get_filter(uint32_t level)
 	const {
 		return &filters[level];
 	}
@@ -602,7 +603,7 @@ bool CascadeFilter<key_object>::validate_key_lifetimes(
 template <class key_object>
 bool CascadeFilter<key_object>::need_flush(uint64_t cur_num_obs) const {
 	if (greedy) {
-		if (get_filter(0)->is_full()) {
+		if (get_filter(0)->is_full(ram_cqf_threshold)) {
 			double load_factor = get_filter(0)->occupied_slots() /
 				(double)get_filter(0)->total_slots();
 			DEBUG("Load factor: " << load_factor);

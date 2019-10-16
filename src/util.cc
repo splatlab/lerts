@@ -65,6 +65,12 @@ namespace popcornfilter {
 			"seconds" << std::endl;
 	}
 
+	float RandomBetween(float smallNumber, float bigNumber)
+	{
+    float diff = bigNumber - smallNumber;
+    return (((float) rand() / RAND_MAX) * diff) + smallNumber;
+	}
+
 	void induce_special_case(uint64_t *vals, uint32_t threshold, uint64_t
 													 start_idx, uint64_t lifetime, uint32_t num) {
 		for (uint32_t j = 0; j < num; j++) {

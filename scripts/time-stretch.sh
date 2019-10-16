@@ -11,7 +11,7 @@ echo "Num observations: $log_num"
 #if [ $l -lt 3 ]; then 
   #l=3;
 #fi
-l=4
+l=3
 g=4
 
 #

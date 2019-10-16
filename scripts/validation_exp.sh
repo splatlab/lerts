@@ -60,7 +60,7 @@ echo "Running count stretch validation experiments for $numobs from $file."
 echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -c -o -v 24 -i $file"
 ./main popcornfilter -f $f -q $q -l $l -g $g -t $t -c -o -v 24 -i $file
 echo "structure,stretch" > raw/cf-count-$numobs
-echo "structure,stretch" > raw/cf-count-$numobs
+echo "structure,stretch" > raw/cf-time-$numobs
 cat $stretch_out | awk '{print "cf,"$6}' | tail -n +2 >> raw/cf-count-$numobs
 cat $stretch_out | awk '{print "cf,"$7}' | tail -n +2 >> raw/cf-time-$numobs
 echo "Count/Time stretch finished for cascade filter! Output in: raw/cf-$numobs"

@@ -17,7 +17,9 @@ df2 = pd.read_csv(infile2, sep=',')
 df3 = pd.read_csv(infile3, sep=',')
 df4 = pd.read_csv(infile4, sep=',')
 df = pd.concat([df1,df2,df3,df4])
+# df = pd.concat([df1,df2])
 
+colors = ['pink', 'lightblue', 'lightgreen', 'red']
 boxprops = dict(linestyle='--', linewidth=5, color='darkgoldenrod')
 medianprops = dict(linestyle='-.', linewidth=5, color='firebrick')
 whiskerprops=dict(linewidth=3, color='green')
@@ -27,15 +29,18 @@ bp = df.boxplot(by='structure', showfliers=False,
         showmeans=True,meanline=True, boxprops=boxprops,
         medianprops=medianprops, whiskerprops=whiskerprops, capprops=capprops)
 
+# for patch, color in zip(bp['boxes'], colors):
+        # patch.set_facecolor(color) 
+
 axes = plt.gca()
 ## Custom x-axis labels
 axes.set_xlabel('Data structures')
-axes.set_xticklabels(['CF', 'PF', 'PF(cones)', 'PF(cones-threads)'])
+# axes.set_xticklabels(['CF', 'PF', 'PF(cones)', 'PF(cones-threads)'])
 # axes.set_xticklabels(['CF', 'TF', 'TF(cones)', 'TF(cones-threads)'])
-# axes.set_xticklabels(['TF1', 'TF2', 'TF3', 'TF4'])
+axes.set_xticklabels(['TF1', 'TF2', 'TF3', 'TF4'])
 # axes.margins(y=0)
 
-plt.title('Count stretch')
-# plt.title('Time stretch')
+# plt.title('Count stretch')
+plt.title('Time stretch')
 plt.suptitle('')
 plt.show()
