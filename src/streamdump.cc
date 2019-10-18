@@ -40,7 +40,6 @@
 
 #include "gqf/hashutil.h"
 #include "util.h"
-#include "popcornfilter.h"
 
 // hard-coded settings from generator #1
 

@@ -252,7 +252,7 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t id, uint32_t nhashbits,
 	num_value_bits(nvaluebits + nagebits), num_age_bits(nagebits),
 	threshold_value(threshold_value), cascade(cascade), odp(odp), greedy(greedy),
 	pinning(pinning), prefix(prefix), id(id),
-	ram_cqf_threshold(popcornfilter::RandomBetween(0.8, 0.9)) {
+	ram_cqf_threshold(0.9) {
 	total_mem_time = total_flush_time = 0;
 	total_anomalies = total_reported_shuffle_merge = total_reported_odp =
 		num_odps = num_point_queries = 0;
@@ -283,7 +283,7 @@ CascadeFilter<key_object>::CascadeFilter(uint32_t id, uint32_t nhashbits,
 
 	// creating an exact CQF to store anomalies.
 #ifdef VALIDATE
-	uint64_t anomaly_filter_size = sizes[0];
+	uint64_t anomaly_filter_size = sizes[0]*512;
 #else
 	uint64_t anomaly_filter_size = sizes[0] / 4;
 	std::string anomaly_log_ext("anomaly.log");
