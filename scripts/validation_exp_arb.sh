@@ -27,7 +27,7 @@ g=4
 q=20
 
 #: <<'END'
-for i in {3..3}; do
+for i in {1..4}; do
 	q=$(echo "scale=0;x=$log_num;y=$l;x-2*(y-1)" | bc -l)
 	echo "Memory CQF: $q"
 	file=raw/streamdump_mmap_arb_new_$numobs_$i;
