@@ -80,7 +80,9 @@ main ( int argc, char *argv[] )
 									option("-i", "--input-file") & value("input_file", pfopt.ip_file) %
 									"input file containing keys and values. (default is generate keys from a Zipfian distribution.)",
 									option("-u", "--udp-port") & value("udp_port", pfopt.port) %
-									"port at which generator will send the packets.)"
+									"port at which generator will send the packets.)",
+									option("-d", "--dump-file") & value("dump_file", pfopt.op_file) %
+									"dump validation output."
 									//option("-h", "--help")      % "show help"
 									//option("-h", "--help")      % "show help"
 									);

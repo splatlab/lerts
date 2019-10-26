@@ -115,6 +115,7 @@ namespace popcornfilter {
 				}
 			}
 
+			PRINT("Number of keys: " << key_lifetime.size());
 			PRINT("Number of keys above threshold: " << total_anomalies);
 
 			return key_lifetime;

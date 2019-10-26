@@ -1093,8 +1093,10 @@ void CascadeFilter<key_object>::shuffle_merge(uint64_t index) {
 
 	/* Initialize cascade filter iterator. */
 	CascadeFilter<key_object>::Iterator it = begin(nlevels);
-	cur_key = *it;
-	++it;
+	if (!it.done()) {
+		cur_key = *it;
+		++it;
+	}
 
 	while(!it.done()) {
 		next_key = *it;

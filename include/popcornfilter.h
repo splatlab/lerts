@@ -68,7 +68,8 @@ class PopcornFilter {
 		void find_anomalies(uint64_t index) const;
 		bool validate_anomalies(std::unordered_map<uint64_t,
 															 std::pair<uint64_t, uint64_t>> key_lifetime,
-															 uint64_t *vals, uint64_t index);
+															 uint64_t *vals, uint64_t index, std::string
+															 filename = std::string());
 
 	private:
 		uint64_t nfilters;
@@ -286,7 +287,8 @@ void PopcornFilter<key_object>::find_anomalies(uint64_t index) const {
 template <class key_object>
 bool PopcornFilter<key_object>::validate_anomalies(
 								std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
-								key_lifetime, uint64_t *vals, uint64_t index) {
+								key_lifetime, uint64_t *vals, uint64_t index, std::string
+								file_name) {
 	std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>>
 		per_filter[nfilters];
 	for (auto it : key_lifetime) {
@@ -298,10 +300,12 @@ bool PopcornFilter<key_object>::validate_anomalies(
 			per_filter[filter_idx][key] = it.second;
 		}
 	}
-	std::string file_name = "raw/Stretch-" + std::to_string(nfilters) + "-" +
-		std::to_string(qbits) + "-" + std::to_string(nlevels) + "-" +
-		std::to_string(gfactor) + "-" + std::to_string(nagebits) + "-" +
-		std::to_string(cascade) +  ".data"; 
+	if (file_name.size() == 0) {
+		file_name = "raw/Stretch-" + std::to_string(nfilters) + "-" +
+			std::to_string(qbits) + "-" + std::to_string(nlevels) + "-" +
+			std::to_string(gfactor) + "-" + std::to_string(nagebits) + "-" +
+			std::to_string(cascade) +  ".data";
+	}
 	std::ofstream result(file_name);
 	if (nagebits > 0) {
 		result << "Key Index-0 Index-T Lifetime ReportIndex CountStretch TimeStretch" << std::endl;

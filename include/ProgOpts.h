@@ -20,6 +20,7 @@ class PopcornFilterOpts {
 		std::string ip_file;
 		int port{0};
 		std::shared_ptr<spdlog::logger> console{nullptr};
+		std::string op_file;
 };
 
 

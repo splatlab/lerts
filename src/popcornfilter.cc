@@ -344,6 +344,7 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	uint32_t greedy = opts.greedy;
 	uint32_t pinning = opts.pinning;
 	uint32_t threshold_value = opts.threshold_value;
+	std::string file_name = opts.op_file;
 
 	PopcornFilter<KeyObject> pf(nfilters, qbits, nlevels, gfactor, nagebits,
 															cascade, do_odp, greedy, pinning, threshold_value);
@@ -469,7 +470,7 @@ int popcornfilter_main (PopcornFilterOpts opts)
 
 #ifdef VALIDATE
 		PRINT("Performing validation");
-		if (pf.validate_anomalies(keylifetimes, vals, nvals - 1))
+		if (pf.validate_anomalies(keylifetimes, vals, nvals - 1, file_name))
 			PRINT("Validation successful!");
 		else
 			PRINT("Validation failed!");
