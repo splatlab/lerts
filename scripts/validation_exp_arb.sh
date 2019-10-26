@@ -6,7 +6,7 @@
 #
 
 logdir=logs
-make V=1 main; make generate_stream; mkdir -p $logdir
+make clean; make V=1 main; make generate_stream; mkdir -p $logdir
 
 #
 #  **The input to this script is the size of the final output file.**
