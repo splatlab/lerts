@@ -77,13 +77,15 @@ struct ThreadArgs {
 		uint64_t *vals;
 		uint64_t stream_size;
 		uint64_t batch_size;
+		uint32_t buffer_count;
 		std::ofstream throughput;
 
-		ThreadArgs() : pf(nullptr), vals(nullptr), stream_size(0), batch_size{0}
-		{};
+		ThreadArgs() : pf(nullptr), vals(nullptr), stream_size(0), batch_size{0},
+			buffer_count{0} {};
 		ThreadArgs(PopcornFilter<key_object> *pf, uint64_t *vals, uint64_t
-							 stream_size, uint64_t batch_size) :
-			pf(pf), vals(vals), stream_size(stream_size), batch_size(batch_size) {};
+							 stream_size, uint64_t batch_size, uint32_t buffer_count) :
+			pf(pf), vals(vals), stream_size(stream_size), batch_size(batch_size),
+			buffer_count(buffer_count) {};
 };
 
 template <class key_object>
@@ -243,30 +245,44 @@ void *thread_insert(void *a) {
 		//PRINT("Inserting from: " << start << " to: " << end);
 		while (start < end) {
 			uint64_t key = args->vals[start];
-			if (!args->pf->insert(KeyObject(key, 0, 1, 0), start,
-														PF_TRY_ONCE_LOCK)) {
-				//DEBUG("Inserting in the buffer.");
-				buffer.insert(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
-				double load_factor = buffer.occupied_slots() /
-					(double)buffer.total_slots();
-				if (load_factor > flush_threshold) {
-					num_buffer_dumps++;
-					DEBUG("Dumping buffer.");
-					typename CQF<KeyObject>::Iterator it = buffer.begin();
-					do {
-						KeyObject key = *it;
-						uint64_t count = key.count;
-						key.count = 1;
-						for (uint64_t c = 0; c < count; c++) {
-							if (!args->pf->insert(key, start, PF_WAIT_FOR_LOCK)) {
-								std::cerr << "Failed insertion for " << (uint64_t)key.key <<
-									std::endl;
-								abort();
+			if (args->buffer_count == 0) {
+				if (!args->pf->insert(KeyObject(key, 0, 1, 0), start,
+															PF_WAIT_FOR_LOCK)) {
+					std::cerr << "Failed insertion for " << (uint64_t)key << std::endl;
+					abort();
+				}
+			} else {
+				if (!args->pf->insert(KeyObject(key, 0, 1, 0), start,
+															PF_WAIT_FOR_LOCK)) {
+					//DEBUG("Inserting in the buffer.");
+					buffer.insert(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
+					if (buffer.query(KeyObject(key, 0, 1, 0), PF_NO_LOCK) ==
+							args->buffer_count) {
+						buffer.delete_key(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
+						args->pf->insert(KeyObject(key, 0, args->buffer_count, 0), start,
+														 PF_WAIT_FOR_LOCK);
+					}
+					double load_factor = buffer.occupied_slots() /
+						(double)buffer.total_slots();
+					if (load_factor > flush_threshold) {
+						num_buffer_dumps++;
+						DEBUG("Dumping buffer.");
+						typename CQF<KeyObject>::Iterator it = buffer.begin();
+						do {
+							KeyObject key = *it;
+							uint64_t count = key.count;
+							key.count = 1;
+							for (uint64_t c = 0; c < count; c++) {
+								if (!args->pf->insert(key, start, PF_WAIT_FOR_LOCK)) {
+									std::cerr << "Failed insertion for " << (uint64_t)key.key <<
+										std::endl;
+									abort();
+								}
 							}
-						}
-						++it;
-					} while(!it.done());
-					buffer.reset();
+							++it;
+						} while(!it.done());
+						buffer.reset();
+					}
 				}
 			}
 			start++;
@@ -344,6 +360,7 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	uint32_t greedy = opts.greedy;
 	uint32_t pinning = opts.pinning;
 	uint32_t threshold_value = opts.threshold_value;
+	uint32_t buffer_count = opts.buffer_count;
 	std::string file_name = opts.op_file;
 
 	PopcornFilter<KeyObject> pf(nfilters, qbits, nlevels, gfactor, nagebits,
@@ -434,7 +451,8 @@ int popcornfilter_main (PopcornFilterOpts opts)
 			}
 			ThreadArgs<KeyObject> *obj = new ThreadArgs<KeyObject>(&pf, vals,
 																														 nvals,
-																														 batch_size);
+																														 batch_size,
+																														 buffer_count);
 			args.emplace_back((void*)obj);
 		}
 	}

@@ -17,6 +17,7 @@ class PopcornFilterOpts {
 		int nagebits{0};
 		int do_odp = {1};
 		int threshold_value{24};
+		int buffer_count{INT_MAX};
 		std::string ip_file;
 		int port{0};
 		std::shared_ptr<spdlog::logger> console{nullptr};

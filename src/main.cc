@@ -73,6 +73,8 @@ main ( int argc, char *argv[] )
 										"do not perform on-demand popcorning. (default is true.)",
 									option("-v", "--threshold_value") & value("threshold_value", pfopt.threshold_value) %
 									"threshold_value  to report. (default is 24)",
+									option("-b", "--buffer_count") & value("buffer_count", pfopt.buffer_count) %
+									"max count of a key in thread local buffer. (default is INF)",
 									option("-e", "--greedy-flushing").set(pfopt.greedy, 1) %
 									"greedy flushing optimization. (default is 0)",
 									option("-p", "--pinning").set(pfopt.pinning, 1) %
