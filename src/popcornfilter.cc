@@ -253,7 +253,7 @@ void *thread_insert(void *a) {
 				}
 			} else {
 				if (!args->pf->insert(KeyObject(key, 0, 1, 0), start,
-															PF_WAIT_FOR_LOCK)) {
+															PF_TRY_ONCE_LOCK)) {
 					//DEBUG("Inserting in the buffer.");
 					buffer.insert(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
 					if (buffer.query(KeyObject(key, 0, 1, 0), PF_NO_LOCK) ==
