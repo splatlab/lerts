@@ -26,12 +26,12 @@ a=0
 c=0
 stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
 
-echo "Running count stretch validation experiments for $numobs from $file."
-echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -o -v 24 -i $file"
-./main popcornfilter -f $f -q $q -l $l -g $g -t $t -o -v 24 -i $file
-echo "structure,stretch" > raw/pf-$numobs
-cat $stretch_out | awk '{print "pf,"$6}' | tail -n +2 >> raw/pf-$numobs
-echo "Count stretch finished! Output in: raw/pf-$numobs"
+#echo "Running count stretch validation experiments for $numobs from $file."
+#echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -o -v 24 -i $file"
+#./main popcornfilter -f $f -q $q -l $l -g $g -t $t -o -v 24 -i $file
+#echo "structure,stretch" > raw/pf-$numobs
+#cat $stretch_out | awk '{print "pf,"$6}' | tail -n +2 >> raw/pf-$numobs
+#echo "Count stretch finished! Output in: raw/pf-$numobs"
 
 #
 # count stretch with cones and threads.
@@ -41,11 +41,11 @@ f=8
 q=$(echo "$q-3" | bc -l)
 stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
 
-echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -o -v 24 -i $file"
-./main popcornfilter -f $f -q $q -l $l -g $g -t $t -o -v 24 -i $file
-echo "structure,stretch" > raw/pf-c-$numobs
-cat $stretch_out | awk '{print "pf-c,"$6}' | tail -n +2 >> raw/pf-c-$numobs
-echo "Count stretch with cones finished! Output in: raw/pf-c-$numobs"
+#echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -o -v 24 -i $file"
+#./main popcornfilter -f $f -q $q -l $l -g $g -t $t -o -v 24 -i $file
+#echo "structure,stretch" > raw/pf-c-$numobs
+#cat $stretch_out | awk '{print "pf-c,"$6}' | tail -n +2 >> raw/pf-c-$numobs
+#echo "Count stretch with cones finished! Output in: raw/pf-c-$numobs"
 
 t=8
 stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data

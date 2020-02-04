@@ -27,38 +27,39 @@ c=0
 stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
 
 echo "Running time stretch validation experiments for $numobs from $file."
-echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file"
-./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file
-echo "structure,stretch" > raw/tf1-$numobs
-cat $stretch_out | awk '{print "tf1,"$7}' | tail -n +2 >> raw/tf1-$numobs
-echo "Time stretch with age bits 1 finished!"
 
-a=2
-stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
+#echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file"
+#./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file
+#echo "structure,stretch" > raw/tf1-$numobs
+#cat $stretch_out | awk '{print "tf1,"$7}' | tail -n +2 >> raw/tf1-$numobs
+#echo "Time stretch with age bits 1 finished!"
+#a=2
+#stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
 
-echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file"
-./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file
-echo "structure,stretch" > raw/tf2-$numobs
-cat $stretch_out | awk '{print "tf2,"$7}' | tail -n +2 >> raw/tf2-$numobs
-echo "Time stretch with age bits 2 finished!"
+#echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file"
+#./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file
+#echo "structure,stretch" > raw/tf2-$numobs
+#cat $stretch_out | awk '{print "tf2,"$7}' | tail -n +2 >> raw/tf2-$numobs
+#echo "Time stretch with age bits 2 finished!"
 
-a=3
-stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
+#a=3
+#stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
 
-echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file"
-./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file
-echo "structure,stretch" > raw/tf3-$numobs
-cat $stretch_out | awk '{print "tf3,"$7}' | tail -n +2 >> raw/tf3-$numobs
-echo "Time stretch with age bits 3 finished!"
+#echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file"
+#./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file
+#echo "structure,stretch" > raw/tf3-$numobs
+#cat $stretch_out | awk '{print "tf3,"$7}' | tail -n +2 >> raw/tf3-$numobs
+#echo "Time stretch with age bits 3 finished!"
 
-a=4
-stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
+#a=4
+#stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
 
-echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file"
-./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file
-echo "structure,stretch" > raw/tf4-$numobs
-cat $stretch_out | awk '{print "tf4,"$7}' | tail -n +2 >> raw/tf4-$numobs
-echo "Time stretch with age bits 4 finished!"
+#echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file"
+#./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file
+#echo "structure,stretch" > raw/tf4-$numobs
+#cat $stretch_out | awk '{print "tf4,"$7}' | tail -n +2 >> raw/tf4-$numobs
+#echo "Time stretch with age bits 4 finished!"
+
 
 #
 # time stretch with cones and threads.
@@ -66,13 +67,14 @@ echo "Time stretch with age bits 4 finished!"
 a=1
 f=8
 q=$(echo "$q-3" | bc -l)
-stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
 
-echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file"
-./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file
-echo "structure,stretch" > raw/tf1-c-$numobs
-cat $stretch_out | awk '{print "tf1-c,"$7}' | tail -n +2 >> raw/tf1-c-$numobs
-echo "Time stretch with age bits 1 and cones finished!"
+#stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data
+
+#echo "./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file"
+#./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file
+#echo "structure,stretch" > raw/tf1-c-$numobs
+#cat $stretch_out | awk '{print "tf1-c,"$7}' | tail -n +2 >> raw/tf1-c-$numobs
+#echo "Time stretch with age bits 1 and cones finished!"
 
 t=8
 stretch_out=raw/Stretch-$f-$q-$l-$g-$a-$c.data

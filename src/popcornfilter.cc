@@ -112,6 +112,8 @@ int shutdown(char *buf)
 	return 0;
 }
 
+// Should not be used in the current form. Need to update fix the code for
+// proper recoding of reporting index.
 void *thread_insert_socket(void *a) {
 	ThreadArgsSocket<KeyObject> *args = (ThreadArgsSocket<KeyObject>*)a;
 
@@ -246,21 +248,21 @@ void *thread_insert(void *a) {
 		while (start < end) {
 			uint64_t key = args->vals[start];
 			if (args->buffer_count == 0) {
-				if (!args->pf->insert(KeyObject(key, 0, 1, 0), start,
+				if (!args->pf->insert(KeyObject(key, 0, 1, 0), get_offset(),
 															PF_WAIT_FOR_LOCK)) {
 					std::cerr << "Failed insertion for " << (uint64_t)key << std::endl;
 					abort();
 				}
 			} else {
-				if (!args->pf->insert(KeyObject(key, 0, 1, 0), start,
+				if (!args->pf->insert(KeyObject(key, 0, 1, 0), get_offset(),
 															PF_TRY_ONCE_LOCK)) {
 					//DEBUG("Inserting in the buffer.");
 					buffer.insert(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
 					if (buffer.query(KeyObject(key, 0, 1, 0), PF_NO_LOCK) ==
 							args->buffer_count) {
 						buffer.delete_key(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
-						args->pf->insert(KeyObject(key, 0, args->buffer_count, 0), start,
-														 PF_WAIT_FOR_LOCK);
+						args->pf->insert(KeyObject(key, 0, args->buffer_count, 0),
+														 get_offset(), PF_WAIT_FOR_LOCK);
 					}
 					double load_factor = buffer.occupied_slots() /
 						(double)buffer.total_slots();
@@ -273,7 +275,7 @@ void *thread_insert(void *a) {
 							uint64_t count = key.count;
 							key.count = 1;
 							for (uint64_t c = 0; c < count; c++) {
-								if (!args->pf->insert(key, start, PF_WAIT_FOR_LOCK)) {
+								if (!args->pf->insert(key, get_offset(), PF_WAIT_FOR_LOCK)) {
 									std::cerr << "Failed insertion for " << (uint64_t)key.key <<
 										std::endl;
 									abort();
