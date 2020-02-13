@@ -1068,7 +1068,7 @@ void CascadeFilter<key_object>::shuffle_merge(uint64_t index) {
 	}
 
 	assert(nlevels <= total_num_levels);
-	DEBUG("Shuffle merging CQFs 0 to " << nlevels - 1);
+	PRINT("Shuffle merging CQFs 0 to " << nlevels - 1);
 
 	KeyObject cur_key, next_key;
 	CQF<key_object> *new_filters;
