@@ -27,7 +27,7 @@ capprops=dict(linewidth=5, color='black')
 
 
 
-bp = df.boxplot(by='structure', showfliers=True, boxprops=boxprops,
+bp = df.boxplot(by='structure', showfliers=False, boxprops=boxprops,
         medianprops=medianprops, whiskerprops=whiskerprops, capprops=capprops)
 
 # for patch, color in zip(bp['boxes'], colors):
@@ -37,19 +37,19 @@ axes = plt.gca()
 # data=[2.2,0.9,0.8]
 # axes.bar(range(1, 4), data, color='yellow', align='center')
 ## Custom x-axis labels
-# axes.set_xlabel('Distributions')
+axes.set_xlabel('Distributions')
 # axes.set_xlabel('Data structures')
-axes.set_xlabel('Buffering approach')
-axes.set_xticklabels(['CF', 'CSL', 'CSL(cones)', 'CSL(cones-threads)'])
+# axes.set_xlabel('Buffering approach')
+# axes.set_xticklabels(['CF', 'CSL', 'CSL(cones)', 'CSL(cones-threads)'])
 # axes.set_xticklabels(['CF', 'TSL', 'TSL(cones)', 'TSL(cones-threads)'])
 # axes.set_xticklabels(['TSL1', 'TSL2', 'TSL3', 'TSL4'])
 # axes.set_xticklabels(['CSL Buffer', 'CSL Buffer-count', 'CSL No-buffer'])
-# axes.set_xticklabels(['24M', '24M-23', 'Round-robin', 'Count-UR'])
+axes.set_xticklabels(['24M', '24M-23', 'Round-robin', 'Count-UR'])
 # axes.margins(y=0)
 
 # plt.title('stretch')
-plt.title('Count stretch')
-# plt.title('Time stretch')
+# plt.title('Count stretch')
+plt.title('Time stretch')
 plt.suptitle('')
 plt.show()
 # fig = bp.get_figure()

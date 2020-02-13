@@ -18,6 +18,7 @@ with open(str(sys.argv[1]),'r') as csvfile:
 
 data=str(sys.argv[1])
 data=data[data.find('/')+1:]
+data=data[:data.find('.')]
 title = data + " vs Lifetime"
 plt.scatter(x,y, label=title)
 plt.xlabel('Lifetime')
