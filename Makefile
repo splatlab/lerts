@@ -6,7 +6,7 @@ ifdef D
 	OPT=
 else
 	DEBUG=
-	OPT=-Ofast
+	OPT=-Ofast -g
 endif
 
 ifdef NH

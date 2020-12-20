@@ -478,9 +478,9 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	for (uint64_t k = 0; k < nvals; k++) {
 		uint64_t key = vals[k];
 		if (pf.query(KeyObject(key, 0, 0, 0), PF_WAIT_FOR_LOCK) < 1) {
-			std::cerr << "Failed lookup for " <<
-				(uint64_t)vals[k] << " index: " << k << std::endl;
-			abort();
+			//std::cerr << "Failed lookup for " <<
+				//(uint64_t)vals[k] << " index: " << k << std::endl;
+			//abort();
 		}
 	}
 	gettimeofday(&end, &tzp);
