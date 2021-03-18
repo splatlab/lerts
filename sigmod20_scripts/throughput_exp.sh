@@ -61,7 +61,7 @@ echo "\n Command: $command" > $out
 # Time-stretch LERT
 #
 a=1
-out="$2/TSL1-throughput.data"
+out="$2/TSL$a-throughput.data"
 echo "Running TSL1 experiments for $numobs from $file."
 command="./myio.sh cgexec -g memory:lert ./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file"
 echo $command
@@ -69,7 +69,7 @@ echo "\n Command: $command" > $out
 `$command > $out`
 
 a=2
-out="$2/TSL2-throughput.data"
+out="$2/TSL$a-throughput.data"
 echo "Running TSL2 experiments for $numobs from $file."
 command="./myio.sh cgexec -g memory:lert ./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file"
 echo $command
@@ -77,7 +77,7 @@ echo "\n Command: $command" > $out
 `$command > $out`
 
 a=3
-out="$2/TSL3-throughput.data"
+out="$2/TSL$a-throughput.data"
 echo "Running TSL3 experiments for $numobs from $file."
 command="./myio.sh cgexec -g memory:lert ./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file"
 echo $command
@@ -85,7 +85,7 @@ echo "\n Command: $command" > $out
 `$command > $out`
 
 a=4
-out="$2/TSL4-throughput.data"
+out="$2/TSL$a-throughput.data"
 echo "Running TSL4 experiments for $numobs from $file."
 command="./myio.sh cgexec -g memory:lert ./main popcornfilter -f $f -q $q -l $l -g $g -t $t -a $a -o -v 24 -i $file"
 echo $command
