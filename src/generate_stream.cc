@@ -163,7 +163,7 @@ main (int argc, char *argv[])
 	if (option != 3)
 		std::shuffle(vals, vals + nvals, std::default_random_engine(time(0)));
 
-	popcornfilter::analyze_stream(vals, nvals, 24);
+	// popcornfilter::analyze_stream(vals, nvals, 24);
 	// unmap
 	munmap(vals, size);
 	close(fd);

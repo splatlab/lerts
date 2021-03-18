@@ -198,4 +198,4 @@ $(LOGDIR):
 	@mkdir -p $(LOGDIR)
 
 clean:
-	rm -rf $(OBJDIR) $(LOGDIR) firehose core $(TARGETS)
+	rm -rf $(OBJDIR) $(LOGDIR) core $(TARGETS)

@@ -6,7 +6,7 @@ make clean; make streamdump;
 # setup firehose
 #
 
-git clone https://github.com/splatlab/firehose.git
+#git clone https://github.com/splatlab/firehose.git
 cd firehose/generators/active/; make; cd -
 
 #

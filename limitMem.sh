@@ -24,7 +24,7 @@ group lert {
 }
 EOF
 
-sudo umount /var/cgroups
+#sudo umount /var/cgroups
 sudo cgconfigparser -l cgconfig.conf
 #echo $MEM | sudo tee /var/cgroups/mantis/memory.limit_in_bytes
 #echo 3 | sudo tee /proc/sys/vm/drop_caches

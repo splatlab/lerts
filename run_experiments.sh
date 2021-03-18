@@ -18,7 +18,7 @@
 generate_data() {
   # 2^26 obs
   datasize=536870912
-  ./$scriptdir/firehose.sh $datasize $rawdir >> $logfile
+  #./$scriptdir/firehose.sh $datasize $rawdir >> $logfile
 
   # Arbitrary obs
   # 2^29 obs
@@ -177,8 +177,7 @@ scalability_exp () {
 # Instantaneous_throughput_1024C_4T.txt
 instantaneous_throughput () {
   # 2^29 obs
-  datasize=536870912
-  #datasize=4294967296
+  datasize=4294967296
   ./$scriptdir/instantaneous_throughput.sh $datasize $rawdir >> $logfile
 }
 
@@ -190,8 +189,7 @@ instantaneous_throughput () {
 
 plot_stretch () {
   # 2^29 obs
-  datasize=536870912 # delete after testing
-  #datasize=4294967296
+  datasize=4294967296
   numobs=$((datasize/8))
 
   ./$scriptdir/boxplot_cs_dist.py $rawdir/cf-count-$numobs $rawdir/pf-$numobs \
@@ -278,60 +276,60 @@ plot_throughput () {
 plot_io () {
   # 2^26 obs
   datasize=536870912
-  datasize=$(($datasize/1024/1024))
+  datasize=$(($datasize))
   file=$rawdir/CSL-throughput.data
-  read_mbps=$(grep "Total  read_bytes:" $file | awk '{print $3}')
-  write_mbps=$(grep "Total  write_bytes:" $file | awk '{print $3}')
-  ttime=$(grep "Performace after" $file | awk '{print $3}')
-  tr=$((($read_mbps*$ttime-$datasize)))
-  tw=$((($write_mbps*$ttime-$datasize)))
-  csl_rg=$(echo "a=$tr;a/1024" | bc -l)
-  csl_wg=$(echo "a=$tw;a/1024" | bc -l)
+  read_bytes=$(grep "^read_bytes:" $file | tail -n 1 | awk '{print $2}')
+  write_bytes=$(grep "^write_bytes:" $file | tail -n 1 | awk '{print $2}')
+  #ttime=$(grep "Performace after" $file | awk '{print $3}')
+  tr=$((($read_bytes-$datasize)))
+  tw=$((($write_bytes)))
+  csl_rg=$(echo "a=$tr;a/1024/1024/1024" | bc -l)
+  csl_wg=$(echo "a=$tw;a/1024/1024/1024" | bc -l)
 
   file=$rawdir/IRL-throughput.data
-  read_mbps=$(grep "Total  read_bytes:" $file | awk '{print $3}')
-  write_mbps=$(grep "Total  write_bytes:" $file | awk '{print $3}')
-  ttime=$(grep "Performace after" $file | awk '{print $3}')
-  tr=$((($read_mbps*$ttime-$datasize)))
-  tw=$((($write_mbps*$ttime-$datasize)))
-  irl_rg=$(echo "a=$tr;a/1024" | bc -l)
-  irl_wg=$(echo "a=$tw;a/1024" | bc -l)
+  read_bytes=$(grep "^read_bytes:" $file | tail -n 1  | awk '{print $2}')
+  write_bytes=$(grep "^write_bytes:" $file | tail -n 1  | awk '{print $2}')
+  #ttime=$(grep "Performace after" $file | awk '{print $3}')
+  tr=$((($read_bytes-$datasize)))
+  tw=$((($write_bytes)))
+  irl_rg=$(echo "a=$tr;a/1024/1024/1024" | bc -l)
+  irl_wg=$(echo "a=$tw;a/1024/1024/1024" | bc -l)
 
   file=$rawdir/TSL1-throughput.data
-  read_mbps=$(grep "Total  read_bytes:" $file | awk '{print $3}')
-  write_mbps=$(grep "Total  write_bytes:" $file | awk '{print $3}')
-  ttime=$(grep "Performace after" $file | awk '{print $3}')
-  tr=$((($read_mbps*$ttime-$datasize)))
-  tw=$((($write_mbps*$ttime-$datasize)))
-  tsl1_rg=$(echo "a=$tr;a/1024" | bc -l)
-  tsl1_wg=$(echo "a=$tw;a/1024" | bc -l)
+  read_bytes=$(grep "^read_bytes:" $file | tail -n 1  | awk '{print $2}')
+  write_bytes=$(grep "^write_bytes:" $file | tail -n 1  | awk '{print $2}')
+  #ttime=$(grep "Performace after" $file | awk '{print $3}')
+  tr=$((($read_bytes-$datasize)))
+  tw=$((($write_bytes)))
+  tsl1_rg=$(echo "a=$tr;a/1024/1024/1024" | bc -l)
+  tsl1_wg=$(echo "a=$tw;a/1024/1024/1024" | bc -l)
 
   file=$rawdir/TSL2-throughput.data
-  read_mbps=$(grep "Total  read_bytes:" $file | awk '{print $3}')
-  write_mbps=$(grep "Total  write_bytes:" $file | awk '{print $3}')
-  ttime=$(grep "Performace after" $file | awk '{print $3}')
-  tr=$((($read_mbps*$ttime-$datasize)))
-  tw=$((($write_mbps*$ttime-$datasize)))
-  tsl2_rg=$(echo "a=$tr;a/1024" | bc -l)
-  tsl2_wg=$(echo "a=$tw;a/1024" | bc -l)
+  read_bytes=$(grep "^read_bytes:" $file | tail -n 1  | awk '{print $2}')
+  write_bytes=$(grep "^write_bytes:" $file | tail -n 1  | awk '{print $2}')
+  #ttime=$(grep "Performace after" $file | awk '{print $3}')
+  tr=$((($read_bytes-$datasize)))
+  tw=$((($write_bytes)))
+  tsl2_rg=$(echo "a=$tr;a/1024/1024/1024" | bc -l)
+  tsl2_wg=$(echo "a=$tw;a/1024/1024/1024" | bc -l)
 
   file=$rawdir/TSL3-throughput.data
-  read_mbps=$(grep "Total  read_bytes:" $file | awk '{print $3}')
-  write_mbps=$(grep "Total  write_bytes:" $file | awk '{print $3}')
-  ttime=$(grep "Performace after" $file | awk '{print $3}')
-  tr=$((($read_mbps*$ttime-$datasize)))
-  tw=$((($write_mbps*$ttime-$datasize)))
-  tsl3_rg=$(echo "a=$tr;a/1024" | bc -l)
-  tsl3_wg=$(echo "a=$tw;a/1024" | bc -l)
+  read_bytes=$(grep "^read_bytes:" $file | tail -n 1  | awk '{print $2}')
+  write_bytes=$(grep "^write_bytes:" $file | tail -n 1  | awk '{print $2}')
+  #ttime=$(grep "Performace after" $file | awk '{print $3}')
+  tr=$((($read_bytes-$datasize)))
+  tw=$((($write_bytes)))
+  tsl3_rg=$(echo "a=$tr;a/1024/1024/1024" | bc -l)
+  tsl3_wg=$(echo "a=$tw;a/1024/1024/1024" | bc -l)
 
   file=$rawdir/TSL4-throughput.data
-  read_mbps=$(grep "Total  read_bytes:" $file | awk '{print $3}')
-  write_mbps=$(grep "Total  write_bytes:" $file | awk '{print $3}')
-  ttime=$(grep "Performace after" $file | awk '{print $3}')
-  tr=$((($read_mbps*$ttime-$datasize)))
-  tw=$((($write_mbps*$ttime-$datasize)))
-  tsl4_rg=$(echo "a=$tr;a/1024" | bc -l)
-  tsl4_wg=$(echo "a=$tw;a/1024" | bc -l)
+  read_bytes=$(grep "^read_bytes:" $file | tail -n 1  | awk '{print $2}')
+  write_bytes=$(grep "^write_bytes:" $file | tail -n 1  | awk '{print $2}')
+  #ttime=$(grep "Performace after" $file | awk '{print $3}')
+  tr=$((($read_bytes-$datasize)))
+  tw=$((($write_bytes)))
+  tsl4_rg=$(echo "a=$tr;a/1024/1024/1024" | bc -l)
+  tsl4_wg=$(echo "a=$tw;a/1024/1024/1024" | bc -l)
 
   ./$scriptdir/barplot_read_io.py $csl_rg $irl_rg $tsl1_rg $tsl2_rg $tsl3_rg $tsl4_rg $figdir/io_read.png
   ./$scriptdir/barplot_write_io.py $csl_wg $irl_wg $tsl1_wg $tsl2_wg $tsl3_wg $tsl4_wg $figdir/io_write.png
@@ -406,6 +404,18 @@ mkdir -p $figdir
 # function calls
 #
 
+echo "$(timestamp): Running arb stretch validation" > $logfile
+validate_arb_stretch
+echo "$(timestamp): Running throughput exp" > $logfile
+throughput_exp
+echo "$(timestamp): Plotting stretch" > $logfile
+plot_stretch
+echo "$(timestamp): Plotting I/O" > $logfile
+plot_io
+echo "$(timestamp): Plotting throughput" > $logfile
+plot_throughput
+
+<< COMMENT1
 echo "$(timestamp): Generating data" > $logfile
 generate_data
 echo "$(timestamp): Running stretch validation" > $logfile
@@ -419,7 +429,7 @@ validate_lifetime_stretch
 echo "$(timestamp): Running throughput exp" > $logfile
 throughput_exp
 echo "$(timestamp): Running scalability throughput exp" > $logfile
-scalability_exp
+#scalability_exp
 echo "$(timestamp): Running instantaneous throughput exp" > $logfile
 instantaneous_throughput
 echo "$(timestamp): Plotting stretch" > $logfile
@@ -431,4 +441,5 @@ plot_io
 echo "$(timestamp): Plotting throughput" > $logfile
 plot_throughput
 echo "$(timestamp): Retrieving scalability data" > $logfile
-retrieve_scalability
+#retrieve_scalability
+COMMENT1
