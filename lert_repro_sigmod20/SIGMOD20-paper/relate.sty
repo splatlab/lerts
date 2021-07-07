@@ -1,0 +1,36 @@
+% relate_macros.tex		1987 Jun 10	E. Ledoux
+% Instructions for use are located at the end of this file.
+%
+
+%\@ifundefined{definitions}{\input{define.sty}}{}
+%\begin{definitions}
+%
+\newdimen\relateleft \relateleft=\leftmargin  % space before label
+\newdimen\relateright \relateright=\leftmargin  % min. space after label
+\newbox\RELbox \newcount\RELcount \RELcount\z@
+\newdimen\RELoldmax \newdimen\RELnewmax
+%
+\def\relate{\@ifnextchar [{\RELcontd}{\global\advance\RELcount\@ne
+\expandafter\RELcontd\expandafter [\romannumeral \the\RELcount]}}%
+%
+\def\RELcontd[#1]{\def\RELlabel{#1}%
+\expandafter\let\expandafter\RELmax\csname RELold@#1\endcsname
+\ifx\RELmax\relax \RELoldmax0.20\hsize \else \RELoldmax\RELmax \fi
+\list{}{\labelwidth\RELoldmax \itemindent\z@ \leftmargin\RELoldmax
+\advance\leftmargin\relateleft \advance\leftmargin\relateright
+\let\makelabel\RELmakelabel}}%
+%
+\def\RELmakelabel#1{\@ifundefined{RELnew@\RELlabel}{\RELnewmax\z@}%
+{\expandafter\RELnewmax\csname RELnew@\RELlabel\endcsname}%
+\setbox\RELbox\hbox{\vtop to0pt{\let\\\cr \halign{##\hfil\cr#1\cr} \vss}}%
+\ifdim\wd\RELbox>\RELnewmax \RELnewmax\wd\RELbox\fi
+\expandafter\xdef\csname RELnew@\RELlabel\endcsname{\the\RELnewmax}%
+\hskip\labelsep \hskip-\relateright \hbox to\z@{\box\RELbox\hss}\hfill}%
+%
+\def\endrelate{\toks\z@\expandafter{\csname RELold@\RELlabel\endcsname}%
+\immediate\write\@auxout{\gdef\the\toks0{\csname RELnew@\RELlabel\endcsname}}%
+\endlist}%
+%
+%\end{definitions}
+
+

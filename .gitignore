@@ -37,3 +37,8 @@ streamdump
 
 # QFs dump
 *.ser
+
+#dump files
+streamdump_mmap*
+
+*.tar.gz

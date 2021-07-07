@@ -1,5 +1,5 @@
 TARGETS= $(COMPILE_TARGETS) test
-COMPILE_TARGETS=main streamdump
+COMPILE_TARGETS=main streamdump generate_stream
 
 ifdef D
 	DEBUG=-g -DDEBUG_MODE
@@ -61,8 +61,10 @@ main:						$(OBJDIR)/main.o $(OBJDIR)/popcornfilter.o \
 								$(OBJDIR)/gqf.o $(OBJDIR)/gqf_file.o $(OBJDIR)/util.o \
 								$(OBJDIR)/hashutil.o $(OBJDIR)/partitioned_counter.o
 
-streamdump: $(OBJDIR)/streamdump.o $(OBJDIR)/gqf.o $(OBJDIR)/util.o \
+streamdump: 		$(OBJDIR)/streamdump.o $(OBJDIR)/gqf.o $(OBJDIR)/util.o \
 								$(OBJDIR)/hashutil.o
+
+generate_stream:	$(OBJDIR)/generate_stream.o $(OBJDIR)/util.o
 
 test: $(LOGDIR)
 	./main popcornfilter -f 1 -q 16 -l 3 -g 2 -t 1 -a 1 -o -v 24
@@ -159,12 +161,13 @@ $(OBJDIR)/cascadefilter.o: 		$(LOC_INCLUDE)/cascadefilter.h \
  															$(LOC_INCLUDE)/lock.h \
  															$(LOC_INCLUDE)/partitioned_counter.h \
  															$(LOC_INCLUDE)/zipf.h
-$(OBJDIR)/streamdump.o: 	$(LOC_INCLUDE)/gqf_cpp.h \
+$(OBJDIR)/streamdump.o: 			$(LOC_INCLUDE)/gqf_cpp.h \
  															$(LOC_INCLUDE)/util.h \
  															$(LOC_INCLUDE)/lock.h
 
 # dependencies between .o files and .cc (or .c) files
 
+$(OBJDIR)/generate_stream.o:	$(LOC_SRC)/generate_stream.cc
 $(OBJDIR)/gqf.o: $(LOC_SRC)/gqf/gqf.c $(LOC_INCLUDE)/gqf/gqf.h
 $(OBJDIR)/gqf_file.o: 	$(LOC_SRC)/gqf/gqf_file.c $(LOC_INCLUDE)/gqf/gqf_file.h
 $(OBJDIR)/hashutil.o: 	$(LOC_INCLUDE)/gqf/hashutil.h

@@ -3,7 +3,7 @@
 import sys
 from decimal import *
 import matplotlib.pyplot as plt
-plt.rcParams.update({'font.size': 24})
+plt.rcParams.update({'font.size': 35})
 import csv
 
 x = []
@@ -16,12 +16,12 @@ with open(str(sys.argv[1]),'r') as csvfile:
         x.append(int(row[0]))
         y.append(Decimal(row[1]))
 
-data=str(sys.argv[1])
-data=data[data.find('/')+1:]
-title = data + " vs Lifetime"
+stretch="Count stretch"
+# stretch="Time stretch"
+title = stretch + " vs Lifetime"
 plt.scatter(x,y, label=title)
 plt.xlabel('Lifetime')
-plt.ylabel(data)
+plt.ylabel(stretch + " (multiple threads)")
 plt.legend()
 plt.show()
 

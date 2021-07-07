@@ -1,0 +1,620 @@
+%!TEX root =  main.tex
+
+
+\section{Evaluation}
+
+In this section, we evaluate our implementations of the \ts (TSL), \cs (CSL),
+and \ps (IRL) for timeliness, robustness to input distributions, I/O
+performance, insertion throughput, and scalability with multiple threads.
+
+We compare our implementations against Bender et al.'s
+cascade filter~\cite{BenderFaJo12} as a baseline for timeliness. 
+%
+This baseline is an external-memory
+data structure with no timeliness guarantee.
+We show that reporting delays can be quite large when data structures take no
+special steps to ensure timeliness.
+
+
+We also evaluate an implementation of the Misra-Gries
+data structure as a baseline for in-memory insertion throughput. We implement
+the Misra-Gries data structure with an exact counting data structure (\cqf) to forbid
+false positives.
+%
+This gives an upper bound on the insertion throughput one can achieve in-memory
+while performing immediate event-detection. The objective of this baseline is to
+evaluate the effect of disk accesses during flushes/shuffle-merges in our
+implementations of the TSL, CSL, and IRL.
+%}
+
+
+We address the following performance questions for the time-stretch,
+count-stretch and immediate-report \LERT:
+
+\begin{enumerate}[noitemsep,nolistsep,leftmargin=*]
+%
+  \item How does the empirical timeliness of reported items compare to the
+    theoretical bounds?
+%
+  \item How robust is the time-stretch \LERT to different input distributions?
+%
+  \item How does deamortization and multi-threading affect the empirical
+    timeliness of reported items?
+%
+  \item How does the buffering strategy affect count stretch and throughput?
+%
+  \item How does LERT total I/O
+% performed by our implementations of different LERTs
+compare to theoretical bounds?
+%
+  \item What is the insertion throughput of the time-stretch, count-stretch and
+    immediate-report \LERT?
+%
+  \item How does deamortization and multiple threads affect instantaneous
+    throughput?
+%
+  \item How does insertion throughput scale with number of threads?
+%
+\end{enumerate}
+
+\begin{figure*}
+{\centering
+\begin{subfigure}{.33\textwidth}
+  \centering
+  %\includegraphics[width=\linewidth]{fig/countstretch-lifetime-r23-l4-g4-all_new_updated_fliers.png}
+  \includegraphics[width=\linewidth]{../LERT-src/sigmod20_figs/countstretch-dist.png}
+  \captionsetup{margin=.5cm}
+  \caption{Distribution of count stretch of different
+  data structures.}
+  \label{fig:countstretch}
+\end{subfigure}
+%
+\begin{subfigure}{.33\textwidth}
+  \centering
+  %\includegraphics[width=\linewidth]{fig/timestretch-lifetime-r23-l4-g4-all_new_updated_fliers.png}
+  \includegraphics[width=\linewidth]{../LERT-src/sigmod20_figs/timestretch-dist.png}
+  \captionsetup{margin=.5cm}
+  \caption{Distribution of time stretch of different
+  data structures.}
+  \label{fig:timestretch}
+\end{subfigure}
+%
+\begin{subfigure}{.33\textwidth}
+  \centering
+  %\includegraphics[width=\linewidth]{fig/timestretch-lifetime-r23-l4-g4-a1to4_new_fliers.png}
+  \includegraphics[width=\linewidth]{../LERT-src/sigmod20_figs/timestretch-a-dist.png}
+  \captionsetup{margin=.5cm}
+  \caption{Distribution of time stretch in the \ts for
+  different \boldmath  $\alpha$ values.}
+  \label{fig:timeliness-timestretch}
+\end{subfigure}
+%
+}
+\caption{\boldmath Data structure configuration: RAM level: 8388608 slots in
+    the CQF, levels: 4, growth factor: 4, level thresholds: (2, 4, 8), cones: 8, threads: 8, number of
+  observations: 512M.
+%
+  Data structures: Cascade filter (CF), \cs (CSL),
+  \ts (TSL), (CSL and TSL) with cones, (CSL and TSL) with cones and threads.
+  \Ts with age bits 1 (TSL1) $\alpha=1$, 2 (TSL2) $\alpha=0.33$, 3 (TSL3)
+  $\alpha=0.14$, and 4 (TSL4) $\alpha=0.06$.
+} 
+\label{fig:timeliness}
+\end{figure*}
+
+\begin{figure}
+{\centering
+\begin{subfigure}{.50\textwidth}
+  \centering
+  %\includegraphics[width=.8\linewidth]{fig/timestretch-lifetime-r23-l4-g4-a1-arb-all_fliers.png}
+  \includegraphics[width=\linewidth]{../LERT-src/sigmod20_figs/timestretch-arb-dist.png}
+  \captionsetup{margin=.5cm}
+  \caption{Distribution of time stretch for different
+    distributions. These distributions are described in~\Cref{diff_dist}.}
+  \label{fig:timestretch-arb}
+\end{subfigure}
+\\
+\begin{subfigure}{.50\textwidth}
+  \centering
+  %\includegraphics[width=.8\linewidth]{fig/countstretch-lifetime-r23-l4-g4-c8-t8-buffering-overlay-new-fliers.png}
+  \includegraphics[width=\linewidth]{../LERT-src/sigmod20_figs/countstretch-buffer-dist.png}
+  \captionsetup{margin=.5cm}
+  \caption{Distribution of count stretch with different
+  buffering strategies. Bars show the average insertion throughput
+  (Million insertions/sec) for each buffering strategy. Average insertion throughput when
+  no-buffer is used is $2.7\times$ lower compared to when buffers are used.}
+  \label{fig:countstretch-buffering}
+\end{subfigure}
+}
+\caption{Data structure configuration: RAM level: 8388608 slots in
+    the CQF, levels: 4, growth factor: 4, level thresholds for on-disk
+    level: (2, 4, 8), cones: 8, threads: 8, number of
+  observations: 512M.
+}
+\label{fig:roboustness}
+\end{figure}
+
+
+\begin{figure}
+{\centering
+\begin{subfigure}{.50\textwidth}
+  \centering
+  %\includegraphics[width=.8\linewidth]{fig/Count-Stretch-Lifetime_r23_l4.png}
+  \includegraphics[width=\linewidth]{../LERT-src/sigmod20_figs/countstretch-lifetime.png}
+  \captionsetup{margin=.5cm}
+  \caption{Distribution of count stretch vs lifetime of reported items in a
+    CSL with 8 cones and 8 threads.}
+  \label{fig:countstretch-analysis}
+\end{subfigure}
+\\
+\begin{subfigure}{.50\textwidth}
+  \centering
+  %\includegraphics[width=.8\linewidth]{fig/Time-Stretch-Lifetime_r23_l4.png}
+  \includegraphics[width=\linewidth]{../LERT-src/sigmod20_figs/timestretch-lifetime.png}
+  \captionsetup{margin=.5cm}
+  \caption{Distribution of time stretch vs lifetime of reported items in a
+    TSL with 8 cones and 8 threads.}
+  \label{fig:timestretch-analysis}
+\end{subfigure}
+}
+\caption{Data structure configuration: RAM level: 8388608 slots in
+    the CQF, levels: 4, growth factor: 4, level thresholds for on-disk
+    level: (2, 4, 8), cones: 8, threads: 8, number of
+  observations: 512M.
+}
+\label{fig:stretch-analysis}
+\end{figure}
+
+
+\subsection{Experimental setup}
+\label{setup}
+
+We describe how we designed experiments to answer the questions 
+above. We describe our workloads, 
+and how we validated timeliness and measured I/O performance.
+
+\ourparagraph{Workload} Firehose~\cite{AndersonPl13} is a suite of benchmarks
+simulating a network-event monitoring workload. A Firehose benchmark
+consists of a \textit{generator} that feeds keys to the \textit{analytic},
+being benchmarked. The analytic must detect
+and report each key that has $24$ observations.
+
+Firehose includes two generators: the power-law generator selects from
+a static ground set of 100,000 keys according to a power-law distribution, while
+the active-set generator allows the ground set to drift over an infinite key
+space. We use the active-set generator 
+because an infinite key space more closely matches many real world streaming workloads. 
+To simulate a stream of keys drawn from a huge key-space we increase the key space
+of the active set to one million.
+
+
+\ourparagraph{Other workloads}\label{diff_dist} Apart from Firehose, we use four other
+simulated workloads to evaluate the empirical stretch in the \ts. These four
+workloads are generated to show the robustness of
+the data structure to non-power-law distributions. In the first
+distribution, $M$ (where $M$ is the size of the level in RAM) keys appear with a
+count between 24--50 and rest of the keys are chosen uniformly at random from a
+big universe. In the second, $M$ keys appear 24 times and the rest of the keys
+appear 23 times. In the third, $M$ keys appear round robin each with a
+count $>24$. In the fourth, for each key we pick the count uniformly at random
+between 1--25.
+
+\ourparagraph{Reporting} During insertion, we record each reported
+item and the index in the stream at which it is reported by the data structure.
+We record by inserting the reported item in an exact CQF (anomaly CQF) and
+encoding the index as the count of the item in the anomaly CQF.
+%
+We also use the anomaly CQF to check if an incoming item has already been
+reported. 
+We only insert the item if
+it is not reported yet. This prevents duplicate reports. 
+
+\ourparagraph{Timeliness} For the timeliness evaluation, we measure the reporting delay
+after its $T$th occurrence. We have two measures
+of timeliness: time stretch and count stretch.
+
+The \ts upper bounds the reporting delay  of an item based on its lifetime (i.e. time between its first
+and $T$th instance). To validate the
+timeliness of the \ts, we first perform an offline analysis of the stream and calculate the
+lifetime of each reportable item.
+%
+Given a reporting threshold $T$, we record the index of the first occurrence of
+the item ($I_0$) and the index of the $T$-th occurrence of the item ($I_T$).
+%
+During ingestion, we record the index ($I_R$) at which the \ts reports the item.
+We calculate the time stretch ($ts$) for each
+reported item as $ts = (I_R-I_0)/(I_T-I_0)$ and verify that $ts \leq (1+
+\alpha)$.
+
+Multiple threads process chunks of 1024
+observations from the input stream.  We consider all reports a thread generates 
+while processing the $i$th observation to occur
+at time $i$.  Due to concurrency, two observations
+of the same key may be inserted into the data structure in a
+different order than they are pulled off of the input stream.  This
+may introduce some noise in our time-stretch measurements.  However,
+our experimental results with and without multi-threading were nearly
+identical, indicating that the noise is small.
+
+In the \cs, the upper bound is on the count of the item when it is reported. To
+validate timeliness, we first record indexes at which items are reported by
+the \cs ($I_R$). We then perform an offline analysis to determine the count of
+the item at index $I_R$ ($C_{I_R}$) in the stream. We then calculate the count
+stretch ($cs$) as $cs=C_{I_R}/T$ and validate that $cs \leq (T+\sum_{i=1}^{L}
+\tau_i)/T$.
+
+To perform the offline analysis of the stream we first generate the stream from
+the active-set generator and dump it in a file. We then read the stream from the
+file for the analysis and for streaming it to the data structure. For timeliness
+validation experiments we use a stream of 512 Million observations from the
+active-set generator.
+
+\ourparagraph{I/O performance} In our implementation of the time-stretch,
+count-stretch and immediate-report \LERT, we allocate space for the data structure by mmap-ing each level (i.e., the CQF)
+to a file on SSD. To force the data structure to keep all levels except
+the first one on SSD we limit the RAM available to the insertion process using
+the ``cgroups'' utility in linux.
+%
+We calculate the total RAM needed by the insertion process to only keep the
+first level in RAM by adding the size of the first level, the space used by the
+anomaly CQF to record reported keys, the space used by thread-local buffers, and
+a small amount of extra space to read the stream sequentially from SSD. We then
+provision the RAM to the next power-of-two of the total sum.
+
+To measure the total I/O performed by the data structure we use the ``iotop''
+utility in linux.  Using \texttt{iotop} we can measure the total amount of reads
+and writes in KB performed by the process doing insertions.
+
+To validate, we calculate the total amount of I/O performed by the data
+structure based on the number of merges (shuffle-merges in case of the \cs) and
+\ts and sizes of levels involved in those merges.
+
+Similar to validation experiments, we first dump the stream to a file and then
+feed the stream to the data structure by streaming it from the file. We use a
+stream of 64 Million observations from the active-set generator.
+
+\ourparagraph{Average insertion throughput and scalability}
+To measure the average insertion throughput, we first
+generate the stream from the active-set generator and dump it in a file. We then
+feed the stream to the data structure by streaming it from the file and measure
+the total time.
+
+To evaluate scalability, we measure how data-structure throughput
+changes with increasing number of threads. We
+evaluate power-of-2 thread counts between $1$ and $64$.
+
+To deamortize the data structures we divide them into $2048$ cones. We use a
+stream of $4$ Billion observations from the active-set generator.
+We evaluate the
+insertion performance and scalability for three values (16, 32 and 64) of the
+DatasetSize-to-RAM-ratio (i.e., the ratio of the data set size to the available RAM).
+
+\ourparagraph{Instantaneous insertion throughput} We also evaluate the
+instantaneous throughput of the data structure when run using either a single cone and
+thread or  multiple cones and threads. We approximate instantaneous throughput by
+calculating throughput (using system timestamps) every $\kappa$ observations.
+In our evaluation, we fix $\kappa = 2^{17}$.
+
+\ourparagraph{Machine specifications} The OS for all experiments 
+was $64$-bit Ubuntu 18.04 running Linux kernel 4.15.0-34-generic
+%
+The machine for all timeliness and I/O performance benchmarks 
+had an Intel Skylake CPU (Core(TM) i7-6700HQ CPU @ $2.60$GHz with $4$ cores
+and $6$MB L$3$ cache) with $32$ GB RAM and a $1$TB Toshiba SSD.
+%
+The machine for all scalability benchmarks had an Intel
+Xeon(R) CPU (E5-2683 v4 @ 2.10GHz with $64$ cores and $20$MB L$3$ cache) with
+$512$ GB RAM and a $1$TB Samsung $860$ SSD.
+
+For all the experiments, we use a reporting threshold of $24$ since it is the default in the Firehose benchmarking suite.
+
+\begin{figure}
+{\centering
+\begin{subfigure}{.50\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{../LERT-src/sigmod20_figs/io_read.png}
+  \captionsetup{margin=.5cm}
+ \caption{Reads I/O}
+\end{subfigure}
+\\
+\begin{subfigure}{.50\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{../LERT-src/sigmod20_figs/io_write.png}
+  \captionsetup{margin=.5cm}
+ \caption{Write I/O}
+\end{subfigure}
+}
+\label{fig:io-data}
+\caption{Total
+  I/O performed by the count-stretch, time-stretch and immediate report \LERT. Data structure configuration: RAM
+  level: 4194304 slots in the CQF, levels: 3, growth factor: 4, number of
+  observations: 64M. Immediate-report LERT (IRL).}
+\end{figure}
+
+%\begin{figure}
+  %\begin{centering}
+    %\begin{tikzpicture}[]
+    %\begin{groupplot} [
+      %group style = {group name=my plots, group size = 1 by 2,},
+      %ybar,
+      %ymajorgrids,
+      %legend style={at={(0.8,2.2)}},
+      %symbolic x coords={CSL, IRL, TSL1, TSL2, TSL3, TSL4},
+      %ymin=0,
+      %%xlabel={Data structures},
+      %nodes near coords align={vertical},
+      %legend columns=2,
+      %%width=.4\textwidth,
+      %width=8cm, height=4cm,
+      %%scale=0.7,
+      %%enlarge x limits=false,enlarge y limits=false,
+      %]
+      %\nextgroupplot[ylabel={I/O in GBs}]
+        %\addplot[pattern=crosshatch, pattern color=teal]  coordinates{
+          %(CSL, 1.398141) (IRL, 1.453542) (TSL1, 2.311195)
+          %(TSL2, 5.070866) (TSL3, 10.797431) (TSL4, 22.592907)
+      %};
+        %\addplot[pattern=grid, pattern color=red]        coordinates {
+          %(CSL, 1.157115) (IRL, 1.782303) (TSL1, 2.034367)
+          %(TSL2, 4.680427) (TSL3, 10.207707) (TSL4, 21.591663)
+        %};
+        %\nextgroupplot[ylabel={I/O in GBs}, xlabel={Data structures}]
+        %\addplot[pattern=crosshatch, pattern color=teal] coordinates{
+          %(CSL, 1.615197) (IRL, 1.678316) (TSL1, 2.655848)
+          %(TSL2, 5.799339) (TSL3, 12.318755) (TSL4, 25.733310)
+        %};
+        %\addplot[pattern=grid, pattern color=red]   coordinates {
+          %(CSL, 1.811719) (IRL, 1.684229) (TSL1, 2.698935)
+          %(TSL2, 5.390067) (TSL3, 11.194569) (TSL4, 23.095296)
+        %};
+        %\legend{Calculated, Measured}
+  %\end{groupplot}
+  %\node[text width=2cm,align=center,anchor=north] at ([yshift=-2mm]my plots c1r1.south)
+  %{\subcaption{Reads \label{subplot:read-io}}};
+  %\node[text width=2cm,align=center,anchor=north] at ([yshift=-8mm]my plots c1r2.south)
+  %{\subcaption{Writes \label{subplot:write-io}}};
+  %\end{tikzpicture}
+%\end{centering}
+%\caption{Total
+  %I/O performed by the count-stretch, time-stretch and immediate report \LERT. Data structure configuration: RAM
+  %level: 4194304 slots in the CQF, levels: 3, growth factor: 4, number of
+  %observations: 64M. Immediate-report LERT (IRL).}
+    %\label{fig:io-data}
+%\end{figure}
+
+\begin{figure*}
+\centering
+{
+ %\begin{subfigure}{0.32\linewidth}
+%\centering
+%\begin{tikzpicture}[yscale=.6, xscale=.7]
+ %\begin{axis}[
+    %ybar,
+    %ymajorgrids,
+    %xlabel={Data structures},
+    %nodes near coords align={vertical},
+    %legend style={at={(0.5,1)},
+        %anchor=north,legend columns=-1},
+    %symbolic x coords={MG, CSL, IRL, TSL1, TSL2, TSL3, TSL4},
+    %ymin=0,
+    %bar width=20pt,
+    %xtick=data,
+    %ylabel={Insertion throughput (Million ops/sec)},
+  %]
+  %\addplot[fill=teal] coordinates{
+  %(MG, 2.2) (CSL, .93808630) (IRL, .46935135) (TSL1, .48538976)
+  %(TSL2, .24639038) (TSL3, .12283503) (TSL4, .06085242)};
+ %\end{axis}
+%\end{tikzpicture}
+ %\caption{Items inserted per second by the CSL, TSL, IRL and
+ %Misra-Gries (MG) data structure. MG is in-memory.}
+ %\label{fig:throughput-data}
+%\end{subfigure}
+%
+\begin{subfigure}{0.33\linewidth}
+  \centering
+  \includegraphics[width=\linewidth]{../LERT-src/sigmod20_figs/throughput.png}
+  %\captionsetup{margin=.5cm}
+ \caption{Items inserted per second by the CSL, TSL, IRL and
+ Misra-Gries (MG) data structure. MG is in-memory.}
+ \label{fig:throughput-data}
+\end{subfigure}
+\hfill
+%
+\hfill
+\begin{subfigure}{0.32\linewidth}
+  \centering
+  \captionsetup[subfigure]{justification=centering}
+  {\centering
+      \begin{tikzpicture}[yscale=0.7, xscale=0.8]
+        \begin{axis}[
+            width=\linewidth,
+            scale only axis,
+            xlabel={Number of threads},
+            ylabel={Throughput (Million inserts/sec)},
+            xmin=0,
+            ymin=0,
+            xmax=75,
+            %ymin=0,
+            %ymax=55,
+            %xtick={1,2,3,4},
+            grid=major,
+            legend entries={Ratio: 16, Ratio: 32, Ratio: 64},
+            %legend entries={Ratio: 16, Ratio: 32, MG in-memory},
+            legend style={legend pos=south east},
+            scaled y ticks=false,
+          ]
+          \addplot[color=blue,mark=pentagon*]       table
+          {data/popcornfilter-threads-4B-c2048-q15-l4-r2G.txt};
+          %{../LERT-src/sigmod20_raw/scalability_throughput_16.output};
+          \addplot[color=teal,mark=square*]       table
+          {data/popcornfilter-threads-4B-c2048-q15-l4-r1G.txt};
+          %{../LERT-src/sigmod20_raw/scalability_throughput_32.output};
+          \addplot[color=red,mark=triangle*]       table
+          {data/popcornfilter-threads-4B-c2048-q15-l4-r512M.txt};
+          %{../LERT-src/sigmod20_raw/scalability_throughput_64.output};
+          %\addplot[thick, color=black] coordinates{(0,7.27)(75,7.27)};
+        \end{axis}
+      \end{tikzpicture}
+  }
+  \caption{Insertion throughput with increasing number of threads for the
+    \cs on 4 Billion observations. }
+    \label{fig:time-threads-pf}
+\end{subfigure}
+%
+\hfill
+\begin{subfigure}{0.33\linewidth}
+  \centering
+  \includegraphics[width=\linewidth]{fig/ThroughputAnalysis.png}
+  %\captionsetup{margin=.5cm}
+  \caption{Instantaneous throughput of the \cs with 1 cone and 1 thread and 1024
+  cones and 4 threads.}
+  \label{fig:throughputanalysis}
+\end{subfigure}
+}
+\caption{Data structure configuration for (a): RAM level: 4194304 slots in
+    the CQF, levels: 3, growth factor: 4, number of observations: 64M.
+    DatasetSize-to-RAM-ratio: 12.5. For (b):
+    RAM level: 67108864 slots in the CQF, levels: 4, growth factor: 4, level
+    thresholds for on-disk level($\ell_3\ldots\ell_{1}$): (2, 4, 8), cones: 2048
+    with greedy flushing, DatasetSize-to-RAM-ratio: 16, 32, and 64. For (c):
+    Same as ~\Cref{fig:countstretch}.}
+\end{figure*}
+
+
+
+
+\subsection{Timely reporting}
+\label{timely-reporting}
+
+\ourparagraph{Cascade filter} \Cref{fig:countstretch,fig:timestretch} 
+show the distribution of count stretch and time stretch of reported items in the
+cascade filter. The cascade filter's maximum count-stretch is $3.0$ and maximum time stretch is $>12$,
+much higher than 
+any single-threaded 
+count-stretch or \ts.
+
+\ourparagraph{\Cs} \Cref{fig:countstretch} validates worst-case count stretch
+for the \cs.
+The total on-disk count for an element
+is 14, so the maximum possible count when reported is $38$ (i.e.,
+$24+14$), for a maximum count stretch of $1.583$.  The maximum reported count
+stretch is $1.583$.
+%
+
+\ourparagraph{\Ts} ~\Cref{fig:timestretch} shows the \ts meets the time-stretch requirements.
+%
+The maximum reported time stretch is $1.59$ which is smaller than the maximum
+allowable time stretch of $2$.
+%
+~\Cref{fig:timeliness-timestretch} shows the distribution of empirical time
+stretches with changing $\alpha$ values. The time stretch of any
+reported element is always smaller than the maximum allowable time stretch.  As
+the number of age bits increases, $\alpha$ decreases and the time stretch decreases.
+
+\subsection{Robustness with input distributions}
+
+\Cref{fig:timestretch-arb} shows the robustness of empirical time stretch (ETS) on
+four input distributions other than the Firehose power-law distribution.
+The ETS is less than 2, the theoretical
+limit of the data structure for all input distributions.
+
+\subsection{Effect of deamortization/threading}
+\label{multi-delay}
+
+\Cref{fig:countstretch,fig:timestretch} show the effect of
+deamortization and multi-threading on timeliness in the \cs and \ts.
+
+Using $8$ cones instead of one does not change the timeliness of any reported
+item.
+%
+This is because the distribution of items in the stream is random (see
+\Cref{setup}) and we use a uniform-random hash function to distribute items to
+each cone. Each cone gets a similar number of items and the cones perform
+shuffle-merges in sync (refer to~\Cref{timeliness-cone-theory}).
+
+Running the count-stretch and time-stretch \LERT with $8$ cones and $8$ threads
+does affect timeliness of reported items. Some items are reported later than the
+theoretical upper bound. The reported maximum time- and count-stretch is
+$>5$.
+%
+This is because each thread inserts items into a local buffer when it can not
+immediately acquire the cone lock.  We empty local buffers only when they are
+full.
+%
+The maximum delay happens when an item's lifetime is similar to the time it
+takes for a cone to incur a full flush involving all levels of the data
+structure.~\Cref{fig:stretch-analysis} shows the stretch of reported items and
+their lifetime. The maximum-stretch items have a
+lifetime $\approx16$M observations which is the number of observations it takes
+for a cone to incur a full flush.
+
+\subsection{Effect of buffering}
+\Cref{fig:countstretch-buffering} shows the empirical count stretch with three
+different buffering strategies. In the first, we use buffers without
+any constraint on the count of a key inside a buffer. We dump the buffer into
+the main data structure when it is full. In the second, we constrain the maximum
+count a key can have in a buffer to~$T/P$ (for $T=24$ and $P=8$ the max count
+is 3). In the third, we don't use buffers. Threads try to acquire the lock on
+the cone and wait if the lock is not available.
+
+The empirical stretch is smallest without  buffers.
+However, not using the buffers increases contention among
+threads and reduces insertion throughput. Using the buffers is
+$2.5\times$ faster compared to not using the buffer.
+
+\subsection{I/O performance and throughput}
+
+\Cref{fig:io-data} shows the total amount of I/O 
+performed by the count-stretch, time-stretch and immediate-report \LERT while ingesting a stream. For all data
+structures, the total I/O calculated and total I/O measured using \texttt{iotop}
+is similar.
+
+The \cs does the least I/O because it performs the fewest
+shuffle-merges. The I/O for the \ts grows by a factor of two as 
+the number of bins increases, as predicted by the theory. The I/O for \ps
+is similar to that of the \ts with stretch 2.
+This shows that
+when item counts follow a power-law distribution, we can achieve immediate
+reporting with the same amount of I/O as with a time stretch of 2.
+
+\ourparagraph{Insertion throughput}
+\Cref{fig:throughput-data} shows
+insertion throughput using the same configuration and stream
+as the total-I/O experiments.
+%
+The \cs has the highest throughput
+because it performs the fewest I/Os. The \ps
+has lower throughput because it performs extra random point queries. The \ts throughput decreases as we add bins and decrease
+the stretch.
+
+The {\bf Misra-Gries data structure}
+throughput is $2.2$ Million ops/sec in-memory. This acts a baseline for
+in-memory insertion throughput. The in-memory MG data structure is only twice as
+fast as the on-disk \cs.
+
+\subsection{Instantaneous throughput} 
+
+\Cref{fig:throughputanalysis} shows the instantaneous throughput of the
+\cs. De-amortization and multi-threading improve both average throughput and
+throughput variance.  With one thread and one cone, the data structure
+periodically stops processing inputs to perform flushes, causing throughput to
+crash to 0.  With 1024 cones and four threads, the system has much smoother
+throughput, never stops processing inputs, and has about 3$\times$ greater
+average throughput.
+
+
+\subsection{Scaling with multiple threads}\label{scalability}
+
+\Cref{fig:time-threads-pf} shows \cs throughput with increasing
+number of threads. 
+The 
+scalability will follow
+for other variants 
+since they all have the same insertion and SSD
+access pattern.
+%
+The insertion throughput increases with thread count. 
+We used three values of DatasetSize-to-RAM-ratio: 16, 32, and 64.
+All have similar scalability curves.
+

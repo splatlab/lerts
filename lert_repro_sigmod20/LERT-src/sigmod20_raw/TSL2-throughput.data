@@ -1,0 +1,3305 @@
+rchar:                  6092  Bytes
+wchar:                  0     Bytes
+syscr:                  16    Bytes
+syscw:                  0     Bytes
+read_bytes:             0     Bytes
+write_bytes:            0     Bytes
+cancelled_write_bytes:  0     Bytes
+
+Creating a time-stretch filter.
+Reading input stream and logs from disk
+Total observations: 67108850
+Inserting elements.
+Shuffle merging CQFs 0 to 1
+rchar:                  17731     Bytes
+wchar:                  156       Bytes
+syscr:                  42        Bytes
+syscw:                  6         Bytes
+read_bytes:             10715136  Bytes
+write_bytes:            31612928  Bytes
+cancelled_write_bytes:  0         Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731     Bytes
+wchar:                  184       Bytes
+syscr:                  42        Bytes
+syscw:                  7         Bytes
+read_bytes:             19853312  Bytes
+write_bytes:            47419392  Bytes
+cancelled_write_bytes:  0         Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731     Bytes
+wchar:                  212       Bytes
+syscr:                  42        Bytes
+syscw:                  8         Bytes
+read_bytes:             27496448  Bytes
+write_bytes:            63225856  Bytes
+cancelled_write_bytes:  0         Bytes
+
+rchar:                  17731     Bytes
+wchar:                  212       Bytes
+syscr:                  42        Bytes
+syscw:                  8         Bytes
+read_bytes:             27496448  Bytes
+write_bytes:            63225856  Bytes
+cancelled_write_bytes:  0         Bytes
+
+Shuffle merging CQFs 0 to 2
+rchar:                  17731      Bytes
+wchar:                  240        Bytes
+syscr:                  42         Bytes
+syscw:                  9          Bytes
+read_bytes:             35635200   Bytes
+write_bytes:            101548032  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  240        Bytes
+syscr:                  42         Bytes
+syscw:                  9          Bytes
+read_bytes:             51470336   Bytes
+write_bytes:            146169856  Bytes
+cancelled_write_bytes:  0          Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731      Bytes
+wchar:                  268        Bytes
+syscr:                  42         Bytes
+syscw:                  10         Bytes
+read_bytes:             55652352   Bytes
+write_bytes:            151474176  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  268        Bytes
+syscr:                  42         Bytes
+syscw:                  10         Bytes
+read_bytes:             87183360   Bytes
+write_bytes:            188760064  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  268        Bytes
+syscr:                  42         Bytes
+syscw:                  10         Bytes
+read_bytes:             122228736  Bytes
+write_bytes:            233897984  Bytes
+cancelled_write_bytes:  0          Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731      Bytes
+wchar:                  296        Bytes
+syscr:                  42         Bytes
+syscw:                  11         Bytes
+read_bytes:             124014592  Bytes
+write_bytes:            236519424  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  296        Bytes
+syscr:                  42         Bytes
+syscw:                  11         Bytes
+read_bytes:             150540288  Bytes
+write_bytes:            269312000  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  296        Bytes
+syscr:                  42         Bytes
+syscw:                  11         Bytes
+read_bytes:             179625984  Bytes
+write_bytes:            301789184  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  296        Bytes
+syscr:                  42         Bytes
+syscw:                  11         Bytes
+read_bytes:             197967872  Bytes
+write_bytes:            322449408  Bytes
+cancelled_write_bytes:  0          Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731      Bytes
+wchar:                  1959       Bytes
+syscr:                  42         Bytes
+syscw:                  33         Bytes
+read_bytes:             216051712  Bytes
+write_bytes:            345350144  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  4091       Bytes
+syscr:                  42         Bytes
+syscw:                  60         Bytes
+read_bytes:             245727232  Bytes
+write_bytes:            378351616  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  5908       Bytes
+syscr:                  42         Bytes
+syscw:                  83         Bytes
+read_bytes:             274210816  Bytes
+write_bytes:            408326144  Bytes
+cancelled_write_bytes:  0          Bytes
+
+Shuffle merging CQFs 0 to 2
+rchar:                  17731      Bytes
+wchar:                  5936       Bytes
+syscr:                  42         Bytes
+syscw:                  84         Bytes
+read_bytes:             274219008  Bytes
+write_bytes:            408342528  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  15441      Bytes
+syscr:                  42         Bytes
+syscw:                  206        Bytes
+read_bytes:             301445120  Bytes
+write_bytes:            435572736  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  25948      Bytes
+syscr:                  42         Bytes
+syscw:                  339        Bytes
+read_bytes:             327651328  Bytes
+write_bytes:            462360576  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  33453      Bytes
+syscr:                  42         Bytes
+syscw:                  434        Bytes
+read_bytes:             357572608  Bytes
+write_bytes:            492290048  Bytes
+cancelled_write_bytes:  0          Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731      Bytes
+wchar:                  39389      Bytes
+syscr:                  42         Bytes
+syscw:                  511        Bytes
+read_bytes:             364466176  Bytes
+write_bytes:            501035008  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  58835      Bytes
+syscr:                  42         Bytes
+syscw:                  759        Bytes
+read_bytes:             388116480  Bytes
+write_bytes:            529596416  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  79454      Bytes
+syscr:                  42         Bytes
+syscw:                  1020       Bytes
+read_bytes:             412848128  Bytes
+write_bytes:            558215168  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  85537      Bytes
+syscr:                  42         Bytes
+syscw:                  1097       Bytes
+read_bytes:             431865856  Bytes
+write_bytes:            582156288  Bytes
+cancelled_write_bytes:  0          Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731      Bytes
+wchar:                  104644     Bytes
+syscr:                  42         Bytes
+syscw:                  1340       Bytes
+read_bytes:             445743104  Bytes
+write_bytes:            599781376  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  127084     Bytes
+syscr:                  42         Bytes
+syscw:                  1622       Bytes
+read_bytes:             467488768  Bytes
+write_bytes:            623505408  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  151724     Bytes
+syscr:                  42         Bytes
+syscw:                  1930       Bytes
+read_bytes:             488624128  Bytes
+write_bytes:            648966144  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  157404     Bytes
+syscr:                  42         Bytes
+syscw:                  2001       Bytes
+read_bytes:             506171392  Bytes
+write_bytes:            668020736  Bytes
+cancelled_write_bytes:  0          Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731      Bytes
+wchar:                  177307     Bytes
+syscr:                  42         Bytes
+syscw:                  2254       Bytes
+read_bytes:             519766016  Bytes
+write_bytes:            685305856  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  207331     Bytes
+syscr:                  42         Bytes
+syscw:                  2631       Bytes
+read_bytes:             541450240  Bytes
+write_bytes:            711258112  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  232451     Bytes
+syscr:                  42         Bytes
+syscw:                  2945       Bytes
+read_bytes:             563073024  Bytes
+write_bytes:            734068736  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  242531     Bytes
+syscr:                  42         Bytes
+syscw:                  3071       Bytes
+read_bytes:             582090752  Bytes
+write_bytes:            758423552  Bytes
+cancelled_write_bytes:  0          Bytes
+
+Shuffle merging CQFs 0 to 2
+rchar:                  17731      Bytes
+wchar:                  248521     Bytes
+syscr:                  42         Bytes
+syscw:                  3148       Bytes
+read_bytes:             587976704  Bytes
+write_bytes:            764317696  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  260134     Bytes
+syscr:                  42         Bytes
+syscw:                  3295       Bytes
+read_bytes:             596586496  Bytes
+write_bytes:            772935680  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  285597     Bytes
+syscr:                  42         Bytes
+syscw:                  3616       Bytes
+read_bytes:             614543360  Bytes
+write_bytes:            790933504  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  318957     Bytes
+syscr:                  42         Bytes
+syscw:                  4033       Bytes
+read_bytes:             636313600  Bytes
+write_bytes:            815349760  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  343837     Bytes
+syscr:                  42         Bytes
+syscw:                  4344       Bytes
+read_bytes:             657305600  Bytes
+write_bytes:            841187328  Bytes
+cancelled_write_bytes:  0          Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731      Bytes
+wchar:                  352799     Bytes
+syscr:                  42         Bytes
+syscw:                  4459       Bytes
+read_bytes:             665001984  Bytes
+write_bytes:            851296256  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  388213     Bytes
+syscr:                  42         Bytes
+syscw:                  4907       Bytes
+read_bytes:             683220992  Bytes
+write_bytes:            874164224  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  424613     Bytes
+syscr:                  42         Bytes
+syscw:                  5362       Bytes
+read_bytes:             704323584  Bytes
+write_bytes:            896745472  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  463653     Bytes
+syscr:                  42         Bytes
+syscw:                  5850       Bytes
+read_bytes:             724844544  Bytes
+write_bytes:            922316800  Bytes
+cancelled_write_bytes:  0          Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731      Bytes
+wchar:                  464536     Bytes
+syscr:                  42         Bytes
+syscw:                  5862       Bytes
+read_bytes:             734560256  Bytes
+write_bytes:            932986880  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  505091     Bytes
+syscr:                  42         Bytes
+syscw:                  6376       Bytes
+read_bytes:             751149056  Bytes
+write_bytes:            954077184  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  540905     Bytes
+syscr:                  42         Bytes
+syscw:                  6825       Bytes
+read_bytes:             769761280  Bytes
+write_bytes:            974139392  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731      Bytes
+wchar:                  579305     Bytes
+syscr:                  42         Bytes
+syscw:                  7305       Bytes
+read_bytes:             789020672  Bytes
+write_bytes:            994623488  Bytes
+cancelled_write_bytes:  0          Bytes
+
+rchar:                  17731       Bytes
+wchar:                  600745      Bytes
+syscr:                  42          Bytes
+syscw:                  7573        Bytes
+read_bytes:             811540480   Bytes
+write_bytes:            1022193664  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  614339      Bytes
+syscr:                  42          Bytes
+syscw:                  7747        Bytes
+read_bytes:             816709632   Bytes
+write_bytes:            1028775936  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  657317      Bytes
+syscr:                  42          Bytes
+syscw:                  8291        Bytes
+read_bytes:             832790528   Bytes
+write_bytes:            1048997888  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  697397      Bytes
+syscr:                  42          Bytes
+syscw:                  8792        Bytes
+read_bytes:             852819968   Bytes
+write_bytes:            1069355008  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  742597      Bytes
+syscr:                  42          Bytes
+syscw:                  9357        Bytes
+read_bytes:             869711872   Bytes
+write_bytes:            1090785280  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  755957      Bytes
+syscr:                  42          Bytes
+syscw:                  9524        Bytes
+read_bytes:             885903360   Bytes
+write_bytes:            1107734528  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 2
+rchar:                  17731       Bytes
+wchar:                  776849      Bytes
+syscr:                  42          Bytes
+syscw:                  9790        Bytes
+read_bytes:             895225856   Bytes
+write_bytes:            1117089792  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  817107      Bytes
+syscr:                  42          Bytes
+syscw:                  10299       Bytes
+read_bytes:             914100224   Bytes
+write_bytes:            1136005120  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  857267      Bytes
+syscr:                  42          Bytes
+syscw:                  10801       Bytes
+read_bytes:             932249600   Bytes
+write_bytes:            1154727936  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  900147      Bytes
+syscr:                  42          Bytes
+syscw:                  11337       Bytes
+read_bytes:             951275520   Bytes
+write_bytes:            1174208512  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  921507      Bytes
+syscr:                  42          Bytes
+syscw:                  11604       Bytes
+read_bytes:             969424896   Bytes
+write_bytes:            1196756992  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  946492      Bytes
+syscr:                  42          Bytes
+syscw:                  11922       Bytes
+read_bytes:             978329600   Bytes
+write_bytes:            1208078336  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  990663      Bytes
+syscr:                  42          Bytes
+syscw:                  12480       Bytes
+read_bytes:             993308672   Bytes
+write_bytes:            1226440704  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1029543     Bytes
+syscr:                  42          Bytes
+syscw:                  12966       Bytes
+read_bytes:             1009750016  Bytes
+write_bytes:            1243549696  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1072983     Bytes
+syscr:                  42          Bytes
+syscw:                  13509       Bytes
+read_bytes:             1027964928  Bytes
+write_bytes:            1262206976  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1098343     Bytes
+syscr:                  42          Bytes
+syscw:                  13826       Bytes
+read_bytes:             1047511040  Bytes
+write_bytes:            1287036928  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  1121985     Bytes
+syscr:                  42          Bytes
+syscw:                  14127       Bytes
+read_bytes:             1055096832  Bytes
+write_bytes:            1296683008  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1148213     Bytes
+syscr:                  42          Bytes
+syscw:                  14459       Bytes
+read_bytes:             1063903232  Bytes
+write_bytes:            1307869184  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1179695     Bytes
+syscr:                  42          Bytes
+syscw:                  14855       Bytes
+read_bytes:             1074855936  Bytes
+write_bytes:            1320181760  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1219615     Bytes
+syscr:                  42          Bytes
+syscw:                  15354       Bytes
+read_bytes:             1090506752  Bytes
+write_bytes:            1337081856  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1263775     Bytes
+syscr:                  42          Bytes
+syscw:                  15906       Bytes
+read_bytes:             1105043456  Bytes
+write_bytes:            1355341824  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1280415     Bytes
+syscr:                  42          Bytes
+syscw:                  16114       Bytes
+read_bytes:             1121591296  Bytes
+write_bytes:            1372577792  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  1307456     Bytes
+syscr:                  42          Bytes
+syscw:                  16458       Bytes
+read_bytes:             1129762816  Bytes
+write_bytes:            1382973440  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1347825     Bytes
+syscr:                  42          Bytes
+syscw:                  16969       Bytes
+read_bytes:             1141927936  Bytes
+write_bytes:            1398468608  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1387391     Bytes
+syscr:                  42          Bytes
+syscw:                  17464       Bytes
+read_bytes:             1157701632  Bytes
+write_bytes:            1414918144  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1427311     Bytes
+syscr:                  42          Bytes
+syscw:                  17963       Bytes
+read_bytes:             1172459520  Bytes
+write_bytes:            1430618112  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1464591     Bytes
+syscr:                  42          Bytes
+syscw:                  18429       Bytes
+read_bytes:             1187860480  Bytes
+write_bytes:            1446092800  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1468831     Bytes
+syscr:                  42          Bytes
+syscw:                  18482       Bytes
+read_bytes:             1199452160  Bytes
+write_bytes:            1463017472  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 2
+rchar:                  17731       Bytes
+wchar:                  1496470     Bytes
+syscr:                  42          Bytes
+syscw:                  18834       Bytes
+read_bytes:             1209528320  Bytes
+write_bytes:            1502633984  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1533284     Bytes
+syscr:                  42          Bytes
+syscw:                  19300       Bytes
+read_bytes:             1222864896  Bytes
+write_bytes:            1555148800  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1569096     Bytes
+syscr:                  42          Bytes
+syscw:                  19749       Bytes
+read_bytes:             1236115456  Bytes
+write_bytes:            1607323648  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1609656     Bytes
+syscr:                  42          Bytes
+syscw:                  20256       Bytes
+read_bytes:             1248280576  Bytes
+write_bytes:            1660727296  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1645096     Bytes
+syscr:                  42          Bytes
+syscw:                  20699       Bytes
+read_bytes:             1259175936  Bytes
+write_bytes:            1715113984  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1675336     Bytes
+syscr:                  42          Bytes
+syscw:                  21077       Bytes
+read_bytes:             1275342848  Bytes
+write_bytes:            1764495360  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  1681522     Bytes
+syscr:                  42          Bytes
+syscw:                  21157       Bytes
+read_bytes:             1285644288  Bytes
+write_bytes:            1775947776  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1725841     Bytes
+syscr:                  42          Bytes
+syscw:                  21718       Bytes
+read_bytes:             1301258240  Bytes
+write_bytes:            1795747840  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1768230     Bytes
+syscr:                  42          Bytes
+syscw:                  22249       Bytes
+read_bytes:             1319493632  Bytes
+write_bytes:            1814487040  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1805830     Bytes
+syscr:                  42          Bytes
+syscw:                  22719       Bytes
+read_bytes:             1336827904  Bytes
+write_bytes:            1831874560  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1840390     Bytes
+syscr:                  42          Bytes
+syscw:                  23151       Bytes
+read_bytes:             1356918784  Bytes
+write_bytes:            1852928000  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  1849982     Bytes
+syscr:                  42          Bytes
+syscw:                  23274       Bytes
+read_bytes:             1365352448  Bytes
+write_bytes:            1862373376  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1877079     Bytes
+syscr:                  42          Bytes
+syscw:                  23617       Bytes
+read_bytes:             1374523392  Bytes
+write_bytes:            1874042880  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1900784     Bytes
+syscr:                  42          Bytes
+syscw:                  23917       Bytes
+read_bytes:             1383018496  Bytes
+write_bytes:            1884692480  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1944144     Bytes
+syscr:                  42          Bytes
+syscw:                  24459       Bytes
+read_bytes:             1400848384  Bytes
+write_bytes:            1902686208  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  1990704     Bytes
+syscr:                  42          Bytes
+syscw:                  25041       Bytes
+read_bytes:             1415659520  Bytes
+write_bytes:            1921462272  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2017504     Bytes
+syscr:                  42          Bytes
+syscw:                  25376       Bytes
+read_bytes:             1434873856  Bytes
+write_bytes:            1946931200  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  2033252     Bytes
+syscr:                  42          Bytes
+syscw:                  25577       Bytes
+read_bytes:             1440346112  Bytes
+write_bytes:            1953886208  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2070540     Bytes
+syscr:                  42          Bytes
+syscw:                  26049       Bytes
+read_bytes:             1452126208  Bytes
+write_bytes:            1968877568  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2112954     Bytes
+syscr:                  42          Bytes
+syscw:                  26581       Bytes
+read_bytes:             1468157952  Bytes
+write_bytes:            1986322432  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2155194     Bytes
+syscr:                  42          Bytes
+syscw:                  27109       Bytes
+read_bytes:             1483235328  Bytes
+write_bytes:            2002436096  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2196074     Bytes
+syscr:                  42          Bytes
+syscw:                  27620       Bytes
+read_bytes:             1499148288  Bytes
+write_bytes:            2018390016  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2205034     Bytes
+syscr:                  42          Bytes
+syscw:                  27732       Bytes
+read_bytes:             1512910848  Bytes
+write_bytes:            2037268480  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 2
+rchar:                  17731       Bytes
+wchar:                  2232135     Bytes
+syscr:                  42          Bytes
+syscw:                  28078       Bytes
+read_bytes:             1534935040  Bytes
+write_bytes:            2060595200  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2262392     Bytes
+syscr:                  42          Bytes
+syscw:                  28461       Bytes
+read_bytes:             1560825856  Bytes
+write_bytes:            2086649856  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2296441     Bytes
+syscr:                  42          Bytes
+syscw:                  28892       Bytes
+read_bytes:             1588772864  Bytes
+write_bytes:            2114662400  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2330490     Bytes
+syscr:                  42          Bytes
+syscw:                  29323       Bytes
+read_bytes:             1615364096  Bytes
+write_bytes:            2141290496  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2362720     Bytes
+syscr:                  42          Bytes
+syscw:                  29726       Bytes
+read_bytes:             1643413504  Bytes
+write_bytes:            2169393152  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2398000     Bytes
+syscr:                  42          Bytes
+syscw:                  30167       Bytes
+read_bytes:             1673478144  Bytes
+write_bytes:            2199527424  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2431760     Bytes
+syscr:                  42          Bytes
+syscw:                  30589       Bytes
+read_bytes:             1700663296  Bytes
+write_bytes:            2226888704  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2464000     Bytes
+syscr:                  42          Bytes
+syscw:                  30992       Bytes
+read_bytes:             1726918656  Bytes
+write_bytes:            2254696448  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2496960     Bytes
+syscr:                  42          Bytes
+syscw:                  31404       Bytes
+read_bytes:             1754808320  Bytes
+write_bytes:            2284224512  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2530960     Bytes
+syscr:                  42          Bytes
+syscw:                  31829       Bytes
+read_bytes:             1780879360  Bytes
+write_bytes:            2311380992  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2556560     Bytes
+syscr:                  42          Bytes
+syscw:                  32149       Bytes
+read_bytes:             1804132352  Bytes
+write_bytes:            2334650368  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  2558610     Bytes
+syscr:                  42          Bytes
+syscw:                  32176       Bytes
+read_bytes:             1816514560  Bytes
+write_bytes:            2347302912  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2601080     Bytes
+syscr:                  42          Bytes
+syscw:                  32714       Bytes
+read_bytes:             1831710720  Bytes
+write_bytes:            2366451712  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2643152     Bytes
+syscr:                  42          Bytes
+syscw:                  33242       Bytes
+read_bytes:             1849683968  Bytes
+write_bytes:            2385399808  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2671632     Bytes
+syscr:                  42          Bytes
+syscw:                  33598       Bytes
+read_bytes:             1862238208  Bytes
+write_bytes:            2397999104  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2688912     Bytes
+syscr:                  42          Bytes
+syscw:                  33814       Bytes
+read_bytes:             1870942208  Bytes
+write_bytes:            2406715392  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2722192     Bytes
+syscr:                  42          Bytes
+syscw:                  34230       Bytes
+read_bytes:             1886801920  Bytes
+write_bytes:            2423889920  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  2724312     Bytes
+syscr:                  42          Bytes
+syscw:                  34258       Bytes
+read_bytes:             1895608320  Bytes
+write_bytes:            2435543040  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2767638     Bytes
+syscr:                  42          Bytes
+syscw:                  34807       Bytes
+read_bytes:             1911431168  Bytes
+write_bytes:            2455670784  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2807146     Bytes
+syscr:                  42          Bytes
+syscw:                  35303       Bytes
+read_bytes:             1927905280  Bytes
+write_bytes:            2473496576  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2841626     Bytes
+syscr:                  42          Bytes
+syscw:                  35734       Bytes
+read_bytes:             1940955136  Bytes
+write_bytes:            2488213504  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2873626     Bytes
+syscr:                  42          Bytes
+syscw:                  36134       Bytes
+read_bytes:             1955299328  Bytes
+write_bytes:            2503196672  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2886826     Bytes
+syscr:                  42          Bytes
+syscw:                  36299       Bytes
+read_bytes:             1971793920  Bytes
+write_bytes:            2525245440  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  2914275     Bytes
+syscr:                  42          Bytes
+syscw:                  36648       Bytes
+read_bytes:             1982119936  Bytes
+write_bytes:            2538373120  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2948788     Bytes
+syscr:                  42          Bytes
+syscw:                  37084       Bytes
+read_bytes:             1994924032  Bytes
+write_bytes:            2554073088  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  2986148     Bytes
+syscr:                  42          Bytes
+syscw:                  37551       Bytes
+read_bytes:             2011181056  Bytes
+write_bytes:            2570362880  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3025428     Bytes
+syscr:                  42          Bytes
+syscw:                  38042       Bytes
+read_bytes:             2024878080  Bytes
+write_bytes:            2587090944  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3055108     Bytes
+syscr:                  42          Bytes
+syscw:                  38413       Bytes
+read_bytes:             2045304832  Bytes
+write_bytes:            2610606080  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 2
+rchar:                  17731       Bytes
+wchar:                  3068309     Bytes
+syscr:                  42          Bytes
+syscw:                  38583       Bytes
+read_bytes:             2056036352  Bytes
+write_bytes:            2621984768  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3098882     Bytes
+syscr:                  42          Bytes
+syscw:                  38970       Bytes
+read_bytes:             2080862208  Bytes
+write_bytes:            2647674880  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3126137     Bytes
+syscr:                  42          Bytes
+syscw:                  39315       Bytes
+read_bytes:             2104123392  Bytes
+write_bytes:            2670993408  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3155525     Bytes
+syscr:                  42          Bytes
+syscw:                  39687       Bytes
+read_bytes:             2129113088  Bytes
+write_bytes:            2696040448  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3189468     Bytes
+syscr:                  42          Bytes
+syscw:                  40115       Bytes
+read_bytes:             2156564480  Bytes
+write_bytes:            2723524608  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3213548     Bytes
+syscr:                  42          Bytes
+syscw:                  40416       Bytes
+read_bytes:             2178863104  Bytes
+write_bytes:            2745872384  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3241708     Bytes
+syscr:                  42          Bytes
+syscw:                  40768       Bytes
+read_bytes:             2203234304  Bytes
+write_bytes:            2770296832  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3276588     Bytes
+syscr:                  42          Bytes
+syscw:                  41204       Bytes
+read_bytes:             2229088256  Bytes
+write_bytes:            2796732416  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3310828     Bytes
+syscr:                  42          Bytes
+syscw:                  41632       Bytes
+read_bytes:             2256232448  Bytes
+write_bytes:            2824036352  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3342828     Bytes
+syscr:                  42          Bytes
+syscw:                  42032       Bytes
+read_bytes:             2281566208  Bytes
+write_bytes:            2849431552  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3370748     Bytes
+syscr:                  42          Bytes
+syscw:                  42381       Bytes
+read_bytes:             2304921600  Bytes
+write_bytes:            2872844288  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3404268     Bytes
+syscr:                  42          Bytes
+syscw:                  42800       Bytes
+read_bytes:             2332033024  Bytes
+write_bytes:            2899988480  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3409788     Bytes
+syscr:                  42          Bytes
+syscw:                  42869       Bytes
+read_bytes:             2350882816  Bytes
+write_bytes:            2918850560  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  3441016     Bytes
+syscr:                  42          Bytes
+syscw:                  43266       Bytes
+read_bytes:             2362187776  Bytes
+write_bytes:            2933231616  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3480703     Bytes
+syscr:                  42          Bytes
+syscw:                  43766       Bytes
+read_bytes:             2378821632  Bytes
+write_bytes:            2952417280  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3521023     Bytes
+syscr:                  42          Bytes
+syscw:                  44270       Bytes
+read_bytes:             2398203904  Bytes
+write_bytes:            2971848704  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3558143     Bytes
+syscr:                  42          Bytes
+syscw:                  44734       Bytes
+read_bytes:             2415632384  Bytes
+write_bytes:            2989535232  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3568623     Bytes
+syscr:                  42          Bytes
+syscw:                  44865       Bytes
+read_bytes:             2422943744  Bytes
+write_bytes:            2998657024  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  3581513     Bytes
+syscr:                  42          Bytes
+syscw:                  45030       Bytes
+read_bytes:             2433359872  Bytes
+write_bytes:            3011903488  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3625516     Bytes
+syscr:                  42          Bytes
+syscw:                  45587       Bytes
+read_bytes:             2448687104  Bytes
+write_bytes:            3031080960  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3667310     Bytes
+syscr:                  42          Bytes
+syscw:                  46110       Bytes
+read_bytes:             2466844672  Bytes
+write_bytes:            3049316352  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3712270     Bytes
+syscr:                  42          Bytes
+syscw:                  46672       Bytes
+read_bytes:             2483240960  Bytes
+write_bytes:            3068108800  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3745150     Bytes
+syscr:                  42          Bytes
+syscw:                  47083       Bytes
+read_bytes:             2502737920  Bytes
+write_bytes:            3090833408  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  3757730     Bytes
+syscr:                  42          Bytes
+syscw:                  47244       Bytes
+read_bytes:             2511110144  Bytes
+write_bytes:            3102474240  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3801101     Bytes
+syscr:                  42          Bytes
+syscw:                  47793       Bytes
+read_bytes:             2525646848  Bytes
+write_bytes:            3120963584  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3845421     Bytes
+syscr:                  42          Bytes
+syscw:                  48348       Bytes
+read_bytes:             2542448640  Bytes
+write_bytes:            3138273280  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3891741     Bytes
+syscr:                  42          Bytes
+syscw:                  48927       Bytes
+read_bytes:             2557788160  Bytes
+write_bytes:            3157184512  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3926381     Bytes
+syscr:                  42          Bytes
+syscw:                  49360       Bytes
+read_bytes:             2575876096  Bytes
+write_bytes:            3180367872  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 2
+rchar:                  17731       Bytes
+wchar:                  3935046     Bytes
+syscr:                  42          Bytes
+syscw:                  49472       Bytes
+read_bytes:             2587418624  Bytes
+write_bytes:            3194871808  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3960996     Bytes
+syscr:                  42          Bytes
+syscw:                  49801       Bytes
+read_bytes:             2609065984  Bytes
+write_bytes:            3217559552  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  3990384     Bytes
+syscr:                  42          Bytes
+syscw:                  50173       Bytes
+read_bytes:             2635747328  Bytes
+write_bytes:            3244265472  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4022616     Bytes
+syscr:                  42          Bytes
+syscw:                  50581       Bytes
+read_bytes:             2659622912  Bytes
+write_bytes:            3268231168  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4049081     Bytes
+syscr:                  42          Bytes
+syscw:                  50916       Bytes
+read_bytes:             2681118720  Bytes
+write_bytes:            3289784320  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4075524     Bytes
+syscr:                  42          Bytes
+syscw:                  51247       Bytes
+read_bytes:             2705489920  Bytes
+write_bytes:            3314225152  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4104564     Bytes
+syscr:                  42          Bytes
+syscw:                  51610       Bytes
+read_bytes:             2730393600  Bytes
+write_bytes:            3339161600  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4132084     Bytes
+syscr:                  42          Bytes
+syscw:                  51954       Bytes
+read_bytes:             2754007040  Bytes
+write_bytes:            3362836480  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4161284     Bytes
+syscr:                  42          Bytes
+syscw:                  52319       Bytes
+read_bytes:             2776780800  Bytes
+write_bytes:            3386687488  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4191524     Bytes
+syscr:                  42          Bytes
+syscw:                  52697       Bytes
+read_bytes:             2802307072  Bytes
+write_bytes:            3413729280  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4222244     Bytes
+syscr:                  42          Bytes
+syscw:                  53081       Bytes
+read_bytes:             2826780672  Bytes
+write_bytes:            3439579136  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4247924     Bytes
+syscr:                  42          Bytes
+syscw:                  53402       Bytes
+read_bytes:             2850738176  Bytes
+write_bytes:            3463598080  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4271044     Bytes
+syscr:                  42          Bytes
+syscw:                  53691       Bytes
+read_bytes:             2874093568  Bytes
+write_bytes:            3487277056  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  4276300     Bytes
+syscr:                  42          Bytes
+syscw:                  53759       Bytes
+read_bytes:             2886049792  Bytes
+write_bytes:            3500433408  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4315958     Bytes
+syscr:                  42          Bytes
+syscw:                  54261       Bytes
+read_bytes:             2901045248  Bytes
+write_bytes:            3519524864  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4353912     Bytes
+syscr:                  42          Bytes
+syscw:                  54737       Bytes
+read_bytes:             2918047744  Bytes
+write_bytes:            3537604608  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4393912     Bytes
+syscr:                  42          Bytes
+syscw:                  55237       Bytes
+read_bytes:             2935611392  Bytes
+write_bytes:            3555250176  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4429832     Bytes
+syscr:                  42          Bytes
+syscw:                  55686       Bytes
+read_bytes:             2955546624  Bytes
+write_bytes:            3576979456  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  4438540     Bytes
+syscr:                  42          Bytes
+syscw:                  55798       Bytes
+read_bytes:             2966319104  Bytes
+write_bytes:            3592134656  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4481911     Bytes
+syscr:                  42          Bytes
+syscw:                  56347       Bytes
+read_bytes:             2981486592  Bytes
+write_bytes:            3611418624  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4495587     Bytes
+syscr:                  42          Bytes
+syscw:                  56519       Bytes
+read_bytes:             2986799104  Bytes
+write_bytes:            3617411072  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4537827     Bytes
+syscr:                  42          Bytes
+syscw:                  57047       Bytes
+read_bytes:             3003748352  Bytes
+write_bytes:            3635568640  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4582627     Bytes
+syscr:                  42          Bytes
+syscw:                  57607       Bytes
+read_bytes:             3019227136  Bytes
+write_bytes:            3655176192  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4598707     Bytes
+syscr:                  42          Bytes
+syscw:                  57808       Bytes
+read_bytes:             3037048832  Bytes
+write_bytes:            3678240768  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  4628989     Bytes
+syscr:                  42          Bytes
+syscw:                  58193       Bytes
+read_bytes:             3047501824  Bytes
+write_bytes:            3691524096  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4664762     Bytes
+syscr:                  42          Bytes
+syscw:                  58645       Bytes
+read_bytes:             3060068352  Bytes
+write_bytes:            3706978304  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4705642     Bytes
+syscr:                  42          Bytes
+syscw:                  59156       Bytes
+read_bytes:             3078062080  Bytes
+write_bytes:            3725029376  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4749882     Bytes
+syscr:                  42          Bytes
+syscw:                  59709       Bytes
+read_bytes:             3092402176  Bytes
+write_bytes:            3743182848  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4774522     Bytes
+syscr:                  42          Bytes
+syscw:                  60017       Bytes
+read_bytes:             3111100416  Bytes
+write_bytes:            3763867648  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 2
+rchar:                  17731       Bytes
+wchar:                  4790893     Bytes
+syscr:                  42          Bytes
+syscw:                  60227       Bytes
+read_bytes:             3124903936  Bytes
+write_bytes:            3778519040  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4819412     Bytes
+syscr:                  42          Bytes
+syscw:                  60588       Bytes
+read_bytes:             3148181504  Bytes
+write_bytes:            3802247168  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4846588     Bytes
+syscr:                  42          Bytes
+syscw:                  60932       Bytes
+read_bytes:             3170406400  Bytes
+write_bytes:            3824533504  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4876055     Bytes
+syscr:                  42          Bytes
+syscw:                  61305       Bytes
+read_bytes:             3193614336  Bytes
+write_bytes:            3847806976  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4902573     Bytes
+syscr:                  42          Bytes
+syscw:                  61640       Bytes
+read_bytes:             3218317312  Bytes
+write_bytes:            3872538624  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4927853     Bytes
+syscr:                  42          Bytes
+syscw:                  61956       Bytes
+read_bytes:             3239952384  Bytes
+write_bytes:            3894218752  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4956893     Bytes
+syscr:                  42          Bytes
+syscw:                  62319       Bytes
+read_bytes:             3264278528  Bytes
+write_bytes:            3918598144  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  4985853     Bytes
+syscr:                  42          Bytes
+syscw:                  62681       Bytes
+read_bytes:             3288616960  Bytes
+write_bytes:            3943071744  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5010573     Bytes
+syscr:                  42          Bytes
+syscw:                  62990       Bytes
+read_bytes:             3309334528  Bytes
+write_bytes:            3964608512  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5035533     Bytes
+syscr:                  42          Bytes
+syscw:                  63302       Bytes
+read_bytes:             3332702208  Bytes
+write_bytes:            3988025344  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5066573     Bytes
+syscr:                  42          Bytes
+syscw:                  63690       Bytes
+read_bytes:             3358121984  Bytes
+write_bytes:            4013469696  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5095213     Bytes
+syscr:                  42          Bytes
+syscw:                  64048       Bytes
+read_bytes:             3381633024  Bytes
+write_bytes:            4037050368  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5117933     Bytes
+syscr:                  42          Bytes
+syscw:                  64332       Bytes
+read_bytes:             3408506880  Bytes
+write_bytes:            4063948800  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  5125154     Bytes
+syscr:                  42          Bytes
+syscw:                  64425       Bytes
+read_bytes:             3419541504  Bytes
+write_bytes:            4075692032  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5167735     Bytes
+syscr:                  42          Bytes
+syscw:                  64964       Bytes
+read_bytes:             3435720704  Bytes
+write_bytes:            4096266240  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5199022     Bytes
+syscr:                  42          Bytes
+syscw:                  65356       Bytes
+read_bytes:             3450908672  Bytes
+write_bytes:            4112035840  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5239582     Bytes
+syscr:                  42          Bytes
+syscw:                  65863       Bytes
+read_bytes:             3470340096  Bytes
+write_bytes:            4131504128  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5257822     Bytes
+syscr:                  42          Bytes
+syscw:                  66091       Bytes
+read_bytes:             3477807104  Bytes
+write_bytes:            4139020288  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5276142     Bytes
+syscr:                  42          Bytes
+syscw:                  66320       Bytes
+read_bytes:             3495407616  Bytes
+write_bytes:            4160573440  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  5295454     Bytes
+syscr:                  42          Bytes
+syscw:                  66566       Bytes
+read_bytes:             3502637056  Bytes
+write_bytes:            4169764864  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5337122     Bytes
+syscr:                  42          Bytes
+syscw:                  67093       Bytes
+read_bytes:             3517804544  Bytes
+write_bytes:            4188495872  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5375362     Bytes
+syscr:                  42          Bytes
+syscw:                  67571       Bytes
+read_bytes:             3534778368  Bytes
+write_bytes:            4205543424  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5417522     Bytes
+syscr:                  42          Bytes
+syscw:                  68098       Bytes
+read_bytes:             3551928320  Bytes
+write_bytes:            4225400832  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5440562     Bytes
+syscr:                  42          Bytes
+syscw:                  68386       Bytes
+read_bytes:             3572137984  Bytes
+write_bytes:            4251013120  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  5465538     Bytes
+syscr:                  42          Bytes
+syscw:                  68704       Bytes
+read_bytes:             3580358656  Bytes
+write_bytes:            4261470208  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5507539     Bytes
+syscr:                  42          Bytes
+syscw:                  69235       Bytes
+read_bytes:             3595096064  Bytes
+write_bytes:            4279488512  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5545059     Bytes
+syscr:                  42          Bytes
+syscw:                  69704       Bytes
+read_bytes:             3611136000  Bytes
+write_bytes:            4295688192  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5587859     Bytes
+syscr:                  42          Bytes
+syscw:                  70239       Bytes
+read_bytes:             3625832448  Bytes
+write_bytes:            4314378240  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5613859     Bytes
+syscr:                  42          Bytes
+syscw:                  70564       Bytes
+read_bytes:             3646140416  Bytes
+write_bytes:            4336238592  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 2
+rchar:                  17731       Bytes
+wchar:                  5627133     Bytes
+syscr:                  42          Bytes
+syscw:                  70735       Bytes
+read_bytes:             3656998912  Bytes
+write_bytes:            4347777024  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5656047     Bytes
+syscr:                  42          Bytes
+syscw:                  71101       Bytes
+read_bytes:             3681062912  Bytes
+write_bytes:            4372643840  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5684092     Bytes
+syscr:                  42          Bytes
+syscw:                  71456       Bytes
+read_bytes:             3704496128  Bytes
+write_bytes:            4396134400  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5711110     Bytes
+syscr:                  42          Bytes
+syscw:                  71798       Bytes
+read_bytes:             3727532032  Bytes
+write_bytes:            4419235840  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5737906     Bytes
+syscr:                  42          Bytes
+syscw:                  72137       Bytes
+read_bytes:             3750162432  Bytes
+write_bytes:            4441903104  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5763826     Bytes
+syscr:                  42          Bytes
+syscw:                  72461       Bytes
+read_bytes:             3773263872  Bytes
+write_bytes:            4465061888  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5791106     Bytes
+syscr:                  42          Bytes
+syscw:                  72802       Bytes
+read_bytes:             3795865600  Bytes
+write_bytes:            4487716864  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5818466     Bytes
+syscr:                  42          Bytes
+syscw:                  73144       Bytes
+read_bytes:             3819216896  Bytes
+write_bytes:            4511105024  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5845906     Bytes
+syscr:                  42          Bytes
+syscw:                  73487       Bytes
+read_bytes:             3841208320  Bytes
+write_bytes:            4534054912  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5872146     Bytes
+syscr:                  42          Bytes
+syscw:                  73815       Bytes
+read_bytes:             3864580096  Bytes
+write_bytes:            4557508608  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5899666     Bytes
+syscr:                  42          Bytes
+syscw:                  74159       Bytes
+read_bytes:             3888025600  Bytes
+write_bytes:            4580982784  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5923506     Bytes
+syscr:                  42          Bytes
+syscw:                  74457       Bytes
+read_bytes:             3910082560  Bytes
+write_bytes:            4603101184  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5950946     Bytes
+syscr:                  42          Bytes
+syscw:                  74800       Bytes
+read_bytes:             3932905472  Bytes
+write_bytes:            4625993728  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  5956386     Bytes
+syscr:                  42          Bytes
+syscw:                  74868       Bytes
+read_bytes:             3952152576  Bytes
+write_bytes:            4646199296  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  5993705     Bytes
+syscr:                  42          Bytes
+syscw:                  75342       Bytes
+read_bytes:             3965276160  Bytes
+write_bytes:            4662894592  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6017666     Bytes
+syscr:                  42          Bytes
+syscw:                  75645       Bytes
+read_bytes:             3974590464  Bytes
+write_bytes:            4674289664  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6041506     Bytes
+syscr:                  42          Bytes
+syscw:                  75943       Bytes
+read_bytes:             3987009536  Bytes
+write_bytes:            4686761984  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6074866     Bytes
+syscr:                  42          Bytes
+syscw:                  76360       Bytes
+read_bytes:             4004446208  Bytes
+write_bytes:            4704251904  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6110306     Bytes
+syscr:                  42          Bytes
+syscw:                  76803       Bytes
+read_bytes:             4025851904  Bytes
+write_bytes:            4726362112  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  6118936     Bytes
+syscr:                  42          Bytes
+syscw:                  76914       Bytes
+read_bytes:             4033904640  Bytes
+write_bytes:            4735320064  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6159621     Bytes
+syscr:                  42          Bytes
+syscw:                  77429       Bytes
+read_bytes:             4048732160  Bytes
+write_bytes:            4754010112  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6198655     Bytes
+syscr:                  42          Bytes
+syscw:                  77918       Bytes
+read_bytes:             4066725888  Bytes
+write_bytes:            4772917248  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6236015     Bytes
+syscr:                  42          Bytes
+syscw:                  78385       Bytes
+read_bytes:             4084736000  Bytes
+write_bytes:            4790984704  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6268175     Bytes
+syscr:                  42          Bytes
+syscw:                  78787       Bytes
+read_bytes:             4104589312  Bytes
+write_bytes:            4813156352  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  6280278     Bytes
+syscr:                  42          Bytes
+syscw:                  78942       Bytes
+read_bytes:             4114206720  Bytes
+write_bytes:            4826304512  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6321437     Bytes
+syscr:                  42          Bytes
+syscw:                  79463       Bytes
+read_bytes:             4128301056  Bytes
+write_bytes:            4844236800  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6362773     Bytes
+syscr:                  42          Bytes
+syscw:                  79981       Bytes
+read_bytes:             4146098176  Bytes
+write_bytes:            4862631936  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6403493     Bytes
+syscr:                  42          Bytes
+syscw:                  80490       Bytes
+read_bytes:             4161921024  Bytes
+write_bytes:            4881436672  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6437973     Bytes
+syscr:                  42          Bytes
+syscw:                  80921       Bytes
+read_bytes:             4181348352  Bytes
+write_bytes:            4905459712  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 2
+rchar:                  17731       Bytes
+wchar:                  6446880     Bytes
+syscr:                  42          Bytes
+syscw:                  81036       Bytes
+read_bytes:             4192120832  Bytes
+write_bytes:            4918472704  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6475504     Bytes
+syscr:                  42          Bytes
+syscw:                  81399       Bytes
+read_bytes:             4214444032  Bytes
+write_bytes:            4941717504  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6498651     Bytes
+syscr:                  42          Bytes
+syscw:                  81692       Bytes
+read_bytes:             4235010048  Bytes
+write_bytes:            4962349056  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6521877     Bytes
+syscr:                  42          Bytes
+syscw:                  81986       Bytes
+read_bytes:             4256477184  Bytes
+write_bytes:            4983902208  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6548342     Bytes
+syscr:                  42          Bytes
+syscw:                  82321       Bytes
+read_bytes:             4278145024  Bytes
+write_bytes:            5005594624  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6572678     Bytes
+syscr:                  42          Bytes
+syscw:                  82627       Bytes
+read_bytes:             4298706944  Bytes
+write_bytes:            5026254848  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6597398     Bytes
+syscr:                  42          Bytes
+syscw:                  82936       Bytes
+read_bytes:             4320043008  Bytes
+write_bytes:            5047644160  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6621318     Bytes
+syscr:                  42          Bytes
+syscw:                  83235       Bytes
+read_bytes:             4342190080  Bytes
+write_bytes:            5069852672  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6646518     Bytes
+syscr:                  42          Bytes
+syscw:                  83550       Bytes
+read_bytes:             4364546048  Bytes
+write_bytes:            5092380672  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6661638     Bytes
+syscr:                  42          Bytes
+syscw:                  83739       Bytes
+read_bytes:             4378386432  Bytes
+write_bytes:            5107011584  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6675558     Bytes
+syscr:                  42          Bytes
+syscw:                  83913       Bytes
+read_bytes:             4390621184  Bytes
+write_bytes:            5119995904  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6700438     Bytes
+syscr:                  42          Bytes
+syscw:                  84224       Bytes
+read_bytes:             4411465728  Bytes
+write_bytes:            5142093824  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6725718     Bytes
+syscr:                  42          Bytes
+syscw:                  84540       Bytes
+read_bytes:             4431249408  Bytes
+write_bytes:            5163065344  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6751558     Bytes
+syscr:                  42          Bytes
+syscw:                  84863       Bytes
+read_bytes:             4451155968  Bytes
+write_bytes:            5184176128  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6776918     Bytes
+syscr:                  42          Bytes
+syscw:                  85180       Bytes
+read_bytes:             4473204736  Bytes
+write_bytes:            5206736896  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  6777792     Bytes
+syscr:                  42          Bytes
+syscw:                  85192       Bytes
+read_bytes:             4487008256  Bytes
+write_bytes:            5220790272  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6821809     Bytes
+syscr:                  42          Bytes
+syscw:                  85750       Bytes
+read_bytes:             4503388160  Bytes
+write_bytes:            5241618432  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6858786     Bytes
+syscr:                  42          Bytes
+syscw:                  86214       Bytes
+read_bytes:             4520185856  Bytes
+write_bytes:            5259747328  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6895106     Bytes
+syscr:                  42          Bytes
+syscw:                  86668       Bytes
+read_bytes:             4538707968  Bytes
+write_bytes:            5278306304  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6938344     Bytes
+syscr:                  42          Bytes
+syscw:                  87107       Bytes
+read_bytes:             4556705792  Bytes
+write_bytes:            5297348608  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  6944237     Bytes
+syscr:                  42          Bytes
+syscw:                  87183       Bytes
+read_bytes:             4568301568  Bytes
+write_bytes:            5313273856  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  6984843     Bytes
+syscr:                  42          Bytes
+syscw:                  87697       Bytes
+read_bytes:             4583841792  Bytes
+write_bytes:            5333037056  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7021250     Bytes
+syscr:                  42          Bytes
+syscw:                  88153       Bytes
+read_bytes:             4601327616  Bytes
+write_bytes:            5351215104  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7070050     Bytes
+syscr:                  42          Bytes
+syscw:                  88763       Bytes
+read_bytes:             4618780672  Bytes
+write_bytes:            5372284928  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7094770     Bytes
+syscr:                  42          Bytes
+syscw:                  89072       Bytes
+read_bytes:             4639907840  Bytes
+write_bytes:            5399007232  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  7112820     Bytes
+syscr:                  42          Bytes
+syscw:                  89302       Bytes
+read_bytes:             4647100416  Bytes
+write_bytes:            5408153600  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7151335     Bytes
+syscr:                  42          Bytes
+syscw:                  89789       Bytes
+read_bytes:             4662308864  Bytes
+write_bytes:            5426950144  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7190935     Bytes
+syscr:                  42          Bytes
+syscw:                  90284       Bytes
+read_bytes:             4679651328  Bytes
+write_bytes:            5444378624  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7235655     Bytes
+syscr:                  42          Bytes
+syscw:                  90843       Bytes
+read_bytes:             4696096768  Bytes
+write_bytes:            5465235456  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7257255     Bytes
+syscr:                  42          Bytes
+syscw:                  91113       Bytes
+read_bytes:             4713377792  Bytes
+write_bytes:            5487968256  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 2
+rchar:                  17731       Bytes
+wchar:                  7271285     Bytes
+syscr:                  42          Bytes
+syscw:                  91293       Bytes
+read_bytes:             4727009280  Bytes
+write_bytes:            5502423040  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7297829     Bytes
+syscr:                  42          Bytes
+syscw:                  91629       Bytes
+read_bytes:             4749103104  Bytes
+write_bytes:            5525180416  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7320028     Bytes
+syscr:                  42          Bytes
+syscw:                  91910       Bytes
+read_bytes:             4769546240  Bytes
+write_bytes:            5545668608  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7341990     Bytes
+syscr:                  42          Bytes
+syscw:                  92188       Bytes
+read_bytes:             4791738368  Bytes
+write_bytes:            5567918080  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7367112     Bytes
+syscr:                  42          Bytes
+syscw:                  92506       Bytes
+read_bytes:             4814331904  Bytes
+write_bytes:            5590540288  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7389094     Bytes
+syscr:                  42          Bytes
+syscw:                  92781       Bytes
+read_bytes:             4835278848  Bytes
+write_bytes:            5611532288  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7416294     Bytes
+syscr:                  42          Bytes
+syscw:                  93121       Bytes
+read_bytes:             4858556416  Bytes
+write_bytes:            5634842624  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7428774     Bytes
+syscr:                  42          Bytes
+syscw:                  93277       Bytes
+read_bytes:             4868550656  Bytes
+write_bytes:            5644877824  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7447494     Bytes
+syscr:                  42          Bytes
+syscw:                  93511       Bytes
+read_bytes:             4886519808  Bytes
+write_bytes:            5662883840  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7470134     Bytes
+syscr:                  42          Bytes
+syscw:                  93794       Bytes
+read_bytes:             4907704320  Bytes
+write_bytes:            5684981760  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7493334     Bytes
+syscr:                  42          Bytes
+syscw:                  94084       Bytes
+read_bytes:             4930138112  Bytes
+write_bytes:            5707444224  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7515414     Bytes
+syscr:                  42          Bytes
+syscw:                  94360       Bytes
+read_bytes:             4950204416  Bytes
+write_bytes:            5727563776  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7543894     Bytes
+syscr:                  42          Bytes
+syscw:                  94716       Bytes
+read_bytes:             4972691456  Bytes
+write_bytes:            5750075392  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7566534     Bytes
+syscr:                  42          Bytes
+syscw:                  94999       Bytes
+read_bytes:             4993036288  Bytes
+write_bytes:            5770469376  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7579974     Bytes
+syscr:                  42          Bytes
+syscw:                  95167       Bytes
+read_bytes:             5019357184  Bytes
+write_bytes:            5798125568  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  7598502     Bytes
+syscr:                  42          Bytes
+syscw:                  95403       Bytes
+read_bytes:             5026758656  Bytes
+write_bytes:            5807554560  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7643799     Bytes
+syscr:                  42          Bytes
+syscw:                  95975       Bytes
+read_bytes:             5044727808  Bytes
+write_bytes:            5829251072  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7678439     Bytes
+syscr:                  42          Bytes
+syscw:                  96408       Bytes
+read_bytes:             5061144576  Bytes
+write_bytes:            5845725184  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7716759     Bytes
+syscr:                  42          Bytes
+syscw:                  96887       Bytes
+read_bytes:             5080301568  Bytes
+write_bytes:            5864923136  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7733879     Bytes
+syscr:                  42          Bytes
+syscw:                  97101       Bytes
+read_bytes:             5095673856  Bytes
+write_bytes:            5881585664  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  7763690     Bytes
+syscr:                  42          Bytes
+syscw:                  97480       Bytes
+read_bytes:             5107585024  Bytes
+write_bytes:            5896740864  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7803539     Bytes
+syscr:                  42          Bytes
+syscw:                  97982       Bytes
+read_bytes:             5124956160  Bytes
+write_bytes:            5916352512  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7844099     Bytes
+syscr:                  42          Bytes
+syscw:                  98489       Bytes
+read_bytes:             5143289856  Bytes
+write_bytes:            5934747648  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7885059     Bytes
+syscr:                  42          Bytes
+syscw:                  99001       Bytes
+read_bytes:             5159571456  Bytes
+write_bytes:            5955006464  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  7891004     Bytes
+syscr:                  42          Bytes
+syscw:                  99077       Bytes
+read_bytes:             5172658176  Bytes
+write_bytes:            5970698240  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7934029     Bytes
+syscr:                  42          Bytes
+syscw:                  99622       Bytes
+read_bytes:             5187530752  Bytes
+write_bytes:            5989617664  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  7975132     Bytes
+syscr:                  42          Bytes
+syscw:                  100138      Bytes
+read_bytes:             5204176896  Bytes
+write_bytes:            6007705600  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8013772     Bytes
+syscr:                  42          Bytes
+syscw:                  100621      Bytes
+read_bytes:             5220839424  Bytes
+write_bytes:            6026309632  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8051452     Bytes
+syscr:                  42          Bytes
+syscw:                  101092      Bytes
+read_bytes:             5238247424  Bytes
+write_bytes:            6044295168  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 2
+rchar:                  17731       Bytes
+wchar:                  8055601     Bytes
+syscr:                  42          Bytes
+syscw:                  101146      Bytes
+read_bytes:             5252194304  Bytes
+write_bytes:            6062940160  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8075734     Bytes
+syscr:                  42          Bytes
+syscw:                  101402      Bytes
+read_bytes:             5268967424  Bytes
+write_bytes:            6080708608  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8086004     Bytes
+syscr:                  42          Bytes
+syscw:                  101532      Bytes
+read_bytes:             5277208576  Bytes
+write_bytes:            6089150464  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8107413     Bytes
+syscr:                  42          Bytes
+syscw:                  101803      Bytes
+read_bytes:             5297082368  Bytes
+write_bytes:            6109081600  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8132535     Bytes
+syscr:                  42          Bytes
+syscw:                  102121      Bytes
+read_bytes:             5318987776  Bytes
+write_bytes:            6131015680  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8157657     Bytes
+syscr:                  42          Bytes
+syscw:                  102439      Bytes
+read_bytes:             5338955776  Bytes
+write_bytes:            6151057408  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8182583     Bytes
+syscr:                  42          Bytes
+syscw:                  102753      Bytes
+read_bytes:             5358489600  Bytes
+write_bytes:            6170615808  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8204823     Bytes
+syscr:                  42          Bytes
+syscw:                  103031      Bytes
+read_bytes:             5377179648  Bytes
+write_bytes:            6189355008  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8229623     Bytes
+syscr:                  42          Bytes
+syscw:                  103341      Bytes
+read_bytes:             5397401600  Bytes
+write_bytes:            6209642496  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8254103     Bytes
+syscr:                  42          Bytes
+syscw:                  103647      Bytes
+read_bytes:             5418053632  Bytes
+write_bytes:            6230327296  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8276263     Bytes
+syscr:                  42          Bytes
+syscw:                  103924      Bytes
+read_bytes:             5437214720  Bytes
+write_bytes:            6250135552  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8297143     Bytes
+syscr:                  42          Bytes
+syscw:                  104185      Bytes
+read_bytes:             5455720448  Bytes
+write_bytes:            6269743104  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8321463     Bytes
+syscr:                  42          Bytes
+syscw:                  104489      Bytes
+read_bytes:             5476421632  Bytes
+write_bytes:            6291054592  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8344423     Bytes
+syscr:                  42          Bytes
+syscw:                  104776      Bytes
+read_bytes:             5495656448  Bytes
+write_bytes:            6310338560  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8368023     Bytes
+syscr:                  42          Bytes
+syscw:                  105071      Bytes
+read_bytes:             5515931648  Bytes
+write_bytes:            6330966016  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8390183     Bytes
+syscr:                  42          Bytes
+syscw:                  105348      Bytes
+read_bytes:             5538164736  Bytes
+write_bytes:            6353219584  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  8390985     Bytes
+syscr:                  42          Bytes
+syscw:                  105359      Bytes
+read_bytes:             5552877568  Bytes
+write_bytes:            6368022528  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8433591     Bytes
+syscr:                  42          Bytes
+syscw:                  105899      Bytes
+read_bytes:             5570158592  Bytes
+write_bytes:            6389972992  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8469405     Bytes
+syscr:                  42          Bytes
+syscw:                  106348      Bytes
+read_bytes:             5586444288  Bytes
+write_bytes:            6407282688  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8509085     Bytes
+syscr:                  42          Bytes
+syscw:                  106844      Bytes
+read_bytes:             5606449152  Bytes
+write_bytes:            6427332608  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8538365     Bytes
+syscr:                  42          Bytes
+syscw:                  107210      Bytes
+read_bytes:             5627187200  Bytes
+write_bytes:            6450466816  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  8553095     Bytes
+syscr:                  42          Bytes
+syscw:                  107398      Bytes
+read_bytes:             5637419008  Bytes
+write_bytes:            6463930368  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8591331     Bytes
+syscr:                  42          Bytes
+syscw:                  107882      Bytes
+read_bytes:             5653032960  Bytes
+write_bytes:            6483124224  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8631722     Bytes
+syscr:                  42          Bytes
+syscw:                  108387      Bytes
+read_bytes:             5671604224  Bytes
+write_bytes:            6501748736  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8674682     Bytes
+syscr:                  42          Bytes
+syscw:                  108924      Bytes
+read_bytes:             5688033280  Bytes
+write_bytes:            6521843712  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8694042     Bytes
+syscr:                  42          Bytes
+syscw:                  109166      Bytes
+read_bytes:             5707919360  Bytes
+write_bytes:            6547415040  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  8718155     Bytes
+syscr:                  42          Bytes
+syscw:                  109473      Bytes
+read_bytes:             5716930560  Bytes
+write_bytes:            6558867456  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8756641     Bytes
+syscr:                  42          Bytes
+syscw:                  109959      Bytes
+read_bytes:             5732519936  Bytes
+write_bytes:            6577631232  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8793441     Bytes
+syscr:                  42          Bytes
+syscw:                  110419      Bytes
+read_bytes:             5749854208  Bytes
+write_bytes:            6595448832  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8840641     Bytes
+syscr:                  42          Bytes
+syscw:                  111009      Bytes
+read_bytes:             5767221248  Bytes
+write_bytes:            6617501696  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8851841     Bytes
+syscr:                  42          Bytes
+syscw:                  111149      Bytes
+read_bytes:             5781921792  Bytes
+write_bytes:            6632427520  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 2
+rchar:                  17731       Bytes
+wchar:                  8870770     Bytes
+syscr:                  42          Bytes
+syscw:                  111391      Bytes
+read_bytes:             5798875136  Bytes
+write_bytes:            6650388480  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8893838     Bytes
+syscr:                  42          Bytes
+syscw:                  111683      Bytes
+read_bytes:             5819150336  Bytes
+write_bytes:            6671024128  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8898815     Bytes
+syscr:                  42          Bytes
+syscw:                  111746      Bytes
+read_bytes:             5823860736  Bytes
+write_bytes:            6675750912  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8921093     Bytes
+syscr:                  42          Bytes
+syscw:                  112028      Bytes
+read_bytes:             5844365312  Bytes
+write_bytes:            6696275968  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8942265     Bytes
+syscr:                  42          Bytes
+syscw:                  112296      Bytes
+read_bytes:             5863251968  Bytes
+write_bytes:            6715219968  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8965412     Bytes
+syscr:                  42          Bytes
+syscw:                  112589      Bytes
+read_bytes:             5883723776  Bytes
+write_bytes:            6735712256  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  8985955     Bytes
+syscr:                  42          Bytes
+syscw:                  112846      Bytes
+read_bytes:             5901668352  Bytes
+write_bytes:            6753714176  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9010115     Bytes
+syscr:                  42          Bytes
+syscw:                  113148      Bytes
+read_bytes:             5922410496  Bytes
+write_bytes:            6774476800  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9032995     Bytes
+syscr:                  42          Bytes
+syscw:                  113434      Bytes
+read_bytes:             5940150272  Bytes
+write_bytes:            6792261632  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9054595     Bytes
+syscr:                  42          Bytes
+syscw:                  113704      Bytes
+read_bytes:             5959995392  Bytes
+write_bytes:            6812102656  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9077315     Bytes
+syscr:                  42          Bytes
+syscw:                  113988      Bytes
+read_bytes:             5978865664  Bytes
+write_bytes:            6831001600  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9098515     Bytes
+syscr:                  42          Bytes
+syscw:                  114253      Bytes
+read_bytes:             5997907968  Bytes
+write_bytes:            6850068480  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9121635     Bytes
+syscr:                  42          Bytes
+syscw:                  114542      Bytes
+read_bytes:             6018883584  Bytes
+write_bytes:            6871089152  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9144195     Bytes
+syscr:                  42          Bytes
+syscw:                  114824      Bytes
+read_bytes:             6038003712  Bytes
+write_bytes:            6890950656  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9167155     Bytes
+syscr:                  42          Bytes
+syscw:                  115111      Bytes
+read_bytes:             6059212800  Bytes
+write_bytes:            6912106496  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9184595     Bytes
+syscr:                  42          Bytes
+syscw:                  115329      Bytes
+read_bytes:             6084091904  Bytes
+write_bytes:            6937092096  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  9200723     Bytes
+syscr:                  42          Bytes
+syscw:                  115535      Bytes
+read_bytes:             6094172160  Bytes
+write_bytes:            6948945920  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9242372     Bytes
+syscr:                  42          Bytes
+syscw:                  116062      Bytes
+read_bytes:             6109974528  Bytes
+write_bytes:            6969044992  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9281332     Bytes
+syscr:                  42          Bytes
+syscw:                  116549      Bytes
+read_bytes:             6127579136  Bytes
+write_bytes:            6988836864  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9321492     Bytes
+syscr:                  42          Bytes
+syscw:                  117051      Bytes
+read_bytes:             6146703360  Bytes
+write_bytes:            7008034816  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9338452     Bytes
+syscr:                  42          Bytes
+syscw:                  117263      Bytes
+read_bytes:             6164639744  Bytes
+write_bytes:            7030116352  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  9371348     Bytes
+syscr:                  42          Bytes
+syscw:                  117681      Bytes
+read_bytes:             6176628736  Bytes
+write_bytes:            7045357568  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9407533     Bytes
+syscr:                  42          Bytes
+syscw:                  118137      Bytes
+read_bytes:             6192631808  Bytes
+write_bytes:            7063719936  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9446733     Bytes
+syscr:                  42          Bytes
+syscw:                  118627      Bytes
+read_bytes:             6210916352  Bytes
+write_bytes:            7083573248  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9487933     Bytes
+syscr:                  42          Bytes
+syscw:                  119142      Bytes
+read_bytes:             6227668992  Bytes
+write_bytes:            7103442944  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  9493407     Bytes
+syscr:                  42          Bytes
+syscw:                  119212      Bytes
+read_bytes:             6240301056  Bytes
+write_bytes:            7121276928  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9532156     Bytes
+syscr:                  42          Bytes
+syscw:                  119703      Bytes
+read_bytes:             6254247936  Bytes
+write_bytes:            7139016704  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9570900     Bytes
+syscr:                  42          Bytes
+syscw:                  120190      Bytes
+read_bytes:             6270902272  Bytes
+write_bytes:            7157219328  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9609300     Bytes
+syscr:                  42          Bytes
+syscw:                  120670      Bytes
+read_bytes:             6286327808  Bytes
+write_bytes:            7174451200  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9649460     Bytes
+syscr:                  42          Bytes
+syscw:                  121172      Bytes
+read_bytes:             6301515776  Bytes
+write_bytes:            7193223168  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 2
+rchar:                  17731       Bytes
+wchar:                  9653479     Bytes
+syscr:                  42          Bytes
+syscw:                  121223      Bytes
+read_bytes:             6313639936  Bytes
+write_bytes:            7210668032  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9673710     Bytes
+syscr:                  42          Bytes
+syscw:                  121481      Bytes
+read_bytes:             6331609088  Bytes
+write_bytes:            7229710336  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9680504     Bytes
+syscr:                  42          Bytes
+syscw:                  121567      Bytes
+read_bytes:             6337527808  Bytes
+write_bytes:            7235956736  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9701281     Bytes
+syscr:                  42          Bytes
+syscw:                  121830      Bytes
+read_bytes:             6355677184  Bytes
+write_bytes:            7254204416  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9723717     Bytes
+syscr:                  42          Bytes
+syscw:                  122114      Bytes
+read_bytes:             6375206912  Bytes
+write_bytes:            7273754624  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9742993     Bytes
+syscr:                  42          Bytes
+syscw:                  122358      Bytes
+read_bytes:             6393151488  Bytes
+write_bytes:            7291752448  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9762427     Bytes
+syscr:                  42          Bytes
+syscw:                  122604      Bytes
+read_bytes:             6411448320  Bytes
+write_bytes:            7310069760  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9784433     Bytes
+syscr:                  42          Bytes
+syscw:                  122880      Bytes
+read_bytes:             6430326784  Bytes
+write_bytes:            7329001472  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9805473     Bytes
+syscr:                  42          Bytes
+syscw:                  123143      Bytes
+read_bytes:             6449651712  Bytes
+write_bytes:            7348346880  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9826353     Bytes
+syscr:                  42          Bytes
+syscw:                  123404      Bytes
+read_bytes:             6467997696  Bytes
+write_bytes:            7366737920  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9849473     Bytes
+syscr:                  42          Bytes
+syscw:                  123693      Bytes
+read_bytes:             6488096768  Bytes
+write_bytes:            7387037696  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9868513     Bytes
+syscr:                  42          Bytes
+syscw:                  123931      Bytes
+read_bytes:             6504824832  Bytes
+write_bytes:            7404556288  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9889553     Bytes
+syscr:                  42          Bytes
+syscw:                  124194      Bytes
+read_bytes:             6524178432  Bytes
+write_bytes:            7424024576  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9909153     Bytes
+syscr:                  42          Bytes
+syscw:                  124439      Bytes
+read_bytes:             6541668352  Bytes
+write_bytes:            7441575936  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9929633     Bytes
+syscr:                  42          Bytes
+syscw:                  124695      Bytes
+read_bytes:             6560583680  Bytes
+write_bytes:            7460528128  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9951713     Bytes
+syscr:                  42          Bytes
+syscw:                  124971      Bytes
+read_bytes:             6580441088  Bytes
+write_bytes:            7480414208  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9973153     Bytes
+syscr:                  42          Bytes
+syscw:                  125239      Bytes
+read_bytes:             6598377472  Bytes
+write_bytes:            7498399744  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  9981233     Bytes
+syscr:                  42          Bytes
+syscw:                  125340      Bytes
+read_bytes:             6619258880  Bytes
+write_bytes:            7520632832  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  10008366    Bytes
+syscr:                  42          Bytes
+syscw:                  125685      Bytes
+read_bytes:             6630342656  Bytes
+write_bytes:            7534714880  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10048849    Bytes
+syscr:                  42          Bytes
+syscw:                  126195      Bytes
+read_bytes:             6647783424  Bytes
+write_bytes:            7554625536  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10084849    Bytes
+syscr:                  42          Bytes
+syscw:                  126645      Bytes
+read_bytes:             6665932800  Bytes
+write_bytes:            7572836352  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10122529    Bytes
+syscr:                  42          Bytes
+syscw:                  127116      Bytes
+read_bytes:             6685810688  Bytes
+write_bytes:            7593746432  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  10130903    Bytes
+syscr:                  42          Bytes
+syscw:                  127223      Bytes
+read_bytes:             6699302912  Bytes
+write_bytes:            7607738368  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10174822    Bytes
+syscr:                  42          Bytes
+syscw:                  127779      Bytes
+read_bytes:             6715670528  Bytes
+write_bytes:            7628550144  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10211458    Bytes
+syscr:                  42          Bytes
+syscw:                  128238      Bytes
+read_bytes:             6733586432  Bytes
+write_bytes:            7647354880  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10248818    Bytes
+syscr:                  42          Bytes
+syscw:                  128705      Bytes
+read_bytes:             6751182848  Bytes
+write_bytes:            7665192960  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10282258    Bytes
+syscr:                  42          Bytes
+syscw:                  129123      Bytes
+read_bytes:             6773075968  Bytes
+write_bytes:            7690842112  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Shuffle merging CQFs 0 to 1
+rchar:                  17731       Bytes
+wchar:                  10299581    Bytes
+syscr:                  42          Bytes
+syscw:                  129344      Bytes
+read_bytes:             6781132800  Bytes
+write_bytes:            7700959232  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10341392    Bytes
+syscr:                  42          Bytes
+syscw:                  129873      Bytes
+read_bytes:             6796619776  Bytes
+write_bytes:            7720378368  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10380112    Bytes
+syscr:                  42          Bytes
+syscw:                  130357      Bytes
+read_bytes:             6814523392  Bytes
+write_bytes:            7738413056  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10396512    Bytes
+syscr:                  42          Bytes
+syscw:                  130562      Bytes
+read_bytes:             6821773312  Bytes
+write_bytes:            7747256320  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10426912    Bytes
+syscr:                  42          Bytes
+syscw:                  130942      Bytes
+read_bytes:             6835126272  Bytes
+write_bytes:            7762743296  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10440432    Bytes
+syscr:                  42          Bytes
+syscw:                  131111      Bytes
+read_bytes:             6850449408  Bytes
+write_bytes:            7783133184  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Total number of buffer dumps: 0
+Total Time Elapsed: 393.822784seconds
+Finished insertions.
+Insertion throughput: 170404
+rchar:                  17731       Bytes
+wchar:                  10470173    Bytes
+syscr:                  42          Bytes
+syscw:                  131449      Bytes
+read_bytes:             6871715840  Bytes
+write_bytes:            7783161856  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10502326    Bytes
+syscr:                  42          Bytes
+syscw:                  131856      Bytes
+read_bytes:             6898352128  Bytes
+write_bytes:            7783198720  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10538192    Bytes
+syscr:                  42          Bytes
+syscw:                  132310      Bytes
+read_bytes:             6926602240  Bytes
+write_bytes:            7783235584  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10570628    Bytes
+syscr:                  42          Bytes
+syscw:                  132720      Bytes
+read_bytes:             6955683840  Bytes
+write_bytes:            7783268352  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10599988    Bytes
+syscr:                  42          Bytes
+syscw:                  133087      Bytes
+read_bytes:             6980620288  Bytes
+write_bytes:            7783297024  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10631828    Bytes
+syscr:                  42          Bytes
+syscw:                  133485      Bytes
+read_bytes:             7007166464  Bytes
+write_bytes:            7783329792  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10666948    Bytes
+syscr:                  42          Bytes
+syscw:                  133924      Bytes
+read_bytes:             7037820928  Bytes
+write_bytes:            7783362560  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10701508    Bytes
+syscr:                  42          Bytes
+syscw:                  134356      Bytes
+read_bytes:             7068270592  Bytes
+write_bytes:            7783399424  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10738868    Bytes
+syscr:                  42          Bytes
+syscw:                  134823      Bytes
+read_bytes:             7099867136  Bytes
+write_bytes:            7783436288  Bytes
+cancelled_write_bytes:  0           Bytes
+
+rchar:                  17731       Bytes
+wchar:                  10775748    Bytes
+syscr:                  42          Bytes
+syscw:                  135284      Bytes
+read_bytes:             7129997312  Bytes
+write_bytes:            7783473152  Bytes
+cancelled_write_bytes:  0           Bytes
+
+Total number of keys above threshold: 135295
+
+Performace after 404 seconds:
+Total  rchar:                  0   MByte/s
+Total  wchar:                  0   MByte/s
+Total  syscr:                  0   MByte/s
+Total  syscw:                  0   MByte/s
+Total  read_bytes:             16  MByte/s
+Total  write_bytes:            18  MByte/s
+Total  cancelled_write_bytes:  0   MByte/s

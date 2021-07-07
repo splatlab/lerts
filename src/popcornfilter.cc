@@ -19,6 +19,7 @@
 #include <bitset>
 #include <cassert>
 #include <fstream>
+#include <chrono>
 
 #include <math.h>
 #include <time.h>
@@ -41,8 +42,9 @@
 #include "popcornfilter.h"
 #include "gqf/hashutil.h"
 
-#define BUFFER_SIZE (1ULL << 16)
-#define BATCH_SIZE 1000
+#define BUFFER_SIZE (1ULL << 17)
+#define BATCH_SIZE (1ULL << 10)
+#define THROUGHPUT_SIZE (BATCH_SIZE*(1ULL<<7))
 
 uint64_t offset{0};
 
@@ -53,6 +55,8 @@ uint64_t get_offset(void) {
 uint64_t incr_offset(uint64_t count) {
 	return __atomic_fetch_add(&offset, count, __ATOMIC_SEQ_CST);
 }
+
+std::ofstream throughput("Instantaneous_throughput.txt");
 
 typedef struct socket_attr {
 	int nsenders{1};
@@ -67,18 +71,21 @@ typedef struct socket_attr {
 socket_attr attr;
 
 template <class key_object>
-class ThreadArgs {
+struct ThreadArgs {
 	public:
 		PopcornFilter<key_object> *pf;
 		uint64_t *vals;
 		uint64_t stream_size;
 		uint64_t batch_size;
+		uint32_t buffer_count;
+		std::ofstream throughput;
 
-		ThreadArgs() : pf(nullptr), vals(nullptr), stream_size(0), batch_size{0}
-		{};
+		ThreadArgs() : pf(nullptr), vals(nullptr), stream_size(0), batch_size{0},
+			buffer_count{0} {};
 		ThreadArgs(PopcornFilter<key_object> *pf, uint64_t *vals, uint64_t
-							 stream_size, uint64_t batch_size) : pf(pf), vals(vals),
-		stream_size(stream_size), batch_size(batch_size) {};
+							 stream_size, uint64_t batch_size, uint32_t buffer_count) :
+			pf(pf), vals(vals), stream_size(stream_size), batch_size(batch_size),
+			buffer_count(buffer_count) {};
 };
 
 template <class key_object>
@@ -105,6 +112,8 @@ int shutdown(char *buf)
 	return 0;
 }
 
+// Should not be used in the current form. Need to update fix the code for
+// proper recoding of reporting index.
 void *thread_insert_socket(void *a) {
 	ThreadArgsSocket<KeyObject> *args = (ThreadArgsSocket<KeyObject>*)a;
 
@@ -212,14 +221,24 @@ void *thread_insert(void *a) {
 												args->pf->get_num_value_bits(), QF_HASH_INVERTIBLE,
 												args->pf->get_seed());
 
+	float flush_threshold = popcornfilter::RandomBetween(0.5, 0.8);
+
 	uint64_t num_buffer_dumps = 0;
 	/* First try and insert the key-value pair in the cascade filter. If the
 	 * insert fails then insert in the buffer. Later dump the buffer in the
 	 * cascade filter.
 	 */
 	uint64_t start{0}, end{0};
+	throughput << start << "," <<
+		std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()
+		<< '\n';
 	do {
 		start = incr_offset(args->batch_size);
+		if (start != 0 && start % THROUGHPUT_SIZE == 0) {
+			throughput << start << "," <<
+				std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()
+				<< '\n';
+		}
 		if (start >= args->stream_size)
 			break;
 		else if (start + args->batch_size > args->stream_size)
@@ -228,30 +247,44 @@ void *thread_insert(void *a) {
 		//PRINT("Inserting from: " << start << " to: " << end);
 		while (start < end) {
 			uint64_t key = args->vals[start];
-			if (!args->pf->insert(KeyObject(key, 0, 1, 0), start,
-														PF_TRY_ONCE_LOCK)) {
-				//DEBUG("Inserting in the buffer.");
-				buffer.insert(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
-				double load_factor = buffer.occupied_slots() /
-					(double)buffer.total_slots();
-				if (load_factor > 0.75) {
-					num_buffer_dumps++;
-					DEBUG("Dumping buffer.");
-					typename CQF<KeyObject>::Iterator it = buffer.begin();
-					do {
-						KeyObject key = *it;
-						uint64_t count = key.count;
-						key.count = 1;
-						for (uint64_t c = 0; c < count; c++) {
-							if (!args->pf->insert(key, start, PF_WAIT_FOR_LOCK)) {
-								std::cerr << "Failed insertion for " << (uint64_t)key.key <<
-									std::endl;
-								abort();
+			if (args->buffer_count == 0) {
+				if (!args->pf->insert(KeyObject(key, 0, 1, 0), get_offset(),
+															PF_WAIT_FOR_LOCK)) {
+					std::cerr << "Failed insertion for " << (uint64_t)key << std::endl;
+					abort();
+				}
+			} else {
+				if (!args->pf->insert(KeyObject(key, 0, 1, 0), get_offset(),
+															PF_TRY_ONCE_LOCK)) {
+					//DEBUG("Inserting in the buffer.");
+					buffer.insert(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
+					if (buffer.query(KeyObject(key, 0, 1, 0), PF_NO_LOCK) ==
+							args->buffer_count) {
+						buffer.delete_key(KeyObject(key, 0, 1, 0), PF_NO_LOCK);
+						args->pf->insert(KeyObject(key, 0, args->buffer_count, 0),
+														 get_offset(), PF_WAIT_FOR_LOCK);
+					}
+					double load_factor = buffer.occupied_slots() /
+						(double)buffer.total_slots();
+					if (load_factor > flush_threshold) {
+						num_buffer_dumps++;
+						DEBUG("Dumping buffer.");
+						typename CQF<KeyObject>::Iterator it = buffer.begin();
+						do {
+							KeyObject key = *it;
+							uint64_t count = key.count;
+							key.count = 1;
+							for (uint64_t c = 0; c < count; c++) {
+								if (!args->pf->insert(key, get_offset(), PF_WAIT_FOR_LOCK)) {
+									std::cerr << "Failed insertion for " << (uint64_t)key.key <<
+										std::endl;
+									abort();
+								}
 							}
-						}
-						++it;
-					} while(!it.done());
-					buffer.reset();
+							++it;
+						} while(!it.done());
+						buffer.reset();
+					}
 				}
 			}
 			start++;
@@ -324,13 +357,16 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	uint64_t nfilters = opts.nfilters;
 	uint64_t nthreads = opts.nthreads;
 	uint32_t nagebits = opts.nagebits;
+	uint32_t cascade = opts.cascade;
 	uint32_t do_odp = opts.do_odp;
 	uint32_t greedy = opts.greedy;
 	uint32_t pinning = opts.pinning;
 	uint32_t threshold_value = opts.threshold_value;
+	uint32_t buffer_count = opts.buffer_count;
+	std::string file_name = opts.op_file;
 
 	PopcornFilter<KeyObject> pf(nfilters, qbits, nlevels, gfactor, nagebits,
-															do_odp, greedy, pinning, threshold_value);
+															cascade, do_odp, greedy, pinning, threshold_value);
 
 	uint64_t nvals = 0;
 	uint64_t *vals = nullptr;
@@ -402,7 +438,6 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	struct timezone tzp;
 	std::vector<void*> args;
 	args.reserve(nthreads);
-
 	if (opts.port > 0) {
 		for (uint64_t i = 0; i < nthreads; i++) {
 			ThreadArgsSocket<KeyObject> *obj = new ThreadArgsSocket<KeyObject>(&pf, socket);
@@ -418,7 +453,8 @@ int popcornfilter_main (PopcornFilterOpts opts)
 			}
 			ThreadArgs<KeyObject> *obj = new ThreadArgs<KeyObject>(&pf, vals,
 																														 nvals,
-																														 batch_size);
+																														 batch_size,
+																														 buffer_count);
 			args.emplace_back((void*)obj);
 		}
 	}
@@ -430,6 +466,8 @@ int popcornfilter_main (PopcornFilterOpts opts)
 	popcornfilter::print_time_elapsed("", &start, &end);
 	PRINT("Finished insertions.");
 	PRINT("Insertion throughput: " << nvals/(float)popcornfilter::cal_time_elapsed(&start, &end));
+
+	throughput.close();
 
 	//PRINT("Total distinct elements inserted: " <<
 				//pf.get_total_dist_elements());
@@ -452,7 +490,7 @@ int popcornfilter_main (PopcornFilterOpts opts)
 
 #ifdef VALIDATE
 		PRINT("Performing validation");
-		if (pf.validate_anomalies(keylifetimes, vals, nvals - 1))
+		if (pf.validate_anomalies(keylifetimes, vals, nvals - 1, file_name))
 			PRINT("Validation successful!");
 		else
 			PRINT("Validation failed!");

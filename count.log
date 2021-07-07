@@ -1,0 +1,80 @@
+Num observations: 29
+Memory CQF: 23
+./main popcornfilter -f 8 -q 20 -l 4 -g 4 -t 8 -o -v 24 -i raw/streamdump_mmap_active_new_536870912
+Creating a count-stretch filter.
+Reading input stream and logs from disk
+Analyzing Stream
+Clearing the multimap.
+Number of keys: 361820361
+Number of keys above threshold: 1076712
+Total observations: 536162700
+Inserting elements.
+Total number of buffer dumps: 75
+Total number of buffer dumps: 73
+Total number of buffer dumps: 62
+Total number of buffer dumps: 57
+Total number of buffer dumps: 63
+Total number of buffer dumps: 64
+Total number of buffer dumps: 64
+Total number of buffer dumps: 69
+Total Time Elapsed: 246.590683seconds
+Finished insertions.
+Insertion throughput: 2.1743e+06
+Querying elements.
+Total Time Elapsed: 396.378601seconds
+Finished lookups.
+Performing validation
+Total flushes: 85
+Failed to report 74 keys on time.
+Validation failed!
+Total number of keys above threshold: 1066804
+cascadefilter 0
+Number of keys above the THRESHOLD value 133778
+Number of keys reported through shuffle-merges 133778
+Number of keys reported through odp 0
+Total memory time (secs): -1.746e+07
+Total flush time (secs): 71.0783
+cascadefilter 1
+Number of keys above the THRESHOLD value 133424
+Number of keys reported through shuffle-merges 133424
+Number of keys reported through odp 0
+Total memory time (secs): -7.05481e+06
+Total flush time (secs): 70.9391
+cascadefilter 2
+Number of keys above the THRESHOLD value 132697
+Number of keys reported through shuffle-merges 132697
+Number of keys reported through odp 0
+Total memory time (secs): -4.83883e+06
+Total flush time (secs): 72.4633
+cascadefilter 3
+Number of keys above the THRESHOLD value 133379
+Number of keys reported through shuffle-merges 133379
+Number of keys reported through odp 0
+Total memory time (secs): -1.81323e+07
+Total flush time (secs): 71.3386
+cascadefilter 4
+Number of keys above the THRESHOLD value 134336
+Number of keys reported through shuffle-merges 134336
+Number of keys reported through odp 0
+Total memory time (secs): -7.3225e+06
+Total flush time (secs): 70.2991
+cascadefilter 5
+Number of keys above the THRESHOLD value 133201
+Number of keys reported through shuffle-merges 133201
+Number of keys reported through odp 0
+Total memory time (secs): -1.8032e+07
+Total flush time (secs): 71.5452
+cascadefilter 6
+Number of keys above the THRESHOLD value 132966
+Number of keys reported through shuffle-merges 132966
+Number of keys reported through odp 0
+Total memory time (secs): -2.06692e+07
+Total flush time (secs): 70.6768
+cascadefilter 7
+Number of keys above the THRESHOLD value 133023
+Number of keys reported through shuffle-merges 133023
+Number of keys reported through odp 0
+Total memory time (secs): -7.46819e+06
+Total flush time (secs): 71.1674
+Total observations inserted: 536162700
+Count stretch with cones and threads finished! Output in: raw/pf-ct-536870912

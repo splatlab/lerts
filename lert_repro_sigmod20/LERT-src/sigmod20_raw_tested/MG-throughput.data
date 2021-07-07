@@ -1,0 +1,10 @@
+Creating a popcorn filter.
+Using greedy optimization.
+Reading input stream and logs from disk
+Total observations: 67107600
+Inserting elements.
+Total number of buffer dumps: 0
+Total Time Elapsed: 33.037689seconds
+Finished insertions.
+Insertion throughput: 2.03124e+06
+Total number of keys above threshold: 135294
