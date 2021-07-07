@@ -1,0 +1,30 @@
+Creating a count-stretch filter.
+Reading input stream and logs from disk
+Total observations: 67107600
+Inserting elements.
+Shuffle merging CQFs 0 to 1
+Shuffle merging CQFs 0 to 1
+Shuffle merging CQFs 0 to 1
+Shuffle merging CQFs 0 to 2
+Shuffle merging CQFs 0 to 1
+Shuffle merging CQFs 0 to 1
+Shuffle merging CQFs 0 to 1
+Shuffle merging CQFs 0 to 2
+Shuffle merging CQFs 0 to 1
+Shuffle merging CQFs 0 to 1
+Shuffle merging CQFs 0 to 1
+Shuffle merging CQFs 0 to 2
+Shuffle merging CQFs 0 to 1
+Shuffle merging CQFs 0 to 1
+Shuffle merging CQFs 0 to 1
+Shuffle merging CQFs 0 to 2
+Shuffle merging CQFs 0 to 1
+Shuffle merging CQFs 0 to 1
+Shuffle merging CQFs 0 to 1
+Shuffle merging CQFs 0 to 2
+Shuffle merging CQFs 0 to 1
+Total number of buffer dumps: 0
+Total Time Elapsed: 96.151840seconds
+Finished insertions.
+Insertion throughput: 697934
+Total number of keys above threshold: 135294
